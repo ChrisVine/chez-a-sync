@@ -1,0 +1,105 @@
+@node compose,,event loop,Top
+
+This (a-sync compose) library file provides a compose-a-sync macro
+interface for the a-sync procedure provided by the
+@ref{coroutines,,(a-sync coroutines)} library file.
+
+@deffn {Syntax} (compose-a-sync [loop] ((var await-exp0) ...) await-exp1 await-exp2 ...)
+This library file provides the compose-a-sync macro.  This does two
+things: first, it calls a-sync for you and deals with the resulting
+'await' and 'resume' procedures without exposing them, which for many
+simple uses makes a-sync easier to use; and secondly it enables
+asynchronous tasks to be more easily composed on an event loop with
+intermediate results, by using a let* type syntax (in fact, let* is
+used internally).
+
+The 'loop' argument of compose-a-sync is optional.  If an event loop
+constructed by make-event-loop is passed to 'loop', then that is the
+main loop on which the tasks will be composed, otherwise if there is
+no 'loop' argument given, the default main loop will be used.  This is
+followed by bindings which are optional (there need not be any), each
+of which must be initialised by an expression comprising the
+application of a 'compose-a-sync'-capable procedure, and following the
+bindings there must be a body of 'compose-a-sync'-capable procedures
+executed solely for the purpose of asynchronous side effects (this
+macro does not, and cannot, return a value because as soon as the
+first await is made control is passed to the event loop).  As in the
+case of let*, unlike the bindings the body cannot be empty - there
+must be at least one expression comprising the application of a
+'compose-a-sync'-capable procedure in the body.
+
+As in the case of let*, each 'compose-a-sync'-capable procedure
+initializing a binding can see the values of the initializations made
+prior to it.  Unlike let*, compose-a-sync blocks cannot be nested
+within other compose-a-sync blocks.  Furthermore, within a
+compose-a-sync block, the result obtained from a
+'compose-a-sync'-capable procedure cannot be passed directly as an
+argument to another 'compose-a-sync'-capable procedure: the
+intermediate result must be stored as the value of a binding in the
+compose-a-sync block.
+
+A 'compose-a-sync'-capable procedure is one which takes an 'await' and
+'yield' procedure from a-sync as its first and second arguments, and
+(if the optional 'loop' argument of this macro is used) takes the
+event loop as its third argument, followed by such further arguments
+as it requires.  All of the await-task!, await-task-in-thread!,
+await-timeout!, await-getline!, await-geteveryline! and
+await-getsomelines! procedures provided by the (a-sync event-loop)
+library file are 'compose-a-sync'-capable.  In addition, to make an
+ordinary body of code which does not block (and which does not need to
+invoke a-sync's await procedure) usable by compose-a-sync, the
+no-await macro can be used to generate a 'compose-a-sync'-capable
+procedure for it (see below).
+
+Each binding is initialized as if sequentially (although it is done
+asynchronously on the relevant event loop).  An initialization does
+not begin until an earlier one has completed.  In addition, each
+clause in the body is executed sequentially in turn, but does so
+asynchronously on the event loop using 'await' semantics.
+
+When calling a 'compose-a-sync'-capable procedure within a
+'compose-a-sync' block (including when initializing its bindings), the
+'await' and 'yield' and event-loop arguments are not explicitly passed
+to it.  The compose-a-sync macro will do it for you.
+
+@example
+(set-default-event-loop!) ;; if none has yet been set
+(compose-a-sync ([line (await-getline! (open-input-file "/dev/tty"))])
+	      ((no-await (simple-format #t
+					"The line was: ~A\n"
+					line))))
+(event-loop-run!)
+@end example
+
+Each block of code within a compose-a-sync block will run
+independently of (and concurrently with) code in other compose-a-sync
+blocks.  Asynchronous operations are only serialized within any one
+compose-a-sync block.  As soon as any code calls a-sync's 'await'
+procedure in a compose-a-sync block, compose-a-sync will return and
+begin executing whatever follows it, and further execution of the
+compose-a-sync block will occur within the event loop concerned.
+
+Other examples of the use of this macro are given in the documentation
+of the @ref{coroutines,,(a-sync coroutines)} library file.
+
+This macro must (like the a-sync procedure) be called in the same
+thread as that in which the event loop runs.
+@end deffn
+
+@deffn {Syntax} (no-await body0 body1 ...)
+This macro will generate a 'compose-a-sync'-capable procedure from a
+body of code which does not block.  It can be passed to
+compose-a-sync, either for use as an initializer or as a clause in its
+body.  When used as an initializer, it evaluates to the value of the
+last expression in the 'no-await' body.
+
+If the body throws an exception which is not caught locally, it will
+propagate out of event-loop-run! or g-main-loop-run, as the case may
+be.
+
+Here is an example of the use of no-await:
+
+@example
+(var ((no-await (+ a b))))
+@end example
+@end deffn

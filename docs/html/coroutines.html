@@ -1,0 +1,344 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!-- Created by GNU Texinfo 6.1, http://www.gnu.org/software/texinfo/ -->
+<head>
+<title>chez-a-sync: coroutines</title>
+
+<meta name="description" content="chez-a-sync: coroutines">
+<meta name="keywords" content="chez-a-sync: coroutines">
+<meta name="resource-type" content="document">
+<meta name="distribution" content="global">
+<meta name="Generator" content="makeinfo">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="index.html#Top" rel="start" title="Top">
+<link href="index.html#Top" rel="up" title="Top">
+<link href="event-loop.html#event-loop" rel="next" title="event loop">
+<link href="index.html#Top" rel="prev" title="Top">
+<style type="text/css">
+<!--
+a.summary-letter {text-decoration: none}
+blockquote.indentedblock {margin-right: 0em}
+blockquote.smallindentedblock {margin-right: 0em; font-size: smaller}
+blockquote.smallquotation {font-size: smaller}
+div.display {margin-left: 3.2em}
+div.example {margin-left: 3.2em}
+div.lisp {margin-left: 3.2em}
+div.smalldisplay {margin-left: 3.2em}
+div.smallexample {margin-left: 3.2em}
+div.smalllisp {margin-left: 3.2em}
+kbd {font-style: oblique}
+pre.display {font-family: inherit}
+pre.format {font-family: inherit}
+pre.menu-comment {font-family: serif}
+pre.menu-preformatted {font-family: serif}
+pre.smalldisplay {font-family: inherit; font-size: smaller}
+pre.smallexample {font-size: smaller}
+pre.smallformat {font-family: inherit; font-size: smaller}
+pre.smalllisp {font-size: smaller}
+span.nolinebreak {white-space: nowrap}
+span.roman {font-family: initial; font-weight: normal}
+span.sansserif {font-family: sans-serif; font-weight: normal}
+ul.no-bullet {list-style: none}
+-->
+</style>
+
+
+</head>
+
+<body lang="en">
+<a name="coroutines"></a>
+<div class="header">
+<p>
+Next: <a href="event-loop.html#event-loop" accesskey="n" rel="next">event loop</a>, Previous: <a href="index.html#Top" accesskey="p" rel="prev">Top</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>
+</div>
+<hr>
+<h4 class="node-heading">coroutines</h4>
+
+<p>The (a-sync coroutines) library file provides the following
+procedures:
+</p>
+<dl>
+<dt><a name="index-make_002diterator"></a>Scheme Procedure: <strong>make-iterator</strong> <em>proc . args</em></dt>
+<dd><p>This procedure takes a generator procedure, namely a procedure which
+has a &rsquo;yield&rsquo; parameter for its first or only argument, followed by
+such other arguments (other than the one for the &rsquo;yield&rsquo; parameter) as
+the generator procedure requires, and constructs an iterator from
+them.  When the iterator (which optionally takes no or one argument)
+is invoked, it will begin executing the procedure unless and until the
+argument comprising the yield procedure is called, which will cause
+the iterator to suspend computation and instead return the value
+passed to yield, if any (yield is a procedure taking no or one
+argument).  If invoked again, the iterator will resume computation at
+the point where it last left off (returning the value, if any, passed
+to the iterator on resuming).  When the generator procedure has
+executed to the end, the iterator returns &rsquo;stop-iteration.  This
+procedure has some resemblance to call/ec, except that (i) instead of
+executing the passed procedure immediately, it returns an iterator
+which will do so, (ii) it is resumable, and (iii) the procedure to be
+executed can receive starting arguments in addition to the yield/break
+argument, to provide an alternative to binding them with a lambda
+closure.  It is similar to ECMAScript generators and python
+generators.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-make_002dcoroutine"></a>Scheme Procedure: <strong>make-coroutine</strong> <em>proc . args</em></dt>
+<dd><p>This procedure takes a generator procedure, namely a procedure which
+has a &rsquo;yield&rsquo; parameter for its first or only argument, followed by
+such other arguments (other than the one for the &rsquo;yield&rsquo; parameter) as
+the generator procedure requires, and constructs a coroutine.  It is
+similar to make-iterator, in that it takes a generator procedure and
+returns a lambda object (a coroutine) which when called will begin
+executing the generator procedure unless and until the argument
+comprising the yield procedure is called, which will cause computation
+to be suspended.  However unlike make-iterator, the resumption
+continuation generated on yielding is returned by the coroutine when
+yielding rather than being stored internally in an iterator, so there
+is less explicit retained mutable state.  The return value of the
+coroutine comprises two values: first the resumption continuation, and
+second the value (if any) passed to &rsquo;yield&rsquo; when called.  If the
+returned resumption continuation is subsequently called again,
+computation will be resumed at the point where it last left off (the
+yield procedure returning the value, if any, passed to the
+continuation on resuming) until it completes or it again calls the
+yield procedure.
+</p>
+<p>Upon the generator procedure finally completing, the value to which it
+evaluates is returned by the resumption continuation together with a
+continuation value of #f.  This differs from the behaviour of
+make-iterator, which returns &rsquo;stop-iteration when the generator
+procedure finishes to completion and ignores its return value.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-a_002dsync"></a>Scheme Procedure: <strong>a-sync</strong> <em>waitable . args</em></dt>
+<dd><p>a-sync takes a waitable procedure (namely a procedure which takes
+&rsquo;await&rsquo; as its first parameter, which is a yield procedure obtained by
+a call to make-iterator, and &rsquo;resume&rsquo; as its second parameter, which
+is an iterator constructed by make-iterator), followed by such other
+arguments (if any) as the waitable procedure requires to be passed on
+to it.  The &rsquo;resume&rsquo; argument must only be called by an asynchronous
+callback, and the &rsquo;await&rsquo; argument must only be called by the waitable
+procedure in order to block until the callback is ready to let it
+resume.  When it unblocks, the &rsquo;await&rsquo; argument returns the value (if
+any) passed to &rsquo;resume&rsquo; by the callback.  This async procedure must be
+called in the same thread as that in which the event loop runs.
+</p>
+<p>None of the code in the waitable procedure should block on other
+things in the program, except by calls to await (which do not in fact
+block, even though they appear to do so).
+</p>
+<p>The way it works is that the call to a-sync will begin executing the
+waitable procedure and will return as soon as the first (or only) call
+to &rsquo;await&rsquo; is made by that procedure, or as soon as the waitable
+procedure returns if it makes no calls to &rsquo;await&rsquo;.  Any subsequent
+resumptions of the waitable procedure will take place in the event
+loop concerned as calls to a relevant continuation object, via the
+calls to &rsquo;resume&rsquo; made by the callbacks.  The effect of the waitable
+procedure subsequently ending, or of further calls to &rsquo;await&rsquo; being
+made within the same waitable procedure, is to return control to the
+event loop by recommencing execution at the point where the most
+recent previous call to &rsquo;resume&rsquo; was made by the last callback to
+execute.
+</p>
+<p>An exception thrown in the waitable procedure before the first call to
+&rsquo;await&rsquo; which is not handled locally will propagate out of the a-sync
+procedure normally.  Any exception thrown subsequently in the waitable
+procedure which is not handled locally will propagate into the
+previously called callback at the point where &rsquo;resume&rsquo; was last
+called.  If this is handled locally in the callback by putting a catch
+block around resume, then control will be returned to the event loop
+and the remainder of the waitable procedure will not execute.  If that
+exception is not handled locally in the callback, or if the callback
+throws an exception of its own, then it will propagate out of the
+event loop.  If the event loop in the event-loop library file is used,
+this means that it will propagate out of the call to event-loop-run!.
+If an exception propagates out of event-loop-run! for that or some
+other reason, then the event loop will be left in a valid state and it
+will be as if event-loop-quit! had been called on it, but it is then
+up to the user to catch that exception once it is out of
+event-loop-run! if she does not want the program to terminate.
+</p>
+<p>After the call to &rsquo;resume&rsquo;, the callback should normally just return
+(with a #t or #f value in the case of a file watch or a timeout on an
+event-loop object from the event loop library file).  If a-sync is
+used with a file watch or timeout on an event-loop object constructed
+by make-event-loop, the watch callback or timeout callback should
+normally, when the call to &rsquo;resume&rsquo; returns, either always return #f
+(so the callback only fires once) or always return #t (so it is
+responsibility of the waitable procedure to terminate the watch or
+timeout repetitions).  That way, there can never be a case where the
+callback has been removed from the event loop by returning false but
+the waitable procedure still thinks it has a call to &rsquo;await&rsquo; to be
+made.  The <a href="event-loop.html#event-loop">event-loop</a> library file has await-task!,
+await-task-in-thread!, await-timeout!, a-sync-read-watch!,
+await-getline! and a-sync-write-watch! convenience procedures which
+will correctly set this up for you automatically, and the
+<a href="compose.html#compose">compose</a> library file provides a compose-a-sync macro
+for composition.  If those convenience procedures are used, exceptions
+should always be handled locally in the waitable procedure (and if the
+callback might throw, in the callback also) if it is undesirable that
+uncaught exceptions propagate out of event-loop-run!.  In the case of
+await-task-in-thread!, that procedure also takes an optional handler
+argument which will handle any exceptions thrown by the task:
+otherwise the task thread throwing would terminate the program if not
+caught within the task.
+</p>
+<p>There can be as many calls to &rsquo;await&rsquo; and asynchronous callbacks in
+any one waitable procedure as wanted, to enable composition of
+asynchronous operations.  However, you cannot run two or more
+asynchronous tasks at the same time with the same await-resume pair
+without an intervening call to await except by doing extra work,
+because the first call to &rsquo;await&rsquo; will match the first callback which
+happens to call &rsquo;resume&rsquo;, and so on.  In such cases, &rsquo;resume&rsquo; would
+need to return something like a key-value pair so that the result can
+be correctly identified.  Accordingly this practice is discouraged.
+Instead, when composing asynchronous tasks within any one waitable
+procedure, operate on a &rsquo;start-task &ndash;&gt; await-on-result &ndash;&gt; start-task
+&ndash;&gt; await-on-result ...&rsquo; basis, and make calls to a-sync on separate
+waitable procedures for tasks which are to run independently (as soon
+as any code calls a-sync&rsquo;s &rsquo;await&rsquo; procedure in any a-sync block,
+a-sync will return and whatever follows it will begin executing,
+including any following a-sync block).  This approach is easy using
+the convenience procedures mentioned above (see the examples below).
+A waitable procedure can itself call a-sync to construct another
+await-resume pair for the purpose of starting other asynchronous
+events.
+</p>
+<p>So, don&rsquo;t do this:
+</p>
+<div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(a-sync (lambda (await resume)
+
+	  (timeout-post! 100
+			 (lambda ()
+			   (resume &quot;expired&quot;)
+			   #f))
+	  (event-post! (lambda ()
+			 (resume (+ 1 1))))
+
+	  (format #t &quot;Timeout ~a\n&quot; (await))
+	  (format #t &quot;1 + 1 is ~a\n&quot; (await))))
+(event-loop-run!)
+</pre></div>
+
+<p>Instead do this, where the two asynchronous operations are to run
+consecutively:
+</p>
+<div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(a-sync (lambda (await resume)
+
+	  (timeout-post! 100
+			 (lambda ()
+			   (resume &quot;expired&quot;)
+			   #f))
+	  (format #t &quot;Timeout ~a\n&quot; (await))
+	  (event-post! (lambda ()
+			 (resume (+ 1 1))))
+
+	  (format #t &quot;1 + 1 is ~a\n&quot; (await))))
+(event-loop-run!)
+</pre></div>
+
+<p>or this, where the two asynchronous operations are to run concurrently
+(the summing of 1 and 1 will finish before the timeout):
+</p>
+<div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(a-sync (lambda (await resume)
+	  (timeout-post! 100
+			 (lambda ()
+			   (resume &quot;expired&quot;)
+			   #f))
+	  (format #t &quot;Timeout ~a\n&quot; (await))))
+(a-sync (lambda (await resume)
+	  (event-post! (lambda ()
+			 (resume (+ 1 1))))
+	  (format #t &quot;1 + 1 is ~a\n&quot; (await))))
+	  
+(event-loop-run!)
+</pre></div>
+
+<p>Or better still, when composing on the event loop from the <a href="event-loop.html#event-loop">event-loop</a> library file, use the await helper procedures, as
+follows (in this example the two asynchronous operations run
+consecutively):
+</p>
+<div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(a-sync (lambda (await resume)
+	  (format #t
+		  &quot;Timeout ~a\n&quot;
+		  (await-timeout! await resume
+				  100
+				  (lambda ()
+				    &quot;expired&quot;)))
+	  (format #t &quot;1 + 1 is ~a\n&quot;
+		  (await-task! await resume
+			       (lambda ()
+				 (+ 1 1))))))
+(event-loop-run!)
+</pre></div>
+
+<p>or this, where the two asynchronous operations run concurrently (the
+summing of 1 and 1 will finish before the timeout)
+</p>
+<div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(a-sync (lambda (await resume)
+	  (format #t
+		  &quot;Timeout ~a\n&quot;
+		  (await-timeout! await resume
+				  100
+				  (lambda ()
+				    &quot;expired&quot;)))))
+(a-sync (lambda (await resume)
+	  (format #t &quot;1 + 1 is ~a\n&quot;
+		  (await-task! await resume
+			       (lambda ()
+				 (+ 1 1))))))
+(event-loop-run!)
+</pre></div>
+
+<p>Or the compose-a-sync macro in the <a href="compose.html#compose">compose</a> library file
+can be used so that the last two examples are constructed as follows
+(in this first case the two asynchronous operations run consecutively)
+</p>
+<div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(compose-a-sync ([ret1 (await-timeout! 100
+				       (lambda ()
+					 &quot;expired&quot;))]
+		 [ignore ((no-await (format #t &quot;Timeout ~a\n&quot; ret1)))]
+		 [ret2 (await-task! (lambda ()
+				      (+ 1 1)))])
+	   ((no-await (format #t &quot;1 + 1 is ~a\n&quot; ret2))))
+(event-loop-run!)
+</pre></div>
+
+<p>and this, where the two asynchronous operations run concurrently (the
+summing of 1 and 1 will finish before the timeout)
+</p>
+<div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(compose-a-sync ([ret (await-timeout! 100
+				      (lambda ()
+				        &quot;expired&quot;))])
+	   ((no-await (format #t &quot;Timeout ~a\n&quot; ret))))
+(compose-a-sync ([ret (await-task! (lambda ()
+				     (+ 1 1)))])
+	   ((no-await (format #t &quot;1 + 1 is ~a\n&quot; ret))))
+(event-loop-run!)
+</pre></div>
+</dd></dl>
+<hr>
+<div class="header">
+<p>
+Next: <a href="event-loop.html#event-loop" accesskey="n" rel="next">event loop</a>, Previous: <a href="index.html#Top" accesskey="p" rel="prev">Top</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>
+</div>
+
+
+
+</body>
+</html>

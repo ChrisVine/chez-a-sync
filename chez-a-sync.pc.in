@@ -1,0 +1,8 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: chez-a-sync
+Description: Event loop and coroutine interface for chez scheme
+Version: @VERSION@

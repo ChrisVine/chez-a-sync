@@ -1,0 +1,30 @@
+\input texinfo
+@c -*-texinfo-*-
+@c %**start of header
+@settitle chez-a-sync
+@setfilename chez-a-sync.info
+@c %**end of header
+
+@ifnottex
+@node Top,coroutines,,
+@top chez-a-sync reference
+@end ifnottex
+
+This is the chez-a-sync package.  It provides both an asynchronous
+event loop for chez scheme, and coroutines to enable an event loop
+(including other event loops) to be used with 'await' semantics to
+deal with inversion of control -- otherwise known as ``callback
+hell''.
+
+The chez-a-sync package is provided in three R6RS library files:
+@menu
+* coroutines::     In library file (a-sync coroutines) - provides coroutines for await semantics on asynchronous events
+* event loop::     In library file (a-sync event-loop) - provides an event loop for asynchronous events
+* compose::        In library file (a-sync compose) - provides the compose-a-sync macro interface for the a-sync coroutine
+@end menu
+
+@include coroutines.texi
+@include event-loop.texi
+@include compose.texi
+
+@bye

@@ -1,0 +1,740 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!-- Created by GNU Texinfo 6.1, http://www.gnu.org/software/texinfo/ -->
+<head>
+<title>chez-a-sync: event loop</title>
+
+<meta name="description" content="chez-a-sync: event loop">
+<meta name="keywords" content="chez-a-sync: event loop">
+<meta name="resource-type" content="document">
+<meta name="distribution" content="global">
+<meta name="Generator" content="makeinfo">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="index.html#Top" rel="start" title="Top">
+<link href="index.html#Top" rel="up" title="Top">
+<link href="compose.html#compose" rel="next" title="compose">
+<link href="coroutines.html#coroutines" rel="prev" title="coroutines">
+<style type="text/css">
+<!--
+a.summary-letter {text-decoration: none}
+blockquote.indentedblock {margin-right: 0em}
+blockquote.smallindentedblock {margin-right: 0em; font-size: smaller}
+blockquote.smallquotation {font-size: smaller}
+div.display {margin-left: 3.2em}
+div.example {margin-left: 3.2em}
+div.lisp {margin-left: 3.2em}
+div.smalldisplay {margin-left: 3.2em}
+div.smallexample {margin-left: 3.2em}
+div.smalllisp {margin-left: 3.2em}
+kbd {font-style: oblique}
+pre.display {font-family: inherit}
+pre.format {font-family: inherit}
+pre.menu-comment {font-family: serif}
+pre.menu-preformatted {font-family: serif}
+pre.smalldisplay {font-family: inherit; font-size: smaller}
+pre.smallexample {font-size: smaller}
+pre.smallformat {font-family: inherit; font-size: smaller}
+pre.smalllisp {font-size: smaller}
+span.nolinebreak {white-space: nowrap}
+span.roman {font-family: initial; font-weight: normal}
+span.sansserif {font-family: sans-serif; font-weight: normal}
+ul.no-bullet {list-style: none}
+-->
+</style>
+
+
+</head>
+
+<body lang="en">
+<a name="event-loop"></a>
+<div class="header">
+<p>
+Next: <a href="compose.html#compose" accesskey="n" rel="next">compose</a>, Previous: <a href="coroutines.html#coroutines" accesskey="p" rel="prev">coroutines</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>
+</div>
+<hr>
+<h4 class="node-heading">event loop</h4>
+
+<p>The (a-sync event-loop) library file provides an event loop for
+asynchronous operations.  The event loop does not of itself start any
+new threads.  Instead it runs in the thread which calls
+event-loop-run!: that procedure will block while there are events to
+be processed.  In most programs the event loop will run in the main
+program thread, with which the program began.  Many programs using
+event loops are entirely single threaded.
+</p>
+<p>However, the event loop provided by this library file does support
+multiple threads.  Most of the event loop procedures in this library
+file are thread safe and may be called in any thread.  The thread safe
+procedures are event-loop-run!  (as mentioned, this will cause the
+event loop to run in the thread which calls it), event-loop-block!,
+event-loop-quit!, event-post!, event-loop-add-read-watch!,
+event-loop-add-write-watch!, event-loop-remove-read-watch!,
+event-loop-remove-write-watch!, timeout-post! and timeout-remove!.  In
+particular, event-post! allows worker threads to post an event to an
+event loop, say with the result of a computation, so that the event
+callback will execute in the event loop thread.
+</p>
+<p>The file watches provided by this library file uses chez scheme&rsquo;s FFI
+to call a wrapper for the poll() system call.  This has the
+consequence that in linux poll() applied to sockets can give rise to
+spurious wake-ups, which means that it may be best with sockets to set
+the socket as non-blocking to prevent a blocking read where it is not
+expected.
+</p>
+<p>On the matter of thread safety, note also that for programs with more
+than one thread running, chez scheme&rsquo;s FFI as used in this library
+does not always work well with the poll() system call when it is
+blocking.  The kernel scheduler will not awaken the thread that poll()
+is blocking in until a file descriptor has become ready or a timeout
+has expired; and chez scheme (its storage manager?) can fail to make
+progress and wedge all threads if more than about 10 to 20 threads are
+running in the program but one of them (such as the poll() thread) is
+blocking on a system call invoked through the FFI.  There are a number
+of answers to this: one is to limit the program to only a handful of
+worker threads (it also helps if every callback only starts one worker
+thread and posts a new event with event-post! to start any others,
+which will itself cause poll() to unblock and enable the thread to
+start correctly).  Another somewhat cludgey approach is to
+continuously run a background timeout which does nothing (except cause
+poll() to unblock) at an appropriate frequency such as every 20ms
+(yuck).  Further work needs to be done on this.
+</p>
+<p>This library files provides the following procedures:
+</p>
+<dl>
+<dt><a name="index-set_002ddefault_002devent_002dloop_0021"></a>Scheme Procedure: <strong>set-default-event-loop!</strong> <em>[loop]</em></dt>
+<dd><p>The &rsquo;loop&rsquo; (event loop) argument is optional.  This procedure sets the
+default event loop for the procedures in this library file to the one
+passed in (which must have been constructed by the make-event-loop
+procedure), or if no argument is passed (or #f is passed), a new event
+loop will be constructed for you as the default, which can be accessed
+via the get-default-event-loop procedure.  The default loop variable
+is not a parameter - it is intended that the default event loop is the
+same for every thread in the program, and that the default event loop
+would normally run in the thread with which the program started.  This
+procedure is not thread safe - if it might be called by a different
+thread from others which might access the default event loop, then
+external synchronization may be required.  However, that should not
+normally be an issue.  The normal course would be to call this
+procedure once only on program start up, before other threads have
+started.  It is usually a mistake to call this procedure twice: if
+there are asynchronous events pending (that is, if event-loop-run!
+has not returned) you will probably not get the results you expect.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-get_002ddefault_002devent_002dloop"></a>Scheme Procedure: <strong>get-default-event-loop</strong></dt>
+<dd><p>This returns the default loop set by the set-default-event-loop!
+procedure, or #f if none has been set.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-make_002devent_002dloop"></a>Scheme Procedure: <strong>make-event-loop</strong></dt>
+<dd><p>This constructs a new event loop object.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-event_002dloop_003f"></a>Scheme Procedure: <strong>event-loop?</strong> <em>obj</em></dt>
+<dd><p>This procedure indicates whether &rsquo;obj&rsquo; is an event-loop object
+constructed by make-event-loop.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-event_002dloop_002drun_0021"></a>Scheme Procedure: <strong>event-loop-run!</strong> <em>[loop]</em></dt>
+<dd><p>The &rsquo;loop&rsquo; (event loop) argument is optional.  This procedure starts
+the event loop passed in as an argument, or if none is passed (or #f
+is passed) it starts the default event loop.  The event loop will run
+in the thread which calls this procedure.  If this procedure has
+returned, including after a call to event-loop-quit!, this procedure
+may be called again to restart the event loop.  If a callback throws,
+or something else throws in the implementation, then this procedure
+will clean up the event loop as if event-loop-quit! had been called,
+and the exception will be rethrown out of this procedure.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-event_002dloop_002dadd_002dread_002dwatch_0021"></a>Scheme Procedure: <strong>event-loop-add-read-watch!</strong> <em>file proc [loop]</em></dt>
+<dd><p>The &rsquo;loop&rsquo; (event loop) argument is optional.  This procedure will
+start a read watch in the event loop passed in as an argument, or if
+none is passed (or #f is passed), in the default event loop.  The
+&rsquo;proc&rsquo; callback should take a single argument, and when called this
+will be set to &rsquo;in or &rsquo;excpt.  The same port or file descriptor can
+also be passed to event-loop-add-write-watch, and if so and the
+descriptor is also available for writing, the write callback will also
+be called with its argument set to &rsquo;out.  If there is already a read
+watch for the file passed, the old one will be replaced by the new
+one.  If proc returns #f, the read watch will be removed from the
+event loop, otherwise the watch will continue.  This is thread safe -
+any thread may add a watch, and the callback will execute in the event
+loop thread.  The file argument can be either a port or a file
+descriptor.  If &rsquo;file&rsquo; is a file descriptor, any port for the
+descriptor is not referenced for garbage collection purposes - it must
+remain valid while operations are carried out on the descriptor.  If
+&rsquo;file&rsquo; is a buffered port, buffering will be taken into account in
+indicating whether a read can be made without blocking (but on a
+buffered port, for efficiency purposes each read operation in response
+to this watch should usually exhaust the buffer by calling drain-input
+or by looping on char-ready?).
+</p>
+<p>This procedure should not throw an exception unless memory is
+exhausted.  If &rsquo;proc&rsquo; throws, say because of port errors, and the
+exception is not caught locally, it will propagate out of
+event-loop-run!.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-event_002dloop_002dadd_002dwrite_002dwatch_0021"></a>Scheme Procedure: <strong>event-loop-add-write-watch!</strong> <em>file proc [loop]</em></dt>
+<dd><p>The &rsquo;loop&rsquo; (event loop) argument is optional.  This procedure will
+start a write watch in the event loop passed in as an argument, or if
+none is passed (or #f is passed), in the default event loop.  The
+&rsquo;proc&rsquo; callback should take a single argument, and when called this
+will be set to &rsquo;out.  The same port or file descriptor can also be
+passed to event-loop-add-read-watch, and if so and the descriptor is
+also available for reading or in exceptional condition, the read
+callback will also be called with its argument set to &rsquo;in or &rsquo;excpt
+(if both a read and a write watch have been set for the same file
+argument, and there is an exceptional condition, it is the read watch
+procedure which will be called with &rsquo;excpt rather than the write watch
+procedure, so if that procedure returns #f only the read watch will be
+removed).  If there is already a write watch for the file passed, the
+old one will be replaced by the new one.  If proc returns #f, the
+write watch will be removed from the event loop, otherwise the watch
+will continue.  This is thread safe - any thread may add a watch, and
+the callback will execute in the event loop thread.  The file argument
+can be either a port or a file descriptor.  If &rsquo;file&rsquo; is a file
+descriptor, any port for the descriptor is not referenced for garbage
+collection purposes - it must remain valid while operations are
+carried out on the descriptor.
+</p>
+<p>If &rsquo;file&rsquo; is a buffered port, buffering will be not be taken into
+account in indicating whether a write can be made without blocking:
+that will only occur if the underlying file descriptor is ready.  This
+is because the writer to the port must in any event cater for the fact
+that when the buffer is full but the underlying file descriptor is
+ready for a character, the next write will cause a buffer flush, and
+if the size of the buffer is greater than the number of characters
+that the file can receive without blocking, blocking might still
+occur.  Therefore, this procedure will generally work best with
+unbuffered ports (say by using the open-file-input-port procedure with
+a buffer-mode of none), or with ports which have been set non-blocking
+so that a partial write is possible without blocking the writer.
+</p>
+<p>This procedure should not throw an exception unless memory is
+exhausted.  If &rsquo;proc&rsquo; throws, say because of port errors, and the
+exception is not caught locally, it will propagate out of
+event-loop-run!.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-event_002dloop_002dremove_002dread_002dwatch_0021"></a>Scheme Procedure: <strong>event-loop-remove-read-watch!</strong> <em>file [loop]</em></dt>
+<dd><p>The &rsquo;loop&rsquo; (event loop) argument is optional.  This procedure will
+remove a read watch from the event loop passed in as an argument, or
+if none is passed (or #f is passed), from the default event loop.  The
+file argument may be a port or a file descriptor.  This is thread safe
+- any thread may remove a watch.  A file descriptor and a port with
+the same underlying file descriptor compare equal for the purposes of
+removal.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-event_002dloop_002dremove_002dwrite_002dwatch_0021"></a>Scheme Procedure: <strong>event-loop-remove-write-watch!</strong> <em>file [loop]</em></dt>
+<dd><p>The &rsquo;loop&rsquo; (event loop) argument is optional.  This procedure will
+remove a write watch from the event loop passed in as an argument, or
+if none is passed (or #f is passed), from the default event loop.  The
+file argument may be a port or a file descriptor.  This is thread safe
+- any thread may remove a watch.  A file descriptor and a port with
+the same underlying file descriptor compare equal for the purposes of
+removal.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-event_002dpost_0021"></a>Scheme Procedure: <strong>event-post!</strong> <em>action [loop]</em></dt>
+<dd><p>The &rsquo;loop&rsquo; (event loop) argument is optional.  This procedure will
+post a callback for execution in the event loop passed in as an
+argument, or if none is passed (or #f is passed), in the default event
+loop.  The &rsquo;action&rsquo; callback is a thunk.  This is thread safe - any
+thread may post an event (that is its main purpose), and the action
+callback will execute in the event loop thread.  Actions execute in
+the order in which they were posted.  If an event is posted from a
+worker thread, it will normally be necessary to call event-loop-block!
+beforehand.
+</p>
+<p>This procedure should not throw an exception unless memory is
+exhausted.  If the &rsquo;action&rsquo; callback throws, and the exception is not
+caught locally, it will propagate out of event-loop-run!.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-timeout_002dpost_0021"></a>Scheme Procedure: <strong>timeout-post!</strong> <em>msecs action [loop]</em></dt>
+<dd><p>The &rsquo;loop&rsquo; (event loop) argument is optional.  This procedure adds a
+timeout to the event loop passed in as an argument, or if none is
+passed (or #f is passed), to the default event loop.  The timeout will
+repeat unless and until the passed-in callback returns #f or
+timeout-remove! is called.  The passed-in callback must be a thunk.
+This procedure returns a tag symbol to which timeout-remove! can be
+applied.  It may be called by any thread, and the timeout callback
+will execute in the event loop thread.
+</p>
+<p>This procedure should not throw an exception unless memory is
+exhausted.  If the &rsquo;action&rsquo; callback throws, and the exception is not
+caught locally, it will propagate out of event-loop-run!.
+</p></dd></dl>
+
+
+<dl>
+<dt><a name="index-timeout_002dremove_0021"></a>Scheme Procedure: <strong>timeout-remove!</strong> <em>tag [loop]</em></dt>
+<dd><p>The &rsquo;loop&rsquo; (event loop) argument is optional.  This procedure stops
+the timeout with the given tag from executing in the event loop passed
+in as an argument, or if none is passed (or #f is passed), in the
+default event loop.  It may be called by any thread.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-event_002dloop_002dblock_0021"></a>Scheme Procedure: <strong>event-loop-block!</strong> <em>val [loop]</em></dt>
+<dd><p>By default, upon there being no more watches, timeouts and posted
+events for an event loop, event-loop-run! will return, which is
+normally what you want with a single threaded program.  However, this
+is undesirable where a worker thread is intended to post an event to
+the main loop after it has reached a result, say via
+await-task-in-thread!, because the main loop may have ended before it
+posts.  Passing #t to the val argument of this procedure will prevent
+that from happening, so that the event loop can only be ended by
+calling event-loop-quit!, or by calling event-loop-block! again with a
+#f argument (to switch the event loop back to non-blocking mode, pass
+#f).  This is thread safe - any thread may call this procedure.  The
+&rsquo;loop&rsquo; (event loop) argument is optional: this procedure operates on
+the event loop passed in as an argument, or if none is passed (or #f
+is passed), on the default event loop.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-event_002dloop_002dquit_0021"></a>Scheme Procedure: <strong>event-loop-quit!</strong> <em>[loop]</em></dt>
+<dd><p>This procedure causes an event loop to unblock.  Any events remaining
+in the event loop will be discarded.  New events may subsequently be
+added after event-loop-run! has unblocked and event-loop-run! then
+called for them.  This is thread safe - any thread may call this
+procedure.  The &rsquo;loop&rsquo; (event loop) argument is optional: this
+procedure operates on the event loop passed in as an argument, or if
+none is passed (or #f is passed), on the default event loop.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-await_002dtask_002din_002dthread_0021"></a>Scheme Procedure: <strong>await-task-in-thread!</strong> <em>await resume [loop] thunk [handler]</em></dt>
+<dd><p>The loop and handler arguments are optional.  The procedure will run
+&rsquo;thunk&rsquo; in its own thread, and then post an event to the event loop
+specified by the &rsquo;loop&rsquo; argument when &rsquo;thunk&rsquo; has finished, or to the
+default event loop if no &rsquo;loop&rsquo; argument is provided or if #f is
+provided as the &rsquo;loop&rsquo; argument (pattern matching is used to detect
+the type of the third argument).  This procedure calls &rsquo;await&rsquo; and
+will return the thunk&rsquo;s return value.  It is intended to be called in
+a waitable procedure invoked by a-sync.  It will normally be necessary
+to call event-loop-block! before invoking this procedure.  If the
+optional &rsquo;handler&rsquo; argument is provided, then that handler will be run
+in the event loop thread if &rsquo;thunk&rsquo; throws and the return value of the
+handler would become the return value of this procedure; otherwise the
+program will terminate if an unhandled exception propagates out of
+&rsquo;thunk&rsquo;.  &rsquo;handler&rsquo; should take a single argument, which will be the
+thrown condition object.
+</p>
+<p>This procedure must (like the a-sync procedure) be called in the same
+thread as that in which the event loop runs, where the result of
+calling &rsquo;thunk&rsquo; will be received.  As mentioned above, the thunk
+itself will run in its own thread.
+</p>
+<p>Exceptions may propagate out of this procedure if they arise while
+setting up (that is, before the worker thread starts), which shouldn&rsquo;t
+happen unless memory is exhausted or pthread has run out of resources.
+Exceptions arising during execution of the task, if not caught by a
+handler procedure, will terminate the program.  Exceptions thrown by
+the handler procedure will propagate out of event-loop-run!.
+</p>
+<p>See the introductory remarks about running worker threads on chez
+scheme with an event loop.
+</p>
+<p>Here is an example of the use of await-task-in-thread!:
+</p><div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(a-sync (lambda (await resume)
+	  (simple-format #t &quot;1 + 1 is ~A\n&quot;
+			 (await-task-in-thread! await resume
+						(lambda ()
+						  (+ 1 1))))
+	  (event-loop-quit!)))
+(event-loop-block! #t) ;; because the task runs in another thread
+(event-loop-run!)
+</pre></div>
+</dd></dl>
+
+<dl>
+<dt><a name="index-await_002dtask_0021"></a>Scheme Procedure: <strong>await-task!</strong> <em>await resume [loop] thunk</em></dt>
+<dd><p>The &rsquo;loop&rsquo; argument is optional.  This is a convenience procedure for
+use with an event loop, which will run &rsquo;thunk&rsquo; in the event loop
+specified by the &rsquo;loop&rsquo; argument, or in the default event loop if no
+&rsquo;loop&rsquo; argument is provided or #f is provided as the &rsquo;loop&rsquo; argument.
+This procedure calls &rsquo;await&rsquo; and will return the thunk&rsquo;s return value.
+It is intended to be called in a waitable procedure invoked by a-sync.
+It is the single-threaded corollary of await-task-in-thread!.  This
+means that (unlike with await-task-in-thread!) while &rsquo;thunk&rsquo; is
+running other events in the event loop will not make progress, so
+blocking calls should not be made in &rsquo;thunk&rsquo;.  This procedure can be
+useful for the purpose of implementing co-operative multi-tasking, say
+by composing tasks with compose-a-sync (see the <a href="compose.html#compose">compose</a>
+library file).
+</p>
+<p>This procedure must (like the a-sync procedure) be called in the same
+thread as that in which the event loop runs.
+</p>
+<p>Exceptions may propagate out of this procedure if they arise while
+setting up (that is, before the task starts), which shouldn&rsquo;t happen
+unless memory is exhausted.  Exceptions arising during execution of
+the task, if not caught locally, will propagate out of
+event-loop-run!.
+</p>
+<p>Here is an example of the use of await-task!:
+</p><div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(a-sync (lambda (await resume)
+	  (simple-format #t &quot;1 + 1 is ~A\n&quot;
+			 (await-task! await resume
+				      (lambda ()
+					(+ 1 1))))))
+(event-loop-run!)
+</pre></div>
+</dd></dl>
+
+<dl>
+<dt><a name="index-await_002dtimeout_0021"></a>Scheme Procedure: <strong>await-timeout!</strong> <em>await resume [loop] msecs thunk</em></dt>
+<dd><p>This is a convenience procedure for use with an event loop, which will
+run &rsquo;thunk&rsquo; in the event loop thread when the timeout expires.  This
+procedure calls &rsquo;await&rsquo; and will return the thunk&rsquo;s return value.  It
+is intended to be called in a waitable procedure invoked by a-sync.
+The timeout is single shot only - as soon as &rsquo;thunk&rsquo; has run once and
+completed, the timeout will be removed from the event loop.  The
+&rsquo;loop&rsquo; argument is optional: this procedure operates on the event loop
+passed in as an argument, or if none is passed (or #f is passed), on
+the default event loop.
+</p>
+<p>This procedure must (like the a-sync procedure) be called in the same
+thread as that in which the event loop runs.
+</p>
+<p>Exceptions may propagate out of this procedure if they arise while
+setting up (that is, before the first call to &rsquo;await&rsquo; is made), which
+shouldn&rsquo;t happen unless memory is exhausted.  Exceptions thrown by
+&rsquo;thunk&rsquo;, if not caught locally, will propagate out of event-loop-run!.
+</p>
+<p>Here is an example of the use of event-timeout!:
+</p><div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(a-sync (lambda (await resume)
+	  (simple-format #t
+			 &quot;Timeout ~A\n&quot;
+			 (await-timeout! await resume
+					 100
+					 (lambda ()
+					   &quot;expired&quot;)))))
+(event-loop-run!)
+</pre></div>
+</dd></dl>
+
+<dl>
+<dt><a name="index-a_002dsync_002dread_002dwatch_0021"></a>Scheme Procedure: <strong>a-sync-read-watch!</strong> <em>resume file proc [loop]</em></dt>
+<dd><p>This is a convenience procedure for use with an event loop, which will
+run &rsquo;proc&rsquo; in the event loop thread whenever &rsquo;file&rsquo; is ready for
+reading, and apply &rsquo;resume&rsquo; (obtained from a call to a-sync) to the
+return value of &rsquo;proc&rsquo;.  &rsquo;file&rsquo; can be a port or a file descriptor
+(and if it is a file descriptor, the revealed count is not
+incremented).  &rsquo;proc&rsquo; should take a single argument which will be set
+by the event loop to &rsquo;in or &rsquo;excpt (see the documentation on
+event-loop-add-read-watch! for further details).  It is intended to be
+called in a waitable procedure invoked by a-sync.  The watch is
+multi-shot - it is for the user to bring it to an end at the right
+time by calling event-loop-remove-read-watch! in the waitable
+procedure.  If &rsquo;file&rsquo; is a buffered port, buffering will be taken into
+account in indicating whether a read can be made without blocking (but
+on a buffered port, for efficiency purposes each read operation in
+response to this watch should usually exhaust the buffer by calling
+drain-input or by looping on char-ready?).
+</p>
+<p>This procedure is mainly intended as something from which higher-level
+asynchronous file operations can be constructed, such as the
+await-readline! procedure.  The &rsquo;loop&rsquo; argument is optional: this
+procedure operates on the event loop passed in as an argument, or if
+none is passed (or #f is passed), on the default event loop
+</p>
+<p>Because this procedure takes a &rsquo;resume&rsquo; argument derived from the
+a-sync procedure, it must (like the a-sync procedure) in practice be
+called in the same thread as that in which the event loop runs.
+</p>
+<p>This procedure should not throw an exception unless memory is
+exhausted.  If &rsquo;proc&rsquo; throws, say because of port errors, and the
+exception is not caught locally, it will propagate out of
+event-loop-run!.
+</p>
+<p>As an example of how to use a-sync-read-watch!, here is the
+implementation of await-getline!:
+</p><div class="example">
+<pre class="example">(define await-getline!
+  (case-lambda
+    [(await resume port) (await-getline! await resume #f port)]
+    [(await resume loop port)
+     (let ()
+       (define chunk-size 128)
+       (define text (make-string chunk-size))
+       (define text-len 0)
+       (define buf (make-string 1))
+       (define (append-char! ch)
+	 (when (and (= (modulo text-len chunk-size) 0)
+		    (&gt; text-len 0))
+	   (let ([tmp text])
+	     (set! text (make-string (+ text-len chunk-size)))
+	     (string-copy! tmp 0 text 0 text-len)))
+	 (string-set! text text-len ch)
+	 (set! text-len (+ 1 text-len)))
+       (a-sync-read-watch! resume
+			   port
+			   (lambda (status)
+			     (if (eq? status 'excpt)
+				 #f
+				 (let next ([res (get-string-some! port buf 0 1)])
+				   (cond
+				    [(eqv? res 0)
+				     'more]
+				    [(eof-object? res)
+				     (if (= text-len 0)
+					 res
+					 (substring text 0 text-len))]
+				    [else
+				     (let ([ch (string-ref buf 0)])
+				       (if (char=? ch #\newline)
+					   (substring text 0 text-len)
+					   (begin
+					     (append-char! ch)
+					     (if (char-ready? port)
+						 (next (get-string-some! port buf 0 1))
+						 'more))))]))))
+			   loop))
+     (let next ((res (await)))
+       (if (eq? res 'more)
+	   (next (await))
+	   (begin
+	     (event-loop-remove-read-watch! port loop)
+	     res)))]))
+</pre></div>
+</dd></dl>
+
+<dl>
+<dt><a name="index-await_002dgetline_0021"></a>Scheme Procedure: <strong>await-getline!</strong> <em>await resume [loop] port</em></dt>
+<dd><p>This is a convenience procedure for use with an event loop, which will
+start a read watch on &rsquo;port&rsquo; for a line of input.  It calls &rsquo;await&rsquo;
+while waiting for input and will return the line of text received
+(without the terminating &rsquo;\n&rsquo; character).  &rsquo;port&rsquo; must be a textual
+port.  The event loop will not be blocked by this procedure even if
+only individual characters are available at any one time.  It is
+intended to be called in a waitable procedure invoked by a-sync, and
+this procedure is implemented using a-sync-read-watch!.  If an
+exceptional condition (&rsquo;excpt) is encountered, #f will be returned.
+If an end-of-file object is encountered which terminates a line of
+text, a string containing the line of text will be returned (and if an
+end-of-file object is encountered without any text, the end-of-file
+object is returned rather than an empty string).  The &rsquo;loop&rsquo; argument
+is optional: this procedure operates on the event loop passed in as an
+argument, or if none is passed (or #f is passed), on the default event
+loop.
+</p>
+<p>This procedure must (like the a-sync procedure) be called in the same
+thread as that in which the event loop runs.
+</p>
+<p>Exceptions may propagate out of this procedure if they arise while
+setting up (that is, before the first call to &rsquo;await&rsquo; is made), which
+shouldn&rsquo;t happen unless memory is exhausted.  Subsequent exceptions
+(say, because of port errors) will propagate out of event-loop-run!.
+</p>
+<p>Here is an example of the use of await-getline!:
+</p><div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(a-sync (lambda (await resume)
+	  (display &quot;Enter a line of text at the keyboard\n&quot;)
+	  (simple-format #t
+			 &quot;The line was: ~A\n&quot;
+			 (await-getline! await resume
+					 (open-input-file &quot;/dev/tty&quot;)))))
+(event-loop-run!)
+</pre></div>
+</dd></dl>
+
+<dl>
+<dt><a name="index-await_002dgeteveryline_0021"></a>Scheme Procedure: <strong>await-geteveryline!</strong> <em>await resume [loop] port proc</em></dt>
+<dd><p>This is a convenience procedure for use with an event loop, which will
+start a read watch on &rsquo;port&rsquo; for lines of input.  It calls &rsquo;await&rsquo;
+while waiting for input and will apply &rsquo;proc&rsquo; to every complete line
+of text received (without the terminating &rsquo;\n&rsquo; character).  &rsquo;proc&rsquo;
+should be a procedure taking a string as its only argument.  &rsquo;port&rsquo;
+should be a textual port.
+</p>
+<p>The event loop will not be blocked by this procedure even if only
+individual characters are available at any one time.  It is intended
+to be called in a waitable procedure invoked by a-sync, and this
+procedure is implemented using a-sync-read-watch!.  Unlike the
+await-getline! procedure, the watch will continue after a line of text
+has been received in order to receive further lines.  The watch will
+not end until end-of-file or an exceptional condition (&rsquo;excpt) is
+reached.  In the event of that happening, this procedure will end and
+return an end-of-file object or #f respectively.
+</p>
+<p>The &rsquo;loop&rsquo; argument is optional: this procedure operates on the event
+loop passed in as an argument, or if none is passed (or #f is passed),
+on the default event loop.
+</p>
+<p>This procedure must (like the a-sync procedure) be called in the same
+thread as that in which the event loop runs.
+</p>
+<p>Exceptions may propagate out of this procedure if they arise while
+setting up (that is, before the first call to &rsquo;await&rsquo; is made), which
+shouldn&rsquo;t happen unless memory is exhausted.  Subsequent exceptions
+can emerge out of two places.  If they arise from port errors, they
+will propagate out of event-loop-run!.  However, if &rsquo;proc&rsquo; throws they
+will emerge out of this procedure and if user code wants to deal with
+them, the user should put an exception handler or guard block directly
+around the call to await-geteveryline!.  Memory exhaustion could also
+cause exceptions to propagate out of event-loop-run! or this
+procedure.
+</p>
+<p>Here is an example of the use of await-geteveryline! (because the
+keyboard has no end-of-file, use Ctrl-C to exit this code snippet):
+</p><div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(a-sync (lambda (await resume)
+	  (display &quot;Enter lines of text at the keyboard, ^C to finish\n&quot;)
+	  (let ([port (open-input-file &quot;/dev/tty&quot;)])
+	    (await-geteveryline! await resume
+				 port
+				 (lambda (line)
+				   (simple-format #t
+						  &quot;The line was: ~A\n&quot;
+						  line))))))
+(event-loop-run!)
+</pre></div>
+</dd></dl>
+
+<dl>
+<dt><a name="index-await_002dgetsomelines_0021"></a>Scheme Procedure: <strong>await-getsomelines!</strong> <em>await resume [loop] port proc</em></dt>
+<dd><p>This is a convenience procedure for use with an event loop, which does
+the same as await-geteveryline!, except that it provides a second
+argument to &rsquo;proc&rsquo;, namely an escape continuation which can be invoked
+by &rsquo;proc&rsquo; to cause the procedure to return before end-of-file is
+reached.  Behavior is identical to await-geteveryline! if the
+continuation is not invoked.
+</p>
+<p>This procedure will start a read watch on &rsquo;port&rsquo; for lines of input.
+It calls &rsquo;await&rsquo; while waiting for input and will apply &rsquo;proc&rsquo; to any
+complete line of text received (without the terminating &rsquo;\n&rsquo;
+character).  &rsquo;proc&rsquo; should be a procedure taking two arguments, a
+string as the first argument containing the line of text read, and an
+escape continuation as its second.  &rsquo;port&rsquo; should be a textual port.
+</p>
+<p>The event loop will not be blocked by this procedure even if only
+individual characters are available at any one time.  It is intended
+to be called in a waitable procedure invoked by a-sync.  This
+procedure is implemented using a-sync-read-watch!.  The watch will not
+end until end-of-file or an exceptional condition (&rsquo;excpt) is reached,
+which would cause this procedure to end and return an end-of-file
+object or #f respectively, or until the escape continuation is
+invoked, in which case the value passed to the escape continuation
+will be returned.
+</p>
+<p>The &rsquo;loop&rsquo; argument is optional: this procedure operates on the event
+loop passed in as an argument, or if none is passed (or #f is passed),
+on the default event loop.
+</p>
+<p>This procedure must (like the a-sync procedure) be called in the same
+thread as that in which the event loop runs.
+</p>
+<p>Exceptions may propagate out of this procedure if they arise while
+setting up (that is, before the first call to &rsquo;await&rsquo; is made), which
+shouldn&rsquo;t happen unless memory is exhausted.  Subsequent exceptions
+can emerge out of two places.  If they arise from port errors, they
+will propagate out of event-loop-run!.  However, if &rsquo;proc&rsquo; throws they
+will emerge out of this procedure and if user code wants to deal with
+them, the user should put an exception handler or guard block directly
+around the call to await-getsomelines!.  Memory exhaustion could also
+cause exceptions to propagate out of event-loop-run! or this
+procedure.
+</p>
+<p>Here is an example of the use of await-getsomelines!:
+</p><div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(a-sync (lambda (await resume)
+	  (display &quot;Enter lines of text at the keyboard, enter an empty line to finish\n&quot;)
+	  (let ([port (open-input-file &quot;/dev/tty&quot;)])
+	    (await-getsomelines! await resume
+				 port
+				 (lambda (line k)
+                                   (when (string=? line &quot;&quot;)
+					 (k #f))
+				   (simple-format #t
+						  &quot;The line was: ~A\n&quot;
+						  line))))))
+(event-loop-run!)
+</pre></div>
+</dd></dl>
+
+<dl>
+<dt><a name="index-a_002dsync_002dwrite_002dwatch_0021"></a>Scheme Procedure: <strong>a-sync-write-watch!</strong> <em>resume file proc [loop]</em></dt>
+<dd><p>This is a convenience procedure for use with an event loop, which will
+run &rsquo;proc&rsquo; in the event loop thread whenever &rsquo;file&rsquo; is ready for
+writing, and apply &rsquo;resume&rsquo; (obtained from a call to a-sync) to the
+return value of &rsquo;proc&rsquo;.  &rsquo;file&rsquo; can be a port or a file descriptor.
+&rsquo;proc&rsquo; should take a single argument which will be set by the event
+loop to &rsquo;out (see the documentation on event-loop-add-write-watch! for
+further details).  It is intended to be called in a waitable procedure
+invoked by a-sync.  The watch is multi-shot - it is for the user to
+bring it to an end at the right time by calling
+event-loop-remove-write-watch! in the waitable procedure.  This
+procedure is mainly intended as something from which higher-level
+asynchronous file operations can be constructed.  The &rsquo;loop&rsquo; argument
+is optional: this procedure operates on the event loop passed in as an
+argument, or if none is passed (or #f is passed), on the default event
+loop
+</p>
+<p>The documentation on the event-loop-add-write-watch! procedure
+explains why this procedure generally works best with an unbuffered or
+non-blocking port.
+</p>
+<p>Because this procedure takes a &rsquo;resume&rsquo; argument derived from the
+a-sync procedure, it must (like the a-sync procedure) in practice be
+called in the same thread as that in which the event loop runs.
+</p>
+<p>This procedure should not throw an exception unless memory is
+exhausted.  If &rsquo;proc&rsquo; throws, say because of port errors, and the
+exception is not caught locally, it will propagate out of
+event-loop-run!.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-make_002dpipe"></a>Scheme Procedure: <strong>make-pipe</strong> <em>[read-buffer-mode [write-buffer-mode [transcoder]]]</em></dt>
+<dd><p>This procedure makes a unix pipe using the system pipe() call.  It is
+needed internally by the event-loop implementation, and is exported as
+part of the event-loop library in case it is useful to users.
+</p>
+<p>This procedure returns two values, first a port for the read end of
+the pipe, and second a port for its write end.  If creating the pipe
+gives rise to an error, a scheme exception of type &amp;serious will be
+raised.  The buffer mode arguments are optional (if not specified the
+read port will be block buffered and the write port will be
+unbuffered).  The transcoder argument is also optional: if provided
+the ports will be textual ports, otherwise they will be binary ports.
+The ports are initially in blocking mode - use set-blocking-mode! to
+change this if wanted.
+</p>
+<p>Setting a buffer mode of &rsquo;none&rsquo; is ineffective for textual ports.
+</p></dd></dl>
+<hr>
+<div class="header">
+<p>
+Next: <a href="compose.html#compose" accesskey="n" rel="next">compose</a>, Previous: <a href="coroutines.html#coroutines" accesskey="p" rel="prev">coroutines</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>
+</div>
+
+
+
+</body>
+</html>
