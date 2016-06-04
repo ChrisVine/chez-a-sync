@@ -81,24 +81,6 @@ spurious wake-ups, which means that it may be best with sockets to set
 the socket as non-blocking to prevent a blocking read where it is not
 expected.
 </p>
-<p>On the matter of thread safety, note also that for programs with more
-than one thread running, chez scheme&rsquo;s FFI as used in this library
-does not always work well with the poll() system call when it is
-blocking.  The kernel scheduler will not awaken the thread that poll()
-is blocking in until a file descriptor has become ready or a timeout
-has expired; and chez scheme (its storage manager?) can fail to make
-progress and wedge all threads if more than about 10 to 20 threads are
-running in the program but one of them (such as the poll() thread) is
-blocking on a system call invoked through the FFI.  There are a number
-of answers to this: one is to limit the program to only a handful of
-worker threads (it also helps if every callback only starts one worker
-thread and posts a new event with event-post! to start any others,
-which will itself cause poll() to unblock and enable the thread to
-start correctly).  Another somewhat cludgey approach is to
-continuously run a background timeout which does nothing (except cause
-poll() to unblock) at an appropriate frequency such as every 20ms
-(yuck).  Further work needs to be done on this.
-</p>
 <p>This library files provides the following procedures:
 </p>
 <dl>

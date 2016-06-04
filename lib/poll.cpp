@@ -24,6 +24,13 @@
 
 extern "C" {
 
+// these are in the 'scheme' binary and can be statically linked
+// against
+int Sactivate_thread(void);
+void Sdeactivate_thread(void);
+void Slock_object(void*);
+void Sunlock_object(void*);
+
 // this function returns the number of pollfd elements inserted in
 // out_table.  The calling code should allocate an uninitialised
 // bytevector of size sizeof(pollfd) times the sum of the number of
@@ -110,7 +117,20 @@ int a_sync_make_poll_table(const int32_t* readfds, const int32_t* writefds,
 int a_sync_poll(pollfd* poll_table, int table_size, int32_t* out_read_bv,
 		int out_read_size, int32_t* out_write_bv, int out_write_size,
 		int32_t* out_except_bv, int out_except_size, int timeout) {
+
+  // nothing in these C functions for poll() can throw
+  Slock_object(poll_table);
+  Slock_object(out_read_bv);
+  Slock_object(out_write_bv);
+  Slock_object(out_except_bv);
+  Sdeactivate_thread();
   int res = poll(poll_table, table_size, timeout);
+  Sactivate_thread();
+  Sunlock_object(poll_table);
+  Sunlock_object(out_read_bv);
+  Sunlock_object(out_write_bv);
+  Sunlock_object(out_except_bv);
+
   if (res == 0) {
     out_read_bv[0] = -1;
     out_write_bv[0] = -1;

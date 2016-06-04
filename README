@@ -42,6 +42,13 @@ On a 64 bit system you may also need to include -fPIC in your CFLAGS
 options if libtool doesn't do that for you (libtool normally does when
 necessary).
 
+This package needs to link against some exported static C functions in
+chez scheme's 'scheme' binary.  At present the build system assumes
+this is located in the /usr/bin directory.  If it is located elsewhere
+it will be necessary to amend lib/Makefile.am to give the correct path
+to 'scheme'.  Requiring this is a hack, and will be replaced by an
+autoconf macro which will test paths for 'scheme' automatically.
+
 If using gcc to compile, gcc-4.6 or later is required.  If using
 clang, clang-3.3 or later is required.
 
@@ -63,11 +70,8 @@ function correctly.  It has been tested with linux and should work on
 the BSDs and on Mac OS X.  If using OS X, the glibtool package will be
 required.
 
-If anyone using OS X has to patch the source to get it to work (such
-as by patching the included header files, which assume POSIX
-compliance) then patches will be gratefully received.  chez-a-sync
-might work on windows if cygwin is installed: again, any patches for
-that would be welcome.
+This package also requires chez scheme to have been compiled with the
+--threads option.
 
 Documentation
 -------------
