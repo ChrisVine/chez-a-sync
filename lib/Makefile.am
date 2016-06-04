@@ -6,6 +6,6 @@ libchez_a_sync_0_la_SOURCES = poll.cpp pipe.cpp errno.cpp
 
 AM_CXXFLAGS = -D_XOPEN_SOURCE=600 -I..
 
-libchez_a_sync_0_la_LIBADD = /usr/bin/scheme
+libchez_a_sync_0_la_LIBADD =
 
 libchez_a_sync_0_la_LDFLAGS = -version-info @CHEZ_A_SYNC_SO_VERSION@
