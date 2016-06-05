@@ -463,8 +463,9 @@
 ;; buffering will be taken into account in indicating whether a read
 ;; can be made without blocking (but on a buffered port, for
 ;; efficiency purposes each read operation in response to this watch
-;; should usually exhaust the buffer by calling drain-input or by
-;; looping on char-ready?).
+;; should usually exhaust the buffer by looping on char-ready? or
+;; input-port-ready?, or by using chez scheme's various
+;; multi-byte/character reading procedures on non-blocking ports).
 ;;
 ;; This procedure should not throw an exception unless memory is
 ;; exhausted.  If 'proc' throws, say because of port errors, and the
@@ -525,9 +526,9 @@
 ;; number of characters that the file can receive without blocking,
 ;; blocking might still occur.  Therefore, this procedure will
 ;; generally work best with unbuffered ports (say by using the
-;; open-file-input-port procedure with a buffer-mode of none), or with
-;; ports which have been set non-blocking so that a partial write is
-;; possible without blocking the writer.
+;; open-file-output-port procedure with a buffer-mode of none), or
+;; with ports which have been set non-blocking so that a partial write
+;; is possible without blocking the writer.
 ;;
 ;; This procedure should not throw an exception unless memory is
 ;; exhausted.  If 'proc' throws, say because of port errors, and the
