@@ -895,7 +895,9 @@
 ;; into account in indicating whether a read can be made without
 ;; blocking (but on a buffered port, for efficiency purposes each read
 ;; operation in response to this watch should usually exhaust the
-;; buffer by calling drain-input or by looping on char-ready?).
+;; buffer by looping on char-ready? or input-port-ready?, or by using
+;; chez scheme's various multi-byte/character reading procedures on
+;; non-blocking ports).
 ;;
 ;; This procedure is mainly intended as something from which
 ;; higher-level asynchronous file operations can be constructed, such

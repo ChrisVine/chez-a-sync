@@ -545,9 +545,6 @@ as non-blocking to prevent a blocking read where it is not expected.
      Exceptions thrown by the handler procedure will propagate out of
      event-loop-run!.
 
-     See the introductory remarks about running worker threads on chez
-     scheme with an event loop.
-
      Here is an example of the use of await-task-in-thread!:
           (set-default-event-loop!) ;; if none has yet been set
           (a-sync (lambda (await resume)
@@ -639,8 +636,9 @@ as non-blocking to prevent a blocking read where it is not expected.
      be taken into account in indicating whether a read can be made
      without blocking (but on a buffered port, for efficiency purposes
      each read operation in response to this watch should usually
-     exhaust the buffer by calling drain-input or by looping on
-     char-ready?).
+     exhaust the buffer by looping on char-ready?  or input-port-ready?,
+     or by using chez scheme's various multi-byte/character reading
+     procedures on non-blocking ports).
 
      This procedure is mainly intended as something from which
      higher-level asynchronous file operations can be constructed, such
@@ -1015,6 +1013,6 @@ Tag Table:
 Node: Top83
 Node: coroutines881
 Node: event loop14483
-Node: compose47838
+Node: compose47832
 
 End Tag Table
