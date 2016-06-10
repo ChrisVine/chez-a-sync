@@ -1000,8 +1000,7 @@ coroutines): coroutines. library file.
      of the last expression in the 'no-await' body.
 
      If the body throws an exception which is not caught locally, it
-     will propagate out of event-loop-run!  or g-main-loop-run, as the
-     case may be.
+     will propagate out of event-loop-run!.
 
      Here is an example of the use of no-await:
 

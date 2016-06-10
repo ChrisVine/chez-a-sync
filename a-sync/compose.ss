@@ -110,8 +110,7 @@
 ;; file with the distribution for further particulars.
 ;;
 ;; If the body throws an exception which is not caught locally, it
-;; will propagate out of event-loop-run! or g-main-loop-run, as the
-;; case may be.
+;; will propagate out of event-loop-run!.
 (define-syntax no-await
   (syntax-rules ()
     [(_ body0 body1 ...)
