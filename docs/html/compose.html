@@ -119,9 +119,9 @@ to it.  The compose-a-sync macro will do it for you.
 <div class="example">
 <pre class="example">(set-default-event-loop!) ;; if none has yet been set
 (compose-a-sync ([line (await-getline! (open-input-file &quot;/dev/tty&quot;))])
-	      ((no-await (simple-format #t
-					&quot;The line was: ~A\n&quot;
-					line))))
+	      ((no-await (format #t
+				 &quot;The line was: ~A\n&quot;
+				 line))))
 (event-loop-run!)
 </pre></div>
 

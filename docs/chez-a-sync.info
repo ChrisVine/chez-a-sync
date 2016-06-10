@@ -971,9 +971,9 @@ coroutines): coroutines. library file.
 
           (set-default-event-loop!) ;; if none has yet been set
           (compose-a-sync ([line (await-getline! (open-input-file "/dev/tty"))])
-          	      ((no-await (simple-format #t
-          					"The line was: ~A\n"
-          					line))))
+          	      ((no-await (format #t
+          				 "The line was: ~A\n"
+          				 line))))
           (event-loop-run!)
 
      Each block of code within a compose-a-sync block will run
