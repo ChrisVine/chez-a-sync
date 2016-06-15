@@ -35,6 +35,15 @@ dnl set up libtool
 AC_PROG_LIBTOOL
 AC_CONFIG_MACRO_DIR([m4])
 
+dnl Check for C++ headers.
+AC_LANG_CPLUSPLUS dnl switch to C++
+AC_CHECK_HEADERS([ map ],
+                 [:],[AC_MSG_ERROR([Standard C++ headers not found], 1)])
+
+dnl Check for C/POSIX headers.
+AC_CHECK_HEADERS([ unistd.h errno.h stdint.h poll.h fcntl.h ],
+                 [:],[AC_MSG_ERROR([Standard POSIX headers not found], 1)])
+
 dnl define MAKE for subdirectories
 AC_PROG_MAKE_SET
 
