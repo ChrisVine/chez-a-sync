@@ -213,19 +213,19 @@
 
 ;; for the purposes of the event loop, two files compare equal if
 ;; their file descriptors are the same, even if one is a port and one
-;; is a file descriptor (or both are a file)
+;; is a file descriptor (or both are ports)
 (define (_file-equal? file1 file2)
   (let ([fd1 (if (and (port? file1) (file-port? file1)) (port-file-descriptor file1) file1)]
    	[fd2 (if (and (port? file2) (file-port? file2)) (port-file-descriptor file2) file2)])
     (= fd1 fd2)))
 
 ;; we don't need any mutexes here as we only access any of the
-;; read-files, read-files-actions, write-files and write-files-actions
-;; fields in the event loop thread.  This removes a given read file
-;; watch and its action from an event loop object.  A file descriptor
-;; and a port with the same underlying file descriptor, or two ports
-;; with the same underlying file descriptor, compare equal for the
-;; purposes of removal.
+;; read-files, read-files-actions, write-files, write-files-actions
+;; and poll cache fields in the event loop thread.  This removes a
+;; given read file watch and its action from an event loop object.  A
+;; file descriptor and a port with the same underlying file
+;; descriptor, or two ports with the same underlying file descriptor,
+;; compare equal for the purposes of removal.
 (define (_remove-read-watch-impl! file el)
   (_read-files-set! el (remp (lambda (elt) (_file-equal? file elt))
 			     (_read-files-get el)))
@@ -234,12 +234,12 @@
   (_set-poll-caches! el))
 
 ;; we don't need any mutexes here as we only access any of the
-;; read-files, read-files-actions, write-files and write-files-actions
-;; fields in the event loop thread.  This removes a given write file
-;; watch and its action from an event loop object.  A file descriptor
-;; and a port with the same underlying file descriptor, or two ports
-;; with the same underlying file descriptor, compare equal for the
-;; purposes of removal.
+;; read-files, read-files-actions, write-files, write-files-actions
+;; and poll cache fields in the event loop thread.  This removes a
+;; given write file watch and its action from an event loop object.  A
+;; file descriptor and a port with the same underlying file
+;; descriptor, or two ports with the same underlying file descriptor,
+;; compare equal for the purposes of removal.
 (define (_remove-write-watch-impl! file el)
   (_write-files-set! el (remp (lambda (elt) (_file-equal? file elt))
 			      (_write-files-get el)))
@@ -251,7 +251,7 @@
 ;; call.  The purpose of the caches is to avoid reconstructing the
 ;; poll table and recalculating other values every time poll is called
 ;; (this is one advantage of poll over select).  It should be called
-;; whenever a read or write file watched is added or removed.
+;; whenever a read or write file watch is added or removed.
 (define (_set-poll-caches! el)
   (let ([read-files (_read-files-get el)]
 	[write-files (_write-files-get el)])
