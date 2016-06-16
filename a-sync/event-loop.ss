@@ -94,9 +94,9 @@
           (mutable event-in _event-in-get _event-in-set!)
           (mutable event-out _event-out-get _event-out-set!)
           (mutable read-files _read-files-get _read-files-set!)
-          (mutable read-files-actions _read-files-actions-get _read-files-actions-set!)
+          (immutable read-files-actions _read-files-actions-get)
           (mutable write-files _write-files-get _write-files-set!)
-          (mutable write-files-actions _write-files-actions-get _write-files-actions-set!)
+          (immutable write-files-actions _write-files-actions-get)
           (mutable timeouts _timeouts-get _timeouts-set!)
           (mutable current-timeout _current-timeout-get _current-timeout-set!)
           (mutable block _block-get _block-set!)
@@ -123,9 +123,9 @@
 				 in
 				 out
 				 '()
+				 (make-hashtable _file-hash _file-equal?)
 				 '()
-				 '()
-				 '()
+				 (make-hashtable _file-hash _file-equal?)
 				 '()
 				 #f
 				 #f
@@ -219,6 +219,16 @@
    	[fd2 (if (and (port? file2) (file-port? file2)) (port-file-descriptor file2) file2)])
     (= fd1 fd2)))
 
+;; this procedure is a hash function for port/file descriptor hashing.
+;; For file descriptors it just returns the descriptor, and for ports
+;; it returns the underlying file descriptor, so this hasher matches
+;; the _file-equal? equality predicate, and meets the requirements
+;; that (i) the same input always provides the same output, and (ii)
+;; any two files which compare equal with _file-equal? will also have
+;; the same hash value.
+(define (_file-hash file)
+  (if (and (port? file) (file-port? file)) (port-file-descriptor file) file))
+
 ;; we don't need any mutexes here as we only access any of the
 ;; read-files, read-files-actions, write-files, write-files-actions
 ;; and poll cache fields in the event loop thread.  This removes a
@@ -229,8 +239,7 @@
 (define (_remove-read-watch-impl! file el)
   (_read-files-set! el (remp (lambda (elt) (_file-equal? file elt))
 			     (_read-files-get el)))
-  (_read-files-actions-set! el (remp (lambda (elt) (_file-equal? file (car elt)))
-				     (_read-files-actions-get el)))
+  (hashtable-delete! (_read-files-actions-get el) file)
   (_set-poll-caches! el))
 
 ;; we don't need any mutexes here as we only access any of the
@@ -243,8 +252,7 @@
 (define (_remove-write-watch-impl! file el)
   (_write-files-set! el (remp (lambda (elt) (_file-equal? file elt))
 			      (_write-files-get el)))
-  (_write-files-actions-set! el (remp (lambda (elt) (_file-equal? file (car elt)))
-				      (_write-files-actions-get el)))
+  (hashtable-delete! (_write-files-actions-get el) file)
   (_set-poll-caches! el))
 
 ;; this sets the caches stored in an event loop for the poll system
@@ -341,11 +349,8 @@
 	   ;; deal with POLLPRI events first
 	   (for-each (lambda (elt)
 		       (let ([action
-			      (let ([item (assp (lambda (file)
-						  (_file-equal? elt file))
-						;; we only poll for POLLPRI on read descriptors
-						read-files-actions)])
-				(if item (cdr item) #f))])
+			      ;; we only poll for POLLPRI on read descriptors
+			      (hashtable-ref read-files-actions elt #f)])
 			 (if action
 			     (when (not (action 'excpt))
 			       (_remove-read-watch-impl! elt el))
@@ -356,10 +361,7 @@
 	   ;; events on read file descriptors
 	   (for-each (lambda (elt)
 		       (let ([action
-			      (let ([item (assp (lambda (file)
-						  (_file-equal? elt file))
-						read-files-actions)])
-				(if item (cdr item) #f))])
+			      (hashtable-ref read-files-actions elt #f)])
 			 (if action
 			     (when (not (action 'in))
 			       (_remove-read-watch-impl! elt el))
@@ -371,16 +373,13 @@
 	   ;; POLLHUP can occur with these)
 	   (for-each (lambda (elt)
 		       (let ([action
-			      (let ([item (assp (lambda (file)
-						  (_file-equal? elt file))
-						write-files-actions)])
-				(if item (cdr item) #f))])
+			      (hashtable-ref write-files-actions elt #f)])
 			 (if action
 			     (when (not (action 'out))
 			       (_remove-write-watch-impl! elt el))
 			     (error "_event-loop-run-impl"
 				    "No action in event loop for write file: " `(,elt)))))
-		       (cadr res))
+		     (cadr res))
 
 	   ;; the strategy with posted events is first to empty the
 	   ;; event pipe (the only purpose of which is to cause the
@@ -436,9 +435,9 @@
 	  (loop))))
     (_done-set! el #f))
   (_read-files-set! el '())
-  (_read-files-actions-set! el '())
+  (hashtable-clear! (_read-files-actions-get el))
   (_write-files-set! el '())
-  (_write-files-actions-set! el '())
+  (hashtable-clear! (_write-files-actions-get el))
   (_timeouts-set! el '())
   (_current-timeout-set! el #f)
   (_set-poll-caches! el))
@@ -485,11 +484,15 @@
 		       (cons file
 			     (remp (lambda (elt) (_file-equal? file elt))
 				   (_read-files-get el))))
-		      (_read-files-actions-set!
-		       el
-		       (cons (cons file proc)
-			     (remp (lambda (elt) (_file-equal? file (car elt)))
-				   (_read-files-actions-get el))))
+		      ;; before adding the new entry, first explicitly
+		      ;; remove any old entry in case we replace a
+		      ;; file descriptor with a port, or vice versa,
+		      ;; where the port has the same underlying file
+		      ;; descriptor: R6RS is not clear that the key as
+		      ;; well as the value will be substituted in such
+		      ;; circumstances
+		      (hashtable-delete! (_read-files-actions-get el) file)
+		      (hashtable-set! (_read-files-actions-get el) file proc)
 		      (_set-poll-caches! el))
 		    el))]))
 
@@ -548,11 +551,15 @@
 		       (cons file
 			     (remp (lambda (elt) (_file-equal? file elt))
 				   (_write-files-get el))))
-		      (_write-files-actions-set!
-		       el
-		       (cons (cons file proc)
-			     (remp (lambda (elt) (_file-equal? file (car elt)))
-				   (_write-files-actions-get el))))
+		      ;; before adding the new entry, first explicitly
+		      ;; remove any old entry in case we replace a
+		      ;; file descriptor with a port, or vice versa,
+		      ;; where the port has the same underlying file
+		      ;; descriptor: R6RS is not clear that the key as
+		      ;; well as the value will be substituted in such
+		      ;; circumstances
+		      (hashtable-delete! (_write-files-actions-get el) file)
+		      (hashtable-set! (_write-files-actions-get el) file proc)
 		      (_set-poll-caches! el))
 		    el))]))
 
