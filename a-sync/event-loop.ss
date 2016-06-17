@@ -123,9 +123,9 @@
 				 in
 				 out
 				 '()
-				 (make-hashtable _file-hash _file-equal?)
+				 (make-eqv-hashtable)
 				 '()
-				 (make-hashtable _file-hash _file-equal?)
+				 (make-eqv-hashtable)
 				 '()
 				 #f
 				 #f
@@ -219,16 +219,6 @@
    	[fd2 (if (and (port? file2) (file-port? file2)) (port-file-descriptor file2) file2)])
     (= fd1 fd2)))
 
-;; this procedure is a hash function for port/file descriptor hashing.
-;; For file descriptors it just returns the descriptor, and for ports
-;; it returns the underlying file descriptor, so this hasher matches
-;; the _file-equal? equality predicate, and meets the requirements
-;; that (i) the same input always provides the same output, and (ii)
-;; any two files which compare equal with _file-equal? will also have
-;; the same hash value.
-(define (_file-hash file)
-  (if (and (port? file) (file-port? file)) (port-file-descriptor file) file))
-
 ;; we don't need any mutexes here as we only access any of the
 ;; read-files, read-files-actions, write-files, write-files-actions
 ;; and poll cache fields in the event loop thread.  This removes a
@@ -239,7 +229,8 @@
 (define (_remove-read-watch-impl! file el)
   (_read-files-set! el (remp (lambda (elt) (_file-equal? file elt))
 			     (_read-files-get el)))
-  (hashtable-delete! (_read-files-actions-get el) file)
+  (hashtable-delete! (_read-files-actions-get el)
+		     (if (and (port? file) (file-port? file)) (port-file-descriptor file) file))
   (_set-poll-caches! el))
 
 ;; we don't need any mutexes here as we only access any of the
@@ -252,7 +243,8 @@
 (define (_remove-write-watch-impl! file el)
   (_write-files-set! el (remp (lambda (elt) (_file-equal? file elt))
 			      (_write-files-get el)))
-  (hashtable-delete! (_write-files-actions-get el) file)
+  (hashtable-delete! (_write-files-actions-get el)
+		     (if (and (port? file) (file-port? file)) (port-file-descriptor file) file))
   (_set-poll-caches! el))
 
 ;; this sets the caches stored in an event loop for the poll system
@@ -350,7 +342,9 @@
 	   (for-each (lambda (elt)
 		       (let ([action
 			      ;; we only poll for POLLPRI on read descriptors
-			      (hashtable-ref read-files-actions elt #f)])
+			      (hashtable-ref read-files-actions
+					     (if (and (port? elt) (file-port? elt)) (port-file-descriptor elt) elt)
+					     #f)])
 			 (if action
 			     (when (not (action 'excpt))
 			       (_remove-read-watch-impl! elt el))
@@ -361,7 +355,9 @@
 	   ;; events on read file descriptors
 	   (for-each (lambda (elt)
 		       (let ([action
-			      (hashtable-ref read-files-actions elt #f)])
+			      (hashtable-ref read-files-actions
+					     (if (and (port? elt) (file-port? elt)) (port-file-descriptor elt) elt)
+					     #f)])
 			 (if action
 			     (when (not (action 'in))
 			       (_remove-read-watch-impl! elt el))
@@ -373,7 +369,9 @@
 	   ;; POLLHUP can occur with these)
 	   (for-each (lambda (elt)
 		       (let ([action
-			      (hashtable-ref write-files-actions elt #f)])
+			      (hashtable-ref write-files-actions
+					     (if (and (port? elt) (file-port? elt)) (port-file-descriptor elt) elt)
+					     #f)])
 			 (if action
 			     (when (not (action 'out))
 			       (_remove-write-watch-impl! elt el))
@@ -484,15 +482,9 @@
 		       (cons file
 			     (remp (lambda (elt) (_file-equal? file elt))
 				   (_read-files-get el))))
-		      ;; before adding the new entry, first explicitly
-		      ;; remove any old entry in case we replace a
-		      ;; file descriptor with a port, or vice versa,
-		      ;; where the port has the same underlying file
-		      ;; descriptor: R6RS is not clear that the key as
-		      ;; well as the value will be substituted in such
-		      ;; circumstances
-		      (hashtable-delete! (_read-files-actions-get el) file)
-		      (hashtable-set! (_read-files-actions-get el) file proc)
+		      (hashtable-set! (_read-files-actions-get el)
+				      (if (and (port? file) (file-port? file)) (port-file-descriptor file) file)
+				      proc)
 		      (_set-poll-caches! el))
 		    el))]))
 
@@ -551,15 +543,9 @@
 		       (cons file
 			     (remp (lambda (elt) (_file-equal? file elt))
 				   (_write-files-get el))))
-		      ;; before adding the new entry, first explicitly
-		      ;; remove any old entry in case we replace a
-		      ;; file descriptor with a port, or vice versa,
-		      ;; where the port has the same underlying file
-		      ;; descriptor: R6RS is not clear that the key as
-		      ;; well as the value will be substituted in such
-		      ;; circumstances
-		      (hashtable-delete! (_write-files-actions-get el) file)
-		      (hashtable-set! (_write-files-actions-get el) file proc)
+		      (hashtable-set! (_write-files-actions-get el)
+				      (if (and (port? file) (file-port? file)) (port-file-descriptor file) file)
+				      proc)
 		      (_set-poll-caches! el))
 		    el))]))
 
