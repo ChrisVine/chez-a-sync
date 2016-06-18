@@ -218,9 +218,8 @@
 (define-syntax _fd-or-port->fd
   (syntax-rules ()
     [(_ file)
-     ;; 'file' must be a file descriptor or a port object so we do not
-     ;; need to worry about the multiple evaluation
-     (if (and (port? file) (file-port? file)) (port-file-descriptor file) file)]))
+     (let ([f file])
+       (if (and (port? f) (file-port? f)) (port-file-descriptor f) f))]))
 
 ;; for the purposes of the event loop, two files compare equal if
 ;; their file descriptors are the same, even if one is a port and one
