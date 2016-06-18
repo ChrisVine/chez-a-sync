@@ -211,12 +211,23 @@
 	      (append (reverse checked) (cdr remaining))
 	      (loop (cdr remaining) (cons first checked)))))))
 
+;; this takes a port or a file descriptor as an argument and returns a
+;; file descriptor (being the port's underlying file descriptor in the
+;; case of a port).  It is used by _file-equal? to test for file
+;; equality and to make keys for the file watch actions hashtables.
+(define-syntax _fd-or-port->fd
+  (syntax-rules ()
+    [(_ file)
+     ;; 'file' must be a file descriptor or a port object so we do not
+     ;; need to worry about the multiple evaluation
+     (if (and (port? file) (file-port? file)) (port-file-descriptor file) file)]))
+
 ;; for the purposes of the event loop, two files compare equal if
 ;; their file descriptors are the same, even if one is a port and one
 ;; is a file descriptor (or both are ports)
 (define (_file-equal? file1 file2)
-  (let ([fd1 (if (and (port? file1) (file-port? file1)) (port-file-descriptor file1) file1)]
-   	[fd2 (if (and (port? file2) (file-port? file2)) (port-file-descriptor file2) file2)])
+  (let ((fd1 (_fd-or-port->fd file1))
+	(fd2 (_fd-or-port->fd file2)))
     (= fd1 fd2)))
 
 ;; we don't need any mutexes here as we only access any of the
@@ -230,7 +241,7 @@
   (_read-files-set! el (remp (lambda (elt) (_file-equal? file elt))
 			     (_read-files-get el)))
   (hashtable-delete! (_read-files-actions-get el)
-		     (if (and (port? file) (file-port? file)) (port-file-descriptor file) file))
+		     (_fd-or-port->fd file))
   (_set-poll-caches! el))
 
 ;; we don't need any mutexes here as we only access any of the
@@ -244,7 +255,7 @@
   (_write-files-set! el (remp (lambda (elt) (_file-equal? file elt))
 			      (_write-files-get el)))
   (hashtable-delete! (_write-files-actions-get el)
-		     (if (and (port? file) (file-port? file)) (port-file-descriptor file) file))
+		     (_fd-or-port->fd file))
   (_set-poll-caches! el))
 
 ;; this sets the caches stored in an event loop for the poll system
@@ -343,7 +354,7 @@
 		       (let ([action
 			      ;; we only poll for POLLPRI on read descriptors
 			      (hashtable-ref read-files-actions
-					     (if (and (port? elt) (file-port? elt)) (port-file-descriptor elt) elt)
+					     (_fd-or-port->fd elt)
 					     #f)])
 			 (if action
 			     (when (not (action 'excpt))
@@ -356,7 +367,7 @@
 	   (for-each (lambda (elt)
 		       (let ([action
 			      (hashtable-ref read-files-actions
-					     (if (and (port? elt) (file-port? elt)) (port-file-descriptor elt) elt)
+					     (_fd-or-port->fd elt)
 					     #f)])
 			 (if action
 			     (when (not (action 'in))
@@ -370,7 +381,7 @@
 	   (for-each (lambda (elt)
 		       (let ([action
 			      (hashtable-ref write-files-actions
-					     (if (and (port? elt) (file-port? elt)) (port-file-descriptor elt) elt)
+					     (_fd-or-port->fd elt)
 					     #f)])
 			 (if action
 			     (when (not (action 'out))
@@ -483,7 +494,7 @@
 			     (remp (lambda (elt) (_file-equal? file elt))
 				   (_read-files-get el))))
 		      (hashtable-set! (_read-files-actions-get el)
-				      (if (and (port? file) (file-port? file)) (port-file-descriptor file) file)
+				      (_fd-or-port->fd file)
 				      proc)
 		      (_set-poll-caches! el))
 		    el))]))
@@ -544,7 +555,7 @@
 			     (remp (lambda (elt) (_file-equal? file elt))
 				   (_write-files-get el))))
 		      (hashtable-set! (_write-files-actions-get el)
-				      (if (and (port? file) (file-port? file)) (port-file-descriptor file) file)
+				      (_fd-or-port->fd file)
 				      proc)
 		      (_set-poll-caches! el))
 		    el))]))
