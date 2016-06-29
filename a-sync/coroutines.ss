@@ -200,16 +200,16 @@
 ;; returning false but the waitable procedure still thinks it has a
 ;; call to 'await' to be made.  The event-loop module has await-task!,
 ;; await-task-in-thread!, await-timeout!, a-sync-read-watch!,
-;; await-getline! and a-sync-write-watch! convenience procedures which
-;; will correctly set this up for you automatically.  If those
-;; convenience procedures are used, exceptions should always be
-;; handled locally in the waitable procedure (and if the callback
-;; might throw, in the callback also) if it is undesirable that
-;; uncaught exceptions propagate out of event-loop-run!.  In the case
-;; of await-task-in-thread!, that procedure also takes an optional
-;; handler argument which will handle any exceptions thrown by the
-;; task: otherwise the task thread throwing would terminate the
-;; program if not caught within the task.
+;; await-getline!, await-geteveryline!, await-getsomelines! and
+;; a-sync-write-watch! convenience procedures which will correctly set
+;; this up for you automatically.  If those convenience procedures are
+;; used, exceptions should always be handled locally in the waitable
+;; procedure (and if the callback might throw, in the callback also)
+;; if it is undesirable that uncaught exceptions propagate out of
+;; event-loop-run!.  In the case of await-task-in-thread!, that
+;; procedure also takes an optional handler argument which will handle
+;; any exceptions thrown by the task: otherwise the task thread
+;; throwing would terminate the program if not caught within the task.
 ;;
 ;; There can be as many calls to 'await' and asynchronous callbacks in
 ;; any one waitable procedure as wanted, to enable composition of
