@@ -278,7 +278,21 @@
 (event-loop-run!)
 (event-loop-block! #f)
   
-;; Test 13: await-task-in-thread! with handler
+;; Test 13: await-task-in-thread! without handler (explicit loop argument)
+
+(a-sync (lambda (await resume)
+	  (let ((res
+	  	 (await-task-in-thread! await resume #f
+	  				(lambda ()
+	  				  (+ 5 10)))))
+	    (test-result 15 res)
+	    (print-result)
+	    (event-loop-quit!))))
+(event-loop-block! #t)
+(event-loop-run!)
+(event-loop-block! #f)
+  
+;; Test 14: await-task-in-thread! with handler
 
 (a-sync (lambda (await resume)
 	  (let ((res
@@ -295,7 +309,7 @@
 (event-loop-run!)
 (event-loop-block! #f)
 
-;; Test 14: await-timeout!
+;; Test 15: await-timeout!
 
 (a-sync (lambda (await resume)
 	  (let ((res
@@ -306,7 +320,7 @@
 	    (print-result))))
 (event-loop-run!)
   
-;; Test 15: await-getline! (also tests a-sync-read-watch!)
+;; Test 16: await-getline! (also tests a-sync-read-watch!)
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -323,7 +337,7 @@
   (close-port out)
   (close-port in))
 
-;; Test 16: await-geteveryline! (also tests a-sync-read-watch!)
+;; Test 17: await-geteveryline! (also tests a-sync-read-watch!)
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -350,7 +364,7 @@
   (event-loop-run!)
   (close-port in))
 
-;; Test 17: await-getsomelines! (also tests a-sync-read-watch!)
+;; Test 18: await-getsomelines! (also tests a-sync-read-watch!)
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -382,7 +396,7 @@
   (close-port out)
   (close-port in))
 
-;; Test 18: await-getsomelines! exception handling (also tests strategy for await-geteveryline!)
+;; Test 19: await-getsomelines! exception handling (also tests strategy for await-geteveryline!)
 ;; exception caught within a-sync block
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -417,7 +431,7 @@
   (test-result 2 count)
   (print-result))
 
-;; Test 19: a-sync-write-watch!
+;; Test 20: a-sync-write-watch!
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -450,7 +464,7 @@
 	    (print-result)))
   (event-loop-run!))
 
-;; Test 20: compose-a-sync and no-await
+;; Test 21: compose-a-sync and no-await
 
 (compose-a-sync ((res (await-task-in-thread! (lambda ()
 					       (+ 5 10)))))
