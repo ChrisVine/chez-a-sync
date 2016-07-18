@@ -267,10 +267,10 @@ Here is an example of the use of await-task-in-thread!:
 @example
 (set-default-event-loop!) ;; if none has yet been set
 (a-sync (lambda (await resume)
-	  (simple-format #t "1 + 1 is ~A\n"
-			 (await-task-in-thread! await resume
-						(lambda ()
-						  (+ 1 1))))
+	  (format #t "1 + 1 is ~A\n"
+		  (await-task-in-thread! await resume
+					 (lambda ()
+					   (+ 1 1))))
 	  (event-loop-quit!)))
 (event-loop-block! #t) ;; because the task runs in another thread
 (event-loop-run!)
@@ -305,10 +305,10 @@ Here is an example of the use of await-task!:
 @example
 (set-default-event-loop!) ;; if none has yet been set
 (a-sync (lambda (await resume)
-	  (simple-format #t "1 + 1 is ~A\n"
-			 (await-task! await resume
-				      (lambda ()
-					(+ 1 1))))))
+	  (format #t "1 + 1 is ~A\n"
+		  (await-task! await resume
+			       (lambda ()
+				 (+ 1 1))))))
 (event-loop-run!)
 @end example
 @end deffn
@@ -336,12 +336,12 @@ Here is an example of the use of event-timeout!:
 @example
 (set-default-event-loop!) ;; if none has yet been set
 (a-sync (lambda (await resume)
-	  (simple-format #t
-			 "Timeout ~A\n"
-			 (await-timeout! await resume
-					 100
-					 (lambda ()
-					   "expired")))))
+	  (format #t
+		  "Timeout ~A\n"
+		  (await-timeout! await resume
+				  100
+				  (lambda ()
+				    "expired")))))
 (event-loop-run!)
 @end example
 @end deffn
@@ -462,10 +462,10 @@ Here is an example of the use of await-getline!:
 (set-default-event-loop!) ;; if none has yet been set
 (a-sync (lambda (await resume)
 	  (display "Enter a line of text at the keyboard\n")
-	  (simple-format #t
-			 "The line was: ~A\n"
-			 (await-getline! await resume
-					 (open-input-file "/dev/tty")))))
+	  (format #t
+		  "The line was: ~A\n"
+		  (await-getline! await resume
+				  (open-input-file "/dev/tty")))))
 (event-loop-run!)
 @end example
 @end deffn
@@ -516,9 +516,9 @@ keyboard has no end-of-file, use Ctrl-C to exit this code snippet):
 	    (await-geteveryline! await resume
 				 port
 				 (lambda (line)
-				   (simple-format #t
-						  "The line was: ~A\n"
-						  line))))))
+				   (format #t
+					   "The line was: ~A\n"
+					   line))))))
 (event-loop-run!)
 @end example
 @end deffn
@@ -577,9 +577,9 @@ Here is an example of the use of await-getsomelines!:
 				 (lambda (line k)
                                    (when (string=? line "")
 					 (k #f))
-				   (simple-format #t
-						  "The line was: ~A\n"
-						  line))))))
+				   (format #t
+					   "The line was: ~A\n"
+					   line))))))
 (event-loop-run!)
 @end example
 @end deffn

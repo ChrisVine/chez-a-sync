@@ -549,10 +549,10 @@ as non-blocking to prevent a blocking read where it is not expected.
      Here is an example of the use of await-task-in-thread!:
           (set-default-event-loop!) ;; if none has yet been set
           (a-sync (lambda (await resume)
-          	  (simple-format #t "1 + 1 is ~A\n"
-          			 (await-task-in-thread! await resume
-          						(lambda ()
-          						  (+ 1 1))))
+          	  (format #t "1 + 1 is ~A\n"
+          		  (await-task-in-thread! await resume
+          					 (lambda ()
+          					   (+ 1 1))))
           	  (event-loop-quit!)))
           (event-loop-block! #t) ;; because the task runs in another thread
           (event-loop-run!)
@@ -584,10 +584,10 @@ as non-blocking to prevent a blocking read where it is not expected.
      Here is an example of the use of await-task!:
           (set-default-event-loop!) ;; if none has yet been set
           (a-sync (lambda (await resume)
-          	  (simple-format #t "1 + 1 is ~A\n"
-          			 (await-task! await resume
-          				      (lambda ()
-          					(+ 1 1))))))
+          	  (format #t "1 + 1 is ~A\n"
+          		  (await-task! await resume
+          			       (lambda ()
+          				 (+ 1 1))))))
           (event-loop-run!)
 
  -- Scheme Procedure: await-timeout! await resume [loop] msecs thunk
@@ -613,12 +613,12 @@ as non-blocking to prevent a blocking read where it is not expected.
      Here is an example of the use of event-timeout!:
           (set-default-event-loop!) ;; if none has yet been set
           (a-sync (lambda (await resume)
-          	  (simple-format #t
-          			 "Timeout ~A\n"
-          			 (await-timeout! await resume
-          					 100
-          					 (lambda ()
-          					   "expired")))))
+          	  (format #t
+          		  "Timeout ~A\n"
+          		  (await-timeout! await resume
+          				  100
+          				  (lambda ()
+          				    "expired")))))
           (event-loop-run!)
 
  -- Scheme Procedure: a-sync-read-watch! resume file proc [loop]
@@ -736,10 +736,10 @@ as non-blocking to prevent a blocking read where it is not expected.
           (set-default-event-loop!) ;; if none has yet been set
           (a-sync (lambda (await resume)
           	  (display "Enter a line of text at the keyboard\n")
-          	  (simple-format #t
-          			 "The line was: ~A\n"
-          			 (await-getline! await resume
-          					 (open-input-file "/dev/tty")))))
+          	  (format #t
+          		  "The line was: ~A\n"
+          		  (await-getline! await resume
+          				  (open-input-file "/dev/tty")))))
           (event-loop-run!)
 
  -- Scheme Procedure: await-geteveryline! await resume [loop] port proc
@@ -788,9 +788,9 @@ as non-blocking to prevent a blocking read where it is not expected.
           	    (await-geteveryline! await resume
           				 port
           				 (lambda (line)
-          				   (simple-format #t
-          						  "The line was: ~A\n"
-          						  line))))))
+          				   (format #t
+          					   "The line was: ~A\n"
+          					   line))))))
           (event-loop-run!)
 
  -- Scheme Procedure: await-getsomelines! await resume [loop] port proc
@@ -847,9 +847,9 @@ as non-blocking to prevent a blocking read where it is not expected.
           				 (lambda (line k)
                                              (when (string=? line "")
           					 (k #f))
-          				   (simple-format #t
-          						  "The line was: ~A\n"
-          						  line))))))
+          				   (format #t
+          					   "The line was: ~A\n"
+          					   line))))))
           (event-loop-run!)
 
  -- Scheme Procedure: a-sync-write-watch! resume file proc [loop]
@@ -1012,6 +1012,6 @@ Tag Table:
 Node: Top83
 Node: coroutines881
 Node: event loop14530
-Node: compose47841
+Node: compose47799
 
 End Tag Table

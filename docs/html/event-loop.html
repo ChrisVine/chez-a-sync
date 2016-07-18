@@ -336,10 +336,10 @@ the handler procedure will propagate out of event-loop-run!.
 </p><div class="example">
 <pre class="example">(set-default-event-loop!) ;; if none has yet been set
 (a-sync (lambda (await resume)
-	  (simple-format #t &quot;1 + 1 is ~A\n&quot;
-			 (await-task-in-thread! await resume
-						(lambda ()
-						  (+ 1 1))))
+	  (format #t &quot;1 + 1 is ~A\n&quot;
+		  (await-task-in-thread! await resume
+					 (lambda ()
+					   (+ 1 1))))
 	  (event-loop-quit!)))
 (event-loop-block! #t) ;; because the task runs in another thread
 (event-loop-run!)
@@ -375,10 +375,10 @@ event-loop-run!.
 </p><div class="example">
 <pre class="example">(set-default-event-loop!) ;; if none has yet been set
 (a-sync (lambda (await resume)
-	  (simple-format #t &quot;1 + 1 is ~A\n&quot;
-			 (await-task! await resume
-				      (lambda ()
-					(+ 1 1))))))
+	  (format #t &quot;1 + 1 is ~A\n&quot;
+		  (await-task! await resume
+			       (lambda ()
+				 (+ 1 1))))))
 (event-loop-run!)
 </pre></div>
 </dd></dl>
@@ -407,12 +407,12 @@ shouldn&rsquo;t happen unless memory is exhausted.  Exceptions thrown by
 </p><div class="example">
 <pre class="example">(set-default-event-loop!) ;; if none has yet been set
 (a-sync (lambda (await resume)
-	  (simple-format #t
-			 &quot;Timeout ~A\n&quot;
-			 (await-timeout! await resume
-					 100
-					 (lambda ()
-					   &quot;expired&quot;)))))
+	  (format #t
+		  &quot;Timeout ~A\n&quot;
+		  (await-timeout! await resume
+				  100
+				  (lambda ()
+				    &quot;expired&quot;)))))
 (event-loop-run!)
 </pre></div>
 </dd></dl>
@@ -535,10 +535,10 @@ shouldn&rsquo;t happen unless memory is exhausted.  Subsequent exceptions
 <pre class="example">(set-default-event-loop!) ;; if none has yet been set
 (a-sync (lambda (await resume)
 	  (display &quot;Enter a line of text at the keyboard\n&quot;)
-	  (simple-format #t
-			 &quot;The line was: ~A\n&quot;
-			 (await-getline! await resume
-					 (open-input-file &quot;/dev/tty&quot;)))))
+	  (format #t
+		  &quot;The line was: ~A\n&quot;
+		  (await-getline! await resume
+				  (open-input-file &quot;/dev/tty&quot;)))))
 (event-loop-run!)
 </pre></div>
 </dd></dl>
@@ -590,9 +590,9 @@ keyboard has no end-of-file, use Ctrl-C to exit this code snippet):
 	    (await-geteveryline! await resume
 				 port
 				 (lambda (line)
-				   (simple-format #t
-						  &quot;The line was: ~A\n&quot;
-						  line))))))
+				   (format #t
+					   &quot;The line was: ~A\n&quot;
+					   line))))))
 (event-loop-run!)
 </pre></div>
 </dd></dl>
@@ -652,9 +652,9 @@ procedure.
 				 (lambda (line k)
                                    (when (string=? line &quot;&quot;)
 					 (k #f))
-				   (simple-format #t
-						  &quot;The line was: ~A\n&quot;
-						  line))))))
+				   (format #t
+					   &quot;The line was: ~A\n&quot;
+					   line))))))
 (event-loop-run!)
 </pre></div>
 </dd></dl>
