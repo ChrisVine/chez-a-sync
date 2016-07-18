@@ -669,8 +669,7 @@ as non-blocking to prevent a blocking read where it is not expected.
                  (define text-len 0)
                  (define buf (make-string 1))
                  (define (append-char! ch)
-          	 (when (and (= (modulo text-len chunk-size) 0)
-          		    (> text-len 0))
+          	 (when (= text-len (string-length text))
           	   (let ([tmp text])
           	     (set! text (make-string (+ text-len chunk-size)))
           	     (string-copy! tmp 0 text 0 text-len)))
@@ -1013,6 +1012,6 @@ Tag Table:
 Node: Top83
 Node: coroutines881
 Node: event loop14530
-Node: compose47879
+Node: compose47841
 
 End Tag Table
