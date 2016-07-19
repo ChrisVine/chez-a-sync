@@ -459,7 +459,7 @@
 ;; so and the descriptor is also available for writing, the write
 ;; callback will also be called with its argument set to 'out.  If
 ;; there is already a read watch for the file passed, the old one will
-;; be replaced by the new one.  If proc returns #f, the read watch
+;; be replaced by the new one.  If 'proc' returns #f, the read watch
 ;; will be removed from the event loop, otherwise the watch will
 ;; continue.  This is thread safe - any thread may add a watch, and
 ;; the callback will execute in the event loop thread.  The file
@@ -512,12 +512,12 @@
 ;; 'excpt rather than the write watch procedure, so if that procedure
 ;; returns #f only the read watch will be removed).  If there is
 ;; already a write watch for the file passed, the old one will be
-;; replaced by the new one.  If proc returns #f, the write watch will
-;; be removed from the event loop, otherwise the watch will continue.
-;; This is thread safe - any thread may add a watch, and the callback
-;; will execute in the event loop thread.  The file argument can be
-;; either a port or a file descriptor.  If 'file' is a file
-;; descriptor, any port for the descriptor is not referenced for
+;; replaced by the new one.  If 'proc' returns #f, the write watch
+;; will be removed from the event loop, otherwise the watch will
+;; continue.  This is thread safe - any thread may add a watch, and
+;; the callback will execute in the event loop thread.  The file
+;; argument can be either a port or a file descriptor.  If 'file' is a
+;; file descriptor, any port for the descriptor is not referenced for
 ;; garbage collection purposes - it must remain valid while operations
 ;; are carried out on the descriptor.
 

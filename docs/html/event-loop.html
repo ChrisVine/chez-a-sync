@@ -145,7 +145,7 @@ also be passed to event-loop-add-write-watch, and if so and the
 descriptor is also available for writing, the write callback will also
 be called with its argument set to &rsquo;out.  If there is already a read
 watch for the file passed, the old one will be replaced by the new
-one.  If proc returns #f, the read watch will be removed from the
+one.  If &rsquo;proc&rsquo; returns #f, the read watch will be removed from the
 event loop, otherwise the watch will continue.  This is thread safe -
 any thread may add a watch, and the callback will execute in the event
 loop thread.  The file argument can be either a port or a file
@@ -180,7 +180,7 @@ argument, and there is an exceptional condition, it is the read watch
 procedure which will be called with &rsquo;excpt rather than the write watch
 procedure, so if that procedure returns #f only the read watch will be
 removed).  If there is already a write watch for the file passed, the
-old one will be replaced by the new one.  If proc returns #f, the
+old one will be replaced by the new one.  If &rsquo;proc&rsquo; returns #f, the
 write watch will be removed from the event loop, otherwise the watch
 will continue.  This is thread safe - any thread may add a watch, and
 the callback will execute in the event loop thread.  The file argument
