@@ -297,7 +297,12 @@
 ;; callback throws, or something else throws in the implementation,
 ;; then this procedure will clean up the event loop as if
 ;; event-loop-quit! had been called, and the exception will be
-;; rethrown out of this procedure.
+;; rethrown out of this procedure.  This means that if there are
+;; continuable exceptions, they will be converted into non-continuable
+;; ones (but continuable exceptions are incompatible with asynchronous
+;; event handlers and should be avoided in most programs anyway, as
+;; they subvert the proper flow of program control and may break
+;; resource management using rethrows or dynamic winds).
 (define event-loop-run!
   (case-lambda
     [() (event-loop-run! #f)]
@@ -1158,6 +1163,13 @@
 ;; handler or guard block directly around the call to
 ;; await-getsomelines!.  Memory exhaustion could also cause exceptions
 ;; to propagate out of event-loop-run! or this procedure.
+;;
+;; If a continuable exception propagates out of this procedure, it
+;; will be converted into a non-continuable one (but continuable
+;; exceptions are incompatible with asynchronous event handlers and
+;; should be avoided in most programs anyway, as they subvert the
+;; proper flow of program control and may break resource management
+;; using rethrows or dynamic winds).
 (define await-getsomelines!
   (case-lambda
     [(await resume port proc) (await-getsomelines! await resume #f port proc)]
