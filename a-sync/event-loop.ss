@@ -51,6 +51,7 @@
 (include "helper/queue.ss")
 (include "helper/errno.ss")
 (include "helper/match.ss")
+(include "helper/try.ss")
 
 
 ;; this variable is not exported - use the accessors below
@@ -318,13 +319,7 @@
   (define event-in (_event-in-get el))
   (define event-fd (port-file-descriptor event-in))
 
-  (guard
-   (c
-    [else
-     ;; something threw, probably a callback.  Put the event loop in a
-     ;; valid state and rethrow
-     (_event-loop-reset! el)
-     (raise c)])
+  (try
    ;; we don't need to use the mutex in this procedure except in
    ;; relation to q, _done-get and _block-get, as we only access the
    ;; current-timeout field of an event loop object, any individual
@@ -422,7 +417,13 @@
 	     (loop1)
 	     ;; clear out any stale events before returning and
 	     ;; unblocking
-	     (_event-loop-reset! el)))))))
+	     (_event-loop-reset! el)))))
+   (except c
+	   [else
+	    ;; something threw, probably a callback.  Put the event
+	    ;; loop in a valid state and rethrow
+	    (_event-loop-reset! el)
+	    (raise c)])))
 
 ;; This procedure is only called in the event loop thread, by
 ;; event-loop-run!  The only things requiring protection by a mutex
@@ -806,13 +807,14 @@
     (if handler
 	(fork-thread
 	 (lambda ()
-	   (guard (c
-		   [else
-		    (event-post! (lambda () (resume (handler c)))
-				 loop)])
-		  (let ([res (thunk)])
-		    (event-post! (lambda () (resume res))
-				 loop)))))
+	   (try
+	    (let ([res (thunk)])
+	      (event-post! (lambda () (resume res))
+			   loop))
+	    (except c
+		    [else
+		     (event-post! (lambda () (resume (handler c)))
+				  loop)]))))
 	(fork-thread
 	 (lambda ()
 	   (let ([res (thunk)])
@@ -1047,6 +1049,13 @@
 ;; handler or guard block directly around the call to
 ;; await-geteveryline!.  Memory exhaustion could also cause exceptions
 ;; to propagate out of event-loop-run! or this procedure.
+;;
+;; If a continuable exception propagates out of this procedure, it
+;; will be converted into a non-continuable one (but continuable
+;; exceptions are incompatible with asynchronous event handlers and
+;; should be avoided in most programs anyway, as they subvert the
+;; proper flow of program control and may break resource management
+;; using rethrows or dynamic winds).
 (define await-geteveryline!
   (case-lambda
     [(await resume port proc) (await-geteveryline! await resume #f port proc)]
@@ -1098,25 +1107,26 @@
 						 'more))))]))))
 			   loop))
      ;; exceptions might be thrown from the remainder of this
-     ;; procedure (and in particular from 'proc').  This catch block
+     ;; procedure (and in particular from 'proc').  This try block
      ;; ensures that the watch is removed if the user has her own
      ;; exception handler within or around the a-sync block which
      ;; covers this procedure.
-     (guard (c
-	     [else 
-	      (event-loop-remove-read-watch! port loop)
-	      (raise c)])
-	    (let next ([res (await)])
-	      (cond
-	       [(eq? res 'more)
-		(next (await))]
-	       [(or (eof-object? res)
-		    (not res))
-		(event-loop-remove-read-watch! port loop)
-		res]
-	       [else
-		(proc res)
-		(next (await))])))]))
+     (try
+      (let next ([res (await)])
+	(cond
+	 [(eq? res 'more)
+	  (next (await))]
+	 [(or (eof-object? res)
+	      (not res))
+	  (event-loop-remove-read-watch! port loop)
+	  res]
+	 [else
+	  (proc res)
+	  (next (await))]))
+      (except c
+	      [else 
+	       (event-loop-remove-read-watch! port loop)
+	       (raise c)]))]))
 
 ;; This is a convenience procedure whose signature is:
 ;;
@@ -1221,29 +1231,30 @@
 						 'more))))]))))
 			   loop))
      ;; exceptions might be thrown from the remainder of this
-     ;; procedure (and in particular from 'proc').  This catch block
+     ;; procedure (and in particular from 'proc').  This try block
      ;; ensures that the watch is removed if the user has her own
      ;; exception handler within or around the a-sync block which
      ;; covers this procedure.
-     (guard (c
-	     [else
-	      (event-loop-remove-read-watch! port loop)
-	      (raise c)])
-	    (let ([ret-val
-		   (let next ([res (await)])
-		     (cond
-		      [(eq? res 'more)
-		       (next (await))]
-		      [(or (eof-object? res)
-			   (not res))
-		       res]
-		      [else
-		       (call/cc
-			(lambda (k)
-			  (proc res k)
-			  (next (await))))]))])
-	      (event-loop-remove-read-watch! port loop)
-	      ret-val))]))
+     (try
+      (let ([ret-val
+	     (let next ([res (await)])
+	       (cond
+		[(eq? res 'more)
+		 (next (await))]
+		[(or (eof-object? res)
+		     (not res))
+		 res]
+		[else
+		 (call/cc
+		  (lambda (k)
+		    (proc res k)
+		    (next (await))))]))])
+	(event-loop-remove-read-watch! port loop)
+	ret-val)
+      (except c
+	      [else
+	       (event-loop-remove-read-watch! port loop)
+	       (raise c)]))]))
 
 ;; This is a convenience procedure for use with an event loop, which
 ;; will run 'proc' in the event loop thread whenever 'file' is ready

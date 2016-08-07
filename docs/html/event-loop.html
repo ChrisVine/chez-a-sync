@@ -587,6 +587,13 @@ around the call to await-geteveryline!.  Memory exhaustion could also
 cause exceptions to propagate out of event-loop-run! or this
 procedure.
 </p>
+<p>If a continuable exception propagates out of this procedure, it will
+be converted into a non-continuable one (but continuable exceptions
+are incompatible with asynchronous event handlers and should be
+avoided in most programs anyway, as they subvert the proper flow of
+program control and may break resource management using rethrows or
+dynamic winds).
+</p>
 <p>Here is an example of the use of await-geteveryline! (because the
 keyboard has no end-of-file, use Ctrl-C to exit this code snippet):
 </p><div class="example">

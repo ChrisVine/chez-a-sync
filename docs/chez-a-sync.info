@@ -786,6 +786,13 @@ as non-blocking to prevent a blocking read where it is not expected.
      await-geteveryline!.  Memory exhaustion could also cause exceptions
      to propagate out of event-loop-run!  or this procedure.
 
+     If a continuable exception propagates out of this procedure, it
+     will be converted into a non-continuable one (but continuable
+     exceptions are incompatible with asynchronous event handlers and
+     should be avoided in most programs anyway, as they subvert the
+     proper flow of program control and may break resource management
+     using rethrows or dynamic winds).
+
      Here is an example of the use of await-geteveryline!  (because the
      keyboard has no end-of-file, use Ctrl-C to exit this code snippet):
           (set-default-event-loop!) ;; if none has yet been set
@@ -1026,6 +1033,6 @@ Tag Table:
 Node: Top83
 Node: coroutines881
 Node: event loop14530
-Node: compose48565
+Node: compose48949
 
 End Tag Table
