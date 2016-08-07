@@ -358,10 +358,17 @@ as non-blocking to prevent a blocking read where it is not expected.
      event loop will run in the thread which calls this procedure.  If
      this procedure has returned, including after a call to
      event-loop-quit!, this procedure may be called again to restart the
-     event loop.  If a callback throws, or something else throws in the
+     event loop.
+
+     If a callback throws, or something else throws in the
      implementation, then this procedure will clean up the event loop as
      if event-loop-quit!  had been called, and the exception will be
-     rethrown out of this procedure.
+     rethrown out of this procedure.  This means that if there are
+     continuable exceptions, they will be converted into non-continuable
+     ones (but continuable exceptions are incompatible with asynchronous
+     event handlers and should be avoided in most programs anyway, as
+     they subvert the proper flow of program control and may break
+     resource management using rethrows or dynamic winds).
 
  -- Scheme Procedure: event-loop-add-read-watch! file proc [loop]
      The 'loop' (event loop) argument is optional.  This procedure will
@@ -837,6 +844,13 @@ as non-blocking to prevent a blocking read where it is not expected.
      await-getsomelines!.  Memory exhaustion could also cause exceptions
      to propagate out of event-loop-run!  or this procedure.
 
+     If a continuable exception propagates out of this procedure, it
+     will be converted into a non-continuable one (but continuable
+     exceptions are incompatible with asynchronous event handlers and
+     should be avoided in most programs anyway, as they subvert the
+     proper flow of program control and may break resource management
+     using rethrows or dynamic winds).
+
      Here is an example of the use of await-getsomelines!:
           (set-default-event-loop!) ;; if none has yet been set
           (a-sync (lambda (await resume)
@@ -1012,6 +1026,6 @@ Tag Table:
 Node: Top83
 Node: coroutines881
 Node: event loop14530
-Node: compose47804
+Node: compose48565
 
 End Tag Table
