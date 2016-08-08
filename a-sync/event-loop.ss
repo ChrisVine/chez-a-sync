@@ -44,14 +44,15 @@
    await-geteveryline!
    await-getsomelines!
    make-pipe)
-  (import (chezscheme))
+  (import
+   (a-sync try)
+   (chezscheme))
 
 (include "helper/poll.ss")
 (include "helper/pipe.ss")
 (include "helper/queue.ss")
 (include "helper/errno.ss")
 (include "helper/match.ss")
-(include "helper/try.ss")
 
 
 ;; this variable is not exported - use the accessors below
@@ -300,10 +301,9 @@
 ;; event-loop-quit! had been called, and the exception will be
 ;; rethrown out of this procedure.  This means that if there are
 ;; continuable exceptions, they will be converted into non-continuable
-;; ones (but continuable exceptions are incompatible with asynchronous
-;; event handlers and should be avoided in most programs anyway, as
-;; they subvert the proper flow of program control and may break
-;; resource management using rethrows or dynamic winds).
+;; ones (but continuable exceptions are usually incompatible with
+;; asynchronous event handlers and may break resource management using
+;; rethrows or dynamic winds).
 (define event-loop-run!
   (case-lambda
     [() (event-loop-run! #f)]
@@ -1051,11 +1051,10 @@
 ;; to propagate out of event-loop-run! or this procedure.
 ;;
 ;; If a continuable exception propagates out of this procedure, it
-;; will be converted into a non-continuable one (but continuable
-;; exceptions are incompatible with asynchronous event handlers and
-;; should be avoided in most programs anyway, as they subvert the
-;; proper flow of program control and may break resource management
-;; using rethrows or dynamic winds).
+;; will be converted into a non-continuable one (continuable
+;; exceptions are incompatible with asynchronous event handling using
+;; this procedure and may break resource management which uses
+;; rethrows or dynamic winds).
 (define await-geteveryline!
   (case-lambda
     [(await resume port proc) (await-geteveryline! await resume #f port proc)]
@@ -1175,11 +1174,10 @@
 ;; to propagate out of event-loop-run! or this procedure.
 ;;
 ;; If a continuable exception propagates out of this procedure, it
-;; will be converted into a non-continuable one (but continuable
-;; exceptions are incompatible with asynchronous event handlers and
-;; should be avoided in most programs anyway, as they subvert the
-;; proper flow of program control and may break resource management
-;; using rethrows or dynamic winds).
+;; will be converted into a non-continuable one (continuable
+;; exceptions are incompatible with asynchronous event handling using
+;; this procedure and may break resource management which uses
+;; rethrows or dynamic winds).
 (define await-getsomelines!
   (case-lambda
     [(await resume port proc) (await-getsomelines! await resume #f port proc)]

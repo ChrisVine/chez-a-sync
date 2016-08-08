@@ -15,6 +15,7 @@
 (import (a-sync coroutines)
 	(a-sync event-loop)
 	(a-sync compose)
+	(a-sync try)
 	(chezscheme))
 
 ;; helpers
@@ -165,17 +166,14 @@
   (close-port out)
   (close-port in))
 
-;; Test 8: await-getsomelines! exception handling (also tests strategy for await-geteveryline!)
-;; exception propagates out of event-loop-run!
+;; Test 8: await-getsomelines! exception handling (also tests 'try' and strategy for await-geteveryline!)
+;; exception caught within a-sync block
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
                                   (make-transcoder (latin-1-codec)))])
   (define count 0)
   (a-sync (lambda (await resume)
-	    (guard
-	     (c
-	      [else
-	       (assert (eq? c 'exit-exception))])
+	    (try
 	     (await-getsomelines! await resume
 				  main-loop
 				  in
@@ -187,7 +185,10 @@
 					  (raise 'exit-exception))
 				    (when (= count 3)
 					  (assert #f)))) ;; we should never reach here
-	     (assert #f)))) ;; we should never reach here
+	     (assert #f) ;; we should never reach here
+	     (except c
+		     [else
+		      (assert (eq? c 'exit-exception))]))))
   (put-string out "test-string1")
   (newline out)
   (put-string out "test-string2")
@@ -396,17 +397,14 @@
   (close-port out)
   (close-port in))
 
-;; Test 19: await-getsomelines! exception handling (also tests strategy for await-geteveryline!)
+;; Test 19: await-getsomelines! exception handling (also tests 'try' and strategy for await-geteveryline!)
 ;; exception caught within a-sync block
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
                                   (make-transcoder (latin-1-codec)))])
   (define count 0)
   (a-sync (lambda (await resume)
-	    (guard
-	     (c
-	      [else
-	       (assert (eq? c 'exit-exception))])
+	    (try
 	     (await-getsomelines! await resume
 				  in
 				  (lambda (line k)
@@ -417,7 +415,10 @@
 					  (raise 'exit-exception))
 				    (when (= count 3)
 					  (assert #f))))   ;; we should never reach here
-	     (assert #f))))   ;; we should never reach here
+	     (assert #f)   ;; we should never reach here
+	     (except c
+		     [else
+		      (assert (eq? c 'exit-exception))]))))
   (put-string out "test-string1")
   (newline out)
   (put-string out "test-string2")

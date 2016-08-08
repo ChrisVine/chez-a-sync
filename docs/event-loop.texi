@@ -76,10 +76,9 @@ then this procedure will clean up the event loop as if
 event-loop-quit! had been called, and the exception will be rethrown
 out of this procedure.  This means that if there are continuable
 exceptions, they will be converted into non-continuable ones (but
-continuable exceptions are incompatible with asynchronous event
-handlers and should be avoided in most programs anyway, as they
-subvert the proper flow of program control and may break resource
-management using rethrows or dynamic winds).
+continuable exceptions are usually incompatible with asynchronous
+event handlers and may break resource management using rethrows or
+dynamic winds).
 @end deffn
 
 @deffn {Scheme Procedure} event-loop-add-read-watch! file proc [loop]
@@ -514,11 +513,9 @@ cause exceptions to propagate out of event-loop-run! or this
 procedure.
 
 If a continuable exception propagates out of this procedure, it will
-be converted into a non-continuable one (but continuable exceptions
-are incompatible with asynchronous event handlers and should be
-avoided in most programs anyway, as they subvert the proper flow of
-program control and may break resource management using rethrows or
-dynamic winds).
+be converted into a non-continuable one (continuable exceptions are
+incompatible with asynchronous event handling using this procedure and
+may break resource management which uses rethrows or dynamic winds).
 
 Here is an example of the use of await-geteveryline! (because the
 keyboard has no end-of-file, use Ctrl-C to exit this code snippet):
@@ -581,11 +578,9 @@ cause exceptions to propagate out of event-loop-run! or this
 procedure.
 
 If a continuable exception propagates out of this procedure, it will
-be converted into a non-continuable one (but continuable exceptions
-are incompatible with asynchronous event handlers and should be
-avoided in most programs anyway, as they subvert the proper flow of
-program control and may break resource management using rethrows or
-dynamic winds).
+be converted into a non-continuable one (continuable exceptions are
+incompatible with asynchronous event handling using this procedure and
+may break resource management which uses rethrows or dynamic winds).
 
 Here is an example of the use of await-getsomelines!:
 @example

@@ -12,12 +12,13 @@ loop for chez scheme, and coroutines to enable an event loop (including
 other event loops) to be used with 'await' semantics to deal with
 inversion of control - otherwise known as "callback hell".
 
-   The chez-a-sync package is provided in three R6RS library files:
+   The chez-a-sync package is provided in four R6RS library files:
 * Menu:
 
 * coroutines::     In library file (a-sync coroutines) - provides coroutines for await semantics on asynchronous events
 * event loop::     In library file (a-sync event-loop) - provides an event loop for asynchronous events
 * compose::        In library file (a-sync compose) - provides the compose-a-sync macro interface for the a-sync coroutine
+* try::            In library file (a-sync try) - provides the try macro interface for dealing with exceptions
 
 
 File: chez-a-sync.info,  Node: coroutines,  Next: event loop,  Prev: Top,  Up: Top
@@ -365,10 +366,9 @@ as non-blocking to prevent a blocking read where it is not expected.
      if event-loop-quit!  had been called, and the exception will be
      rethrown out of this procedure.  This means that if there are
      continuable exceptions, they will be converted into non-continuable
-     ones (but continuable exceptions are incompatible with asynchronous
-     event handlers and should be avoided in most programs anyway, as
-     they subvert the proper flow of program control and may break
-     resource management using rethrows or dynamic winds).
+     ones (but continuable exceptions are usually incompatible with
+     asynchronous event handlers and may break resource management using
+     rethrows or dynamic winds).
 
  -- Scheme Procedure: event-loop-add-read-watch! file proc [loop]
      The 'loop' (event loop) argument is optional.  This procedure will
@@ -787,11 +787,10 @@ as non-blocking to prevent a blocking read where it is not expected.
      to propagate out of event-loop-run!  or this procedure.
 
      If a continuable exception propagates out of this procedure, it
-     will be converted into a non-continuable one (but continuable
-     exceptions are incompatible with asynchronous event handlers and
-     should be avoided in most programs anyway, as they subvert the
-     proper flow of program control and may break resource management
-     using rethrows or dynamic winds).
+     will be converted into a non-continuable one (continuable
+     exceptions are incompatible with asynchronous event handling using
+     this procedure and may break resource management which uses
+     rethrows or dynamic winds).
 
      Here is an example of the use of await-geteveryline!  (because the
      keyboard has no end-of-file, use Ctrl-C to exit this code snippet):
@@ -852,11 +851,10 @@ as non-blocking to prevent a blocking read where it is not expected.
      to propagate out of event-loop-run!  or this procedure.
 
      If a continuable exception propagates out of this procedure, it
-     will be converted into a non-continuable one (but continuable
-     exceptions are incompatible with asynchronous event handlers and
-     should be avoided in most programs anyway, as they subvert the
-     proper flow of program control and may break resource management
-     using rethrows or dynamic winds).
+     will be converted into a non-continuable one (continuable
+     exceptions are incompatible with asynchronous event handling using
+     this procedure and may break resource management which uses
+     rethrows or dynamic winds).
 
      Here is an example of the use of await-getsomelines!:
           (set-default-event-loop!) ;; if none has yet been set
@@ -923,7 +921,7 @@ as non-blocking to prevent a blocking read where it is not expected.
      Setting a buffer mode of 'none' is ineffective for textual ports.
 
 
-File: chez-a-sync.info,  Node: compose,  Prev: event loop,  Up: Top
+File: chez-a-sync.info,  Node: compose,  Next: try,  Prev: event loop,  Up: Top
 
 This (a-sync compose) library file provides a compose-a-sync macro
 interface for the a-sync procedure provided by the *note (a-sync
@@ -1027,12 +1025,79 @@ coroutines): coroutines. library file.
 
           (var ((no-await (+ a b))))
 
+
+File: chez-a-sync.info,  Node: try,  Prev: compose,  Up: Top
+
+This (a-sync try) library file provides a 'try' macro for dealing with
+exceptions.
+
+ -- Syntax: (try body0 body1 ... (except condition cond-clause0
+          cond-clause1 ...))
+     Try is a macro used in the implementation of the event loop
+     provided by this library.  The macro has two keywords, 'try' and
+     'except'.  It executes the body clauses, and if an exception is
+     raised by them passes control to the 'except' block with
+     'condition' set to the condition which was raised.  The
+     cond-clauses are then evaluated as if in a cond expression.  If one
+     of the cond tests is found to be true, or there is none found to be
+     true but there is an else clause, then the relevant cond clause or
+     else clause will be evaluated and returned.  If none of the cond
+     tests in the cond-clauses are found to be true and there is no else
+     clause, the exception condition will be re-raised as if by raise,
+     for an enclosing try form, guard form or with-exception-handler
+     form (if any) to handle.
+
+     The return value of try, if there is no exception raised by the
+     body clauses or any exception raised is handled by a cond-clause,
+     is the value of the last expression of the body clauses or of the
+     cond-clause, as the case may be.
+
+     This is similar to but not the same as the R6RS 'guard' form.  The
+     guard form has the property that if no cond test is found to be
+     true in the cond clauses and there is no else clause, the exception
+     condition will be re-raised with raise-continuable.  This is to
+     allow continuable exceptions to propagate successfully through a
+     'guard' form (albeit triggering any dynamic winds in doing so).  A
+     further consequence is that when the condition is re-raised, that
+     is done in the dynamic environment of the original call to raise or
+     raise-continuable.  As mentioned, the 'try' form always re-raises
+     with 'raise' (so in effect converting any continuable exception to
+     a non-continuable one), and it does so in the dynamic environment
+     in which the cond-clauses are evaluated, which is the dynamic
+     environment of the original call to 'try'.
+
+     Or put another way, the 'try' macro behaves like a conventional
+     stack unwinding exception implementation.  'guard' does not
+     necessarily do so.
+
+     Continuable exceptions with generalised handling forms such as
+     'guard' are generally to be avoided, as they may break any
+     intermediate resource management which uses rethrows or dynamic
+     winds.  Continuable exceptions are also usually unsuitable for use
+     with asynchronous event handlers, which is why the 'try' form is
+     used in the implementation of the event loop provided by this
+     library.  But for cases where that is not true and you know what
+     you are doing, you can use 'guard' instead of 'try' for maintaining
+     continuable exceptions as continuable.
+
+     The 'try' macro is first available in version 0.3 of this library.
+
+     Here is an example of the use of try:
+          (display (try (display "In outer try form\n")
+          	      (try (display "In inner try form\n")
+          		   (raise 'five)
+          		   (except c
+          			   [(eq? c 'six) 6]))
+          	      (except c
+          		      [(eq? c 'five) 5])))
+
 
 
 Tag Table:
 Node: Top83
-Node: coroutines881
-Node: event loop14530
-Node: compose48949
+Node: coroutines991
+Node: event loop14640
+Node: compose48802
+Node: try54257
 
 End Tag Table

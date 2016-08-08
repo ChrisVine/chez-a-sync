@@ -1,0 +1,129 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!-- Created by GNU Texinfo 6.1, http://www.gnu.org/software/texinfo/ -->
+<head>
+<title>chez-a-sync: try</title>
+
+<meta name="description" content="chez-a-sync: try">
+<meta name="keywords" content="chez-a-sync: try">
+<meta name="resource-type" content="document">
+<meta name="distribution" content="global">
+<meta name="Generator" content="makeinfo">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="index.html#Top" rel="start" title="Top">
+<link href="index.html#Top" rel="up" title="Top">
+<link href="compose.html#compose" rel="prev" title="compose">
+<style type="text/css">
+<!--
+a.summary-letter {text-decoration: none}
+blockquote.indentedblock {margin-right: 0em}
+blockquote.smallindentedblock {margin-right: 0em; font-size: smaller}
+blockquote.smallquotation {font-size: smaller}
+div.display {margin-left: 3.2em}
+div.example {margin-left: 3.2em}
+div.lisp {margin-left: 3.2em}
+div.smalldisplay {margin-left: 3.2em}
+div.smallexample {margin-left: 3.2em}
+div.smalllisp {margin-left: 3.2em}
+kbd {font-style: oblique}
+pre.display {font-family: inherit}
+pre.format {font-family: inherit}
+pre.menu-comment {font-family: serif}
+pre.menu-preformatted {font-family: serif}
+pre.smalldisplay {font-family: inherit; font-size: smaller}
+pre.smallexample {font-size: smaller}
+pre.smallformat {font-family: inherit; font-size: smaller}
+pre.smalllisp {font-size: smaller}
+span.nolinebreak {white-space: nowrap}
+span.roman {font-family: initial; font-weight: normal}
+span.sansserif {font-family: sans-serif; font-weight: normal}
+ul.no-bullet {list-style: none}
+-->
+</style>
+
+
+</head>
+
+<body lang="en">
+<a name="try"></a>
+<div class="header">
+<p>
+Previous: <a href="compose.html#compose" accesskey="p" rel="prev">compose</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>
+</div>
+<hr>
+<h4 class="node-heading">try</h4>
+
+<p>This (a-sync try) library file provides a &rsquo;try&rsquo; macro for dealing with
+exceptions.
+</p>
+<dl>
+<dt><a name="index-_0028try"></a>Syntax: <strong>(try</strong> <em>body0 body1 ... (except condition cond-clause0 cond-clause1 ...))</em></dt>
+<dd><p>Try is a macro used in the implementation of the event loop provided
+by this library.  The macro has two keywords, &rsquo;try&rsquo; and &rsquo;except&rsquo;.  It
+executes the body clauses, and if an exception is raised by them
+passes control to the &rsquo;except&rsquo; block with &rsquo;condition&rsquo; set to the
+condition which was raised.  The cond-clauses are then evaluated as if
+in a cond expression.  If one of the cond tests is found to be true,
+or there is none found to be true but there is an else clause, then
+the relevant cond clause or else clause will be evaluated and
+returned.  If none of the cond tests in the cond-clauses are found to
+be true and there is no else clause, the exception condition will be
+re-raised as if by raise, for an enclosing try form, guard form or
+with-exception-handler form (if any) to handle.
+</p>
+<p>The return value of try, if there is no exception raised by the body
+clauses or any exception raised is handled by a cond-clause, is the
+value of the last expression of the body clauses or of the
+cond-clause, as the case may be.
+</p>
+<p>This is similar to but not the same as the R6RS &rsquo;guard&rsquo; form.  The
+guard form has the property that if no cond test is found to be true
+in the cond clauses and there is no else clause, the exception
+condition will be re-raised with raise-continuable.  This is to allow
+continuable exceptions to propagate successfully through a &rsquo;guard&rsquo;
+form (albeit triggering any dynamic winds in doing so).  A further
+consequence is that when the condition is re-raised, that is done in
+the dynamic environment of the original call to raise or
+raise-continuable.  As mentioned, the &rsquo;try&rsquo; form always re-raises with
+&rsquo;raise&rsquo; (so in effect converting any continuable exception to a
+non-continuable one), and it does so in the dynamic environment in
+which the cond-clauses are evaluated, which is the dynamic environment
+of the original call to &rsquo;try&rsquo;.
+</p>
+<p>Or put another way, the &rsquo;try&rsquo; macro behaves like a conventional stack
+unwinding exception implementation.  &rsquo;guard&rsquo; does not necessarily do
+so.
+</p>
+<p>Continuable exceptions with generalised handling forms such as &rsquo;guard&rsquo;
+are generally to be avoided, as they may break any intermediate
+resource management which uses rethrows or dynamic winds.  Continuable
+exceptions are also usually unsuitable for use with asynchronous event
+handlers, which is why the &rsquo;try&rsquo; form is used in the implementation of
+the event loop provided by this library.  But for cases where that is
+not true and you know what you are doing, you can use &rsquo;guard&rsquo; instead
+of &rsquo;try&rsquo; for maintaining continuable exceptions as continuable.
+</p>
+<p>The &rsquo;try&rsquo; macro is first available in version 0.3 of this library.
+</p>
+<p>Here is an example of the use of try:
+</p><div class="example">
+<pre class="example">(display (try (display &quot;In outer try form\n&quot;)
+	      (try (display &quot;In inner try form\n&quot;)
+		   (raise 'five)
+		   (except c
+			   [(eq? c 'six) 6]))
+	      (except c
+		      [(eq? c 'five) 5])))
+</pre></div>
+</dd></dl>
+
+<hr>
+<div class="header">
+<p>
+Previous: <a href="compose.html#compose" accesskey="p" rel="prev">compose</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>
+</div>
+
+
+
+</body>
+</html>
