@@ -58,9 +58,6 @@
 ;; stack unwinding exception implementation.  'guard' does not
 ;; necessarily do so.
 ;;
-;; Try is used in the implementation of the event loop provided by
-;; this library.
-;;
 ;; Continuable exceptions with generalised handling forms such as
 ;; 'guard' are generally to be avoided, as they may break any
 ;; intermediate resource management which uses rethrows or dynamic
