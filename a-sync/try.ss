@@ -19,7 +19,8 @@
   (import (chezscheme))
 
 ;; Try is a macro used in the implementation of the event loop
-;; provided by this library and has the syntax:
+;; provided by this library, and is exported in case it is useful to
+;; users.  It has the syntax:
 ;;
 ;;   (try body0 body1 ... (except condition cond-clause0 cond-clause1 ...))
 ;;

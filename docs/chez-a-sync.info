@@ -1034,18 +1034,19 @@ exceptions.
  -- Syntax: (try body0 body1 ... (except condition cond-clause0
           cond-clause1 ...))
      Try is a macro used in the implementation of the event loop
-     provided by this library.  The macro has two keywords, 'try' and
-     'except'.  It executes the body clauses, and if an exception is
-     raised by them passes control to the 'except' block with
-     'condition' set to the condition which was raised.  The
-     cond-clauses are then evaluated as if in a cond expression.  If one
-     of the cond tests is found to be true, or there is none found to be
-     true but there is an else clause, then the relevant cond clause or
-     else clause will be evaluated and returned.  If none of the cond
-     tests in the cond-clauses are found to be true and there is no else
-     clause, the exception condition will be re-raised as if by raise,
-     for an enclosing try form, guard form or with-exception-handler
-     form (if any) to handle.
+     provided by this library, and is exported in case it is useful to
+     users.  The macro has two keywords, 'try' and 'except'.  It
+     executes the body clauses, and if an exception is raised by them
+     passes control to the 'except' block with 'condition' set to the
+     condition which was raised.  The cond-clauses are then evaluated as
+     if in a cond expression.  If one of the cond tests is found to be
+     true, or there is none found to be true but there is an else
+     clause, then the relevant cond clause or else clause will be
+     evaluated and returned.  If none of the cond tests in the
+     cond-clauses are found to be true and there is no else clause, the
+     exception condition will be re-raised as if by raise, for an
+     enclosing try form, guard form or with-exception-handler form (if
+     any) to handle.
 
      The return value of try, if there is no exception raised by the
      body clauses or any exception raised is handled by a cond-clause,
