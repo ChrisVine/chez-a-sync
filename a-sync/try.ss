@@ -15,7 +15,7 @@
 #!r6rs
 
 (library (a-sync try)
-  (export try)
+  (export try except)
   (import (chezscheme))
 
 ;; Try is a macro used in the implementation of the event loop
