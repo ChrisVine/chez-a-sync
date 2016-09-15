@@ -54,7 +54,7 @@ This returns the default loop set by the set-default-event-loop!
 procedure, or #f if none has been set.
 @end deffn
 
-@deffn {Scheme Procedure} make-event-loop [throttle-threshold throttle delay]
+@deffn {Scheme Procedure} make-event-loop [throttle-threshold throttle-delay]
 This constructs a new event loop object.  From version 0.4, this
 procedure optionally takes two throttling arguments for backpressure
 when applying the event-post! procedure to the event loop.  The
@@ -71,10 +71,10 @@ the one in which the event loop runs.
 
 So if the threshold given is 10000 tasks and the delay given is 1000
 microseconds, upon 10000 unexecuted tasks accumulating a delay of 1000
-microseconds will be appled to callers of event-post!, at 20000
-unexecuted tasks a delay of 8000 microseconds will be applied, and at
-30000 unexecuted tasks a delay of 27000 microseconds will be applied,
-and so on.
+microseconds will be applied to callers of event-post! which are not
+in the event loop thread, at 20000 unexecuted tasks a delay of 8000
+microseconds will be applied, and at 30000 unexecuted tasks a delay of
+27000 microseconds will be applied, and so on.
 
 If throttle-threshold and throttle-delay arguments are not provided
 (or #f is passed for them), then no throttling takes place.

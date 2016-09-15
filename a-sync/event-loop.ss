@@ -128,13 +128,13 @@
 ;; The value of 'threshold-delay' should be given in microseconds.
 ;; Throttling is only applied where the call to event-post! is made in
 ;; a thread other than the one in which the event loop runs.
-
+;;
 ;; So if the threshold given is 10000 tasks and the delay given is
 ;; 1000 microseconds, upon 10000 unexecuted tasks accumulating a delay
-;; of 1000 microseconds will be appled to callers of event-post!, at
-;; 20000 unexecuted tasks a delay of 8000 microseconds will be
-;; applied, and at 30000 unexecuted tasks a delay of 27000
-;; microseconds will be applied, and so on.
+;; of 1000 microseconds will be applied to callers of event-post!
+;; which are not in the event loop thread, at 20000 unexecuted tasks a
+;; delay of 8000 microseconds will be applied, and at 30000 unexecuted
+;; tasks a delay of 27000 microseconds will be applied, and so on.
 ;;
 ;; If throttle-threshold and throttle-delay arguments are not provided
 ;; (or #f is passed for them), then no throttling takes place.
