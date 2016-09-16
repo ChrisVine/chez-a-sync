@@ -310,6 +310,65 @@ Here is an example of the use of await-task-in-thread!:
 @end example
 @end deffn
 
+@deffn {Scheme Procedure} await-task-in-event-loop! await resume [waiter] worker thunk
+The 'waiter' argument is optional.  The 'worker' argument is an
+event loop running in a different thread than the one in which this
+procedure is called, and is the one in which 'thunk' will be
+executed by posting an event to that loop.  The result of executing
+'thunk' will then be posted to the event loop specified by the
+'waiter' argument, or to the default event loop if no 'waiter'
+argument is provided or if #f is provided as the 'waiter' argument,
+and will comprise this procedure's return value.  This procedure is
+intended to be called in a waitable procedure invoked by a-sync.
+It will normally be necessary to call event-loop-block! on 'waiter'
+(or on the default event loop) before invoking this procedure.
+
+This procedure calls 'await' and must (like the a-sync procedure)
+be called in the same thread as that in which the 'waiter' or
+default event loop runs (as the case may be).
+
+This procedure acts as a form of channel through which two
+different event loops may communicate.  It also offers a means by
+which a master event loop (the waiter or default event loop) may
+allocate work to worker event loops for execution.  It would be
+nice to have a pool of worker event loops for the purpose, but that
+is a work for the future.
+
+Depending on the circumstances, it may be desirable to provide
+throttling arguments when constructing the 'worker' event loop, in
+order to enable backpressure to be supplied if the 'worker' event
+loop becomes overloaded: see the documentation on the
+make-event-loop procedure for further information about that.
+
+Exceptions may propagate out of this procedure if they arise while
+setting up, which shouldn't happen unless memory is exhausted or
+pthread has run out of resources.  Exceptions arising during
+execution of the task, if not caught locally, will propagate out of
+the event-loop-run! procedure called for the 'worker' event loop.
+
+This procedure is first available in version 0.4 of this library.
+
+Here is an example of the use of await-task-in-event-loop!:
+@example
+(define waiter (make-event-loop))
+(define worker (make-event-loop))
+(event-loop-block! #t waiter)
+(event-loop-block! #t worker)
+
+(fork-thread
+ (lambda ()
+   (event-loop-run! worker)))
+
+(a-sync (lambda (await resume)
+	  (let ([res
+		 (await-task-in-event-loop! await resume waiter worker
+					    (lambda ()
+					      (+ 5 10)))])
+	    (format #t "~a\n" res)
+(event-loop-run! waiter)
+@end example
+@end deffn
+
 @deffn {Scheme Procedure} await-task! await resume [loop] thunk
 The 'loop' argument is optional.  This is a convenience procedure for
 use with an event loop, which will run 'thunk' in the event loop
