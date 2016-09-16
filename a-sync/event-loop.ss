@@ -311,7 +311,7 @@
 	  (let* ([tasks (with-mutex (_mutex-get el) (_num-tasks-get el))]
 		 [excess (/ tasks threshold)])
 	    (when (not (zero? (truncate excess)))
-	      (let* ([usecs (exact (* excess excess excess (_delay-get el)))]
+	      (let* ([usecs (exact (round (* excess excess excess (_delay-get el))))]
 		     [secs (quotient usecs 1000000)]
 		     [nanosecs (* (remainder usecs 1000000) 1000)])
 		(sleep (make-time 'time-duration nanosecs secs))))))))))
