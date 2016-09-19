@@ -29,6 +29,7 @@
    event-loop-add-write-watch!
    event-loop-remove-read-watch!
    event-loop-remove-write-watch!
+   event-loop-tasks
    event-loop-block!
    event-loop-quit!
    event-post!
@@ -760,7 +761,31 @@
 		      (when (eq? tag (vector-ref (_current-timeout-get el) 1))
 			(_current-timeout-set! el (_next-timeout (_timeouts-get el)))))
 		    el))]))
-      
+
+;; This procedure returns the number of callbacks posted to an event
+;; loop with the event-post! procedure which at the time still remain
+;; queued for execution.  Amongst other things, it can be used by a
+;; calling thread which is not the event loop thread to determine
+;; whether throttling is likely to be applied to it when calling
+;; event-post! - see the documentation on make-event-loop for further
+;; details.
+;;
+;; The 'el' (event loop) argument is optional: this procedure operates
+;; on the event loop passed in as an argument, or if none is passed
+;; (or #f is passed), on the default event loop.  This procedure is
+;; thread safe - any thread may call it.
+;;
+;; This procedure is first available in version 0.4 of this library.
+(define event-loop-tasks
+  (case-lambda
+    [() (event-loop-tasks #f)]
+    [(el)
+     (let ([el (or el (get-default-event-loop))])
+       (when (not el) 
+	     (error "event-loop-tasks"
+		    "No default event loop set for call to event-loop-tasks"))
+       (with-mutex (_mutex-get el) (_num-tasks-get el)))]))
+
 ;; By default, upon there being no more watches, timeouts and posted
 ;; events for an event loop, event-loop-run! will return, which is
 ;; normally what you want with a single threaded program.  However,

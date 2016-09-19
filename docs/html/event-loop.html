@@ -1,6 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
-<!-- Created by GNU Texinfo 6.1, http://www.gnu.org/software/texinfo/ -->
+<!-- Created by GNU Texinfo 6.3, http://www.gnu.org/software/texinfo/ -->
 <head>
 <title>chez-a-sync: event loop</title>
 
@@ -297,13 +297,29 @@ exhausted.  If the &rsquo;action&rsquo; callback throws, and the exception is no
 caught locally, it will propagate out of event-loop-run!.
 </p></dd></dl>
 
-
 <dl>
 <dt><a name="index-timeout_002dremove_0021"></a>Scheme Procedure: <strong>timeout-remove!</strong> <em>tag [loop]</em></dt>
 <dd><p>The &rsquo;loop&rsquo; (event loop) argument is optional.  This procedure stops
 the timeout with the given tag from executing in the event loop passed
 in as an argument, or if none is passed (or #f is passed), in the
 default event loop.  It may be called by any thread.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-event_002dloop_002dtasks"></a>Scheme Procedure: <strong>event-loop-tasks</strong> <em>[loop]</em></dt>
+<dd><p>This procedure returns the number of callbacks posted to an event loop
+with the event-post! procedure which at the time still remain queued
+for execution.  Amongst other things, it can be used by a calling
+thread which is not the event loop thread to determine whether
+throttling is likely to be applied to it when calling event-post! -
+see the documentation on make-event-loop for further details.
+</p>
+<p>The &rsquo;el&rsquo; (event loop) argument is optional: this procedure operates on
+the event loop passed in as an argument, or if none is passed (or #f
+is passed), on the default event loop.  This procedure is thread safe
+- any thread may call it.
+</p>
+<p>This procedure is first available in version 0.4 of this library.
 </p></dd></dl>
 
 <dl>
