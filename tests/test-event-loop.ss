@@ -406,3 +406,90 @@
   (close-port out)
   (close-port in)
   (print-result))
+
+;;;;;;;;;;;;; now tests with a throttled event loop ;;;;;;;;;;;;;
+
+(define throttled-loop (make-event-loop 3 100000))
+
+(define-syntax get-elapsed-millisecs
+  (syntax-rules ()
+    [(_ body0 body1 ...)
+     (let ([start (real-time)])
+       body0 body1 ...
+       (let ([end (real-time)])
+	 (- end start)))]))
+
+;; Test 15: throttling arguments of make-event-loop
+
+(let ()
+  (event-loop-block! #t throttled-loop)
+  (event-post!
+   (lambda ()
+     (define res #f)
+     (define mutex (make-mutex))
+     (define cond (make-condition))
+     (fork-thread
+      (lambda ()
+	(let ([elapsed-millisecs
+	       (get-elapsed-millisecs
+		(let loop ((count 0))
+		  (if (< count 2)
+		      (begin
+			(event-post! 
+			 (lambda () #f)
+			 throttled-loop)
+		       (loop (1+ count)))
+		      (event-post!
+		       (lambda ()
+			 (event-loop-block! #f throttled-loop))
+		       throttled-loop))))])
+	  (with-mutex mutex
+		      (set! res elapsed-millisecs)
+		      (condition-signal cond)))))
+     (let loop ()
+       (with-mutex mutex
+		   (if (not res)
+		       (begin
+			 (condition-wait cond mutex)
+			 (loop))
+		       (assert (>= res 100))))))
+   throttled-loop)
+  
+  (event-loop-run! throttled-loop)
+
+  (event-loop-block! #t throttled-loop)
+  (event-post!
+   (lambda ()
+     (define res #f)
+     (define mutex (make-mutex))
+     (define cond (make-condition))
+     (fork-thread
+      (lambda ()
+	(let ([elapsed-millisecs
+	       (get-elapsed-millisecs
+		(let loop ((count 0))
+		  (if (< count 3)
+		      (begin
+			(event-post! 
+			 (lambda () #f)
+			 throttled-loop)
+			(loop (1+ count)))
+		      (event-post!
+		       (lambda ()
+			 (event-loop-block! #f throttled-loop))
+		       throttled-loop))))])
+	  (with-mutex mutex
+		      (set! res elapsed-millisecs)
+		      (condition-signal cond)))))
+     (let loop ()
+       (with-mutex mutex
+		   (if (not res)
+		       (begin
+			 (condition-wait cond mutex)
+			 (loop))
+		       ;; 100mS + 237mS = 337mS
+		       (assert (>= res 337))))))
+   throttled-loop)
+   
+  (event-loop-run! throttled-loop)
+  (print-result))
