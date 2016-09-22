@@ -102,6 +102,12 @@ procedure once only on program start up, before other threads have
 started.  It is usually a mistake to call this procedure twice: if
 there are asynchronous events pending (that is, if event-loop-run!
 has not returned) you will probably not get the results you expect.
+</p>
+<p>Note that if a default event-loop is constructed for you because no
+argument is passed (or #f is passed), no throttling arguments are
+applied to it (see the documentation on make-event-loop for more about
+that).  If throttling is wanted, the make-event-loop procedure should
+be called explicitly and the result passed to this procedure.
 </p></dd></dl>
 
 <dl>
@@ -374,6 +380,10 @@ thread as that in which the event loop runs, where the result of
 calling &rsquo;thunk&rsquo; will be received.  As mentioned above, the thunk
 itself will run in its own thread.
 </p>
+<p>As the worker thread calls event-post!, it might be subject to
+throttling by the event loop concerned.  See the documentation on the
+make-event-loop procedure for further information about that.
+</p>
 <p>Exceptions may propagate out of this procedure if they arise while
 setting up (that is, before the worker thread starts), which shouldn&rsquo;t
 happen unless memory is exhausted or pthread has run out of resources.
@@ -397,40 +407,42 @@ the handler procedure will propagate out of event-loop-run!.
 
 <dl>
 <dt><a name="index-await_002dtask_002din_002devent_002dloop_0021"></a>Scheme Procedure: <strong>await-task-in-event-loop!</strong> <em>await resume [waiter] worker thunk</em></dt>
-<dd><p>The &rsquo;waiter&rsquo; argument is optional.  The &rsquo;worker&rsquo; argument is an
-event loop running in a different thread than the one in which this
-procedure is called, and is the one in which &rsquo;thunk&rsquo; will be
-executed by posting an event to that loop.  The result of executing
-&rsquo;thunk&rsquo; will then be posted to the event loop specified by the
-&rsquo;waiter&rsquo; argument, or to the default event loop if no &rsquo;waiter&rsquo;
-argument is provided or if #f is provided as the &rsquo;waiter&rsquo; argument,
-and will comprise this procedure&rsquo;s return value.  This procedure is
-intended to be called in a waitable procedure invoked by a-sync.
-It will normally be necessary to call event-loop-block! on &rsquo;waiter&rsquo;
-(or on the default event loop) before invoking this procedure.
+<dd><p>The &rsquo;waiter&rsquo; argument is optional.  The &rsquo;worker&rsquo; argument is an event
+loop running in a different thread than the one in which this
+procedure is called, and is the one in which &rsquo;thunk&rsquo; will be executed
+by posting an event to that loop.  The result of executing &rsquo;thunk&rsquo;
+will then be posted to the event loop specified by the &rsquo;waiter&rsquo;
+argument, or to the default event loop if no &rsquo;waiter&rsquo; argument is
+provided or if #f is provided as the &rsquo;waiter&rsquo; argument, and will
+comprise this procedure&rsquo;s return value.  This procedure is intended to
+be called in a waitable procedure invoked by a-sync.  It will normally
+be necessary to call event-loop-block! on &rsquo;waiter&rsquo; (or on the default
+event loop) before invoking this procedure.
 </p>
-<p>This procedure calls &rsquo;await&rsquo; and must (like the a-sync procedure)
-be called in the same thread as that in which the &rsquo;waiter&rsquo; or
-default event loop runs (as the case may be).
+<p>This procedure calls &rsquo;await&rsquo; and must (like the a-sync procedure) be
+called in the same thread as that in which the &rsquo;waiter&rsquo; or default
+event loop runs (as the case may be).
 </p>
-<p>This procedure acts as a form of channel through which two
-different event loops may communicate.  It also offers a means by
-which a master event loop (the waiter or default event loop) may
-allocate work to worker event loops for execution.  It would be
-nice to have a pool of worker event loops for the purpose, but that
-is a work for the future.
+<p>This procedure acts as a form of channel through which two different
+event loops may communicate.  It also offers a means by which a master
+event loop (the waiter or default event loop) may allocate work to
+worker event loops for execution.  It would be nice to have a pool of
+worker event loops for the purpose, but that is a work for the future.
 </p>
 <p>Depending on the circumstances, it may be desirable to provide
 throttling arguments when constructing the &rsquo;worker&rsquo; event loop, in
-order to enable backpressure to be supplied if the &rsquo;worker&rsquo; event
-loop becomes overloaded: see the documentation on the
-make-event-loop procedure for further information about that.
+order to enable backpressure to be supplied if the &rsquo;worker&rsquo; event loop
+becomes overloaded: see the documentation on the make-event-loop
+procedure for further information about that.  (This procedure calls
+event-post! in both the &rsquo;waiter&rsquo; and &rsquo;worker&rsquo; event loops by the
+respective threads of the other, so either could be subject to
+throttling.)
 </p>
 <p>Exceptions may propagate out of this procedure if they arise while
 setting up, which shouldn&rsquo;t happen unless memory is exhausted or
-pthread has run out of resources.  Exceptions arising during
-execution of the task, if not caught locally, will propagate out of
-the event-loop-run! procedure called for the &rsquo;worker&rsquo; event loop.
+pthread has run out of resources.  Exceptions arising during execution
+of the task, if not caught locally, will propagate out of the
+event-loop-run! procedure called for the &rsquo;worker&rsquo; event loop.
 </p>
 <p>This procedure is first available in version 0.4 of this library.
 </p>
@@ -473,6 +485,14 @@ library file).
 </p>
 <p>This procedure must (like the a-sync procedure) be called in the same
 thread as that in which the event loop runs.
+</p>
+<p>This procedure calls event-post! in the event loop concerned.  This is
+done in the same thread as that in which the event loop runs so it
+cannot of itself be throttled.  However it may contribute to the
+number of accumulated unexecuted tasks in the event loop and therefore
+contribute to the throttling of other threads by the loop.  See the
+documentation on the make-event-loop procedure for further information
+about that.
 </p>
 <p>Exceptions may propagate out of this procedure if they arise while
 setting up (that is, before the task starts), which shouldn&rsquo;t happen

@@ -139,16 +139,17 @@ The (a-sync coroutines) library file provides the following procedures:
      from the event loop by returning false but the waitable procedure
      still thinks it has a call to 'await' to be made.  The *note
      event-loop: event loop. library file has await-task!,
-     await-task-in-thread!, await-timeout!, a-sync-read-watch!,
-     await-getline!, await-geteveryline!, await-getsomelines!  and
-     a-sync-write-watch!  convenience procedures which will correctly
-     set this up for you automatically, and the *note compose: compose.
-     library file provides a compose-a-sync macro for composition.  If
-     those convenience procedures are used, exceptions should always be
-     handled locally in the waitable procedure (and if the callback
-     might throw, in the callback also) if it is undesirable that
-     uncaught exceptions propagate out of event-loop-run!.  In the case
-     of await-task-in-thread!, that procedure also takes an optional
+     await-task-in-thread!, await-task-in-event-loop!, await-timeout!,
+     a-sync-read-watch!, await-getline!, await-geteveryline!,
+     await-getsomelines!  and a-sync-write-watch!  convenience
+     procedures which will correctly set this up for you automatically,
+     and the *note compose: compose. library file provides a
+     compose-a-sync macro for composition.  If those convenience
+     procedures are used, exceptions should always be handled locally in
+     the waitable procedure (and if the callback might throw, in the
+     callback also) if it is undesirable that uncaught exceptions
+     propagate out of event-loop-run!.  In the case of
+     await-task-in-thread!, that procedure also takes an optional
      handler argument which will handle any exceptions thrown by the
      task: otherwise the task thread throwing would terminate the
      program if not caught within the task.
@@ -340,6 +341,13 @@ as non-blocking to prevent a blocking read where it is not expected.
      It is usually a mistake to call this procedure twice: if there are
      asynchronous events pending (that is, if event-loop-run!  has not
      returned) you will probably not get the results you expect.
+
+     Note that if a default event-loop is constructed for you because no
+     argument is passed (or #f is passed), no throttling arguments are
+     applied to it (see the documentation on make-event-loop for more
+     about that).  If throttling is wanted, the make-event-loop
+     procedure should be called explicitly and the result passed to this
+     procedure.
 
  -- Scheme Procedure: get-default-event-loop
      This returns the default loop set by the set-default-event-loop!
@@ -589,6 +597,10 @@ as non-blocking to prevent a blocking read where it is not expected.
      of calling 'thunk' will be received.  As mentioned above, the thunk
      itself will run in its own thread.
 
+     As the worker thread calls event-post!, it might be subject to
+     throttling by the event loop concerned.  See the documentation on
+     the make-event-loop procedure for further information about that.
+
      Exceptions may propagate out of this procedure if they arise while
      setting up (that is, before the worker thread starts), which
      shouldn't happen unless memory is exhausted or pthread has run out
@@ -639,6 +651,9 @@ as non-blocking to prevent a blocking read where it is not expected.
      order to enable backpressure to be supplied if the 'worker' event
      loop becomes overloaded: see the documentation on the
      make-event-loop procedure for further information about that.
+     (This procedure calls event-post!  in both the 'waiter' and
+     'worker' event loops by the respective threads of the other, so
+     either could be subject to throttling.)
 
      Exceptions may propagate out of this procedure if they arise while
      setting up, which shouldn't happen unless memory is exhausted or
@@ -683,6 +698,14 @@ as non-blocking to prevent a blocking read where it is not expected.
 
      This procedure must (like the a-sync procedure) be called in the
      same thread as that in which the event loop runs.
+
+     This procedure calls event-post!  in the event loop concerned.
+     This is done in the same thread as that in which the event loop
+     runs so it cannot of itself be throttled.  However it may
+     contribute to the number of accumulated unexecuted tasks in the
+     event loop and therefore contribute to the throttling of other
+     threads by the loop.  See the documentation on the make-event-loop
+     procedure for further information about that.
 
      Exceptions may propagate out of this procedure if they arise while
      setting up (that is, before the task starts), which shouldn't
@@ -1070,14 +1093,14 @@ coroutines): coroutines. library file.
      arguments, and (if the optional 'loop' argument of this macro is
      used) takes the event loop as its third argument, followed by such
      further arguments as it requires.  All of the await-task!,
-     await-task-in-thread!, await-timeout!, await-getline!,
-     await-geteveryline!  and await-getsomelines!  procedures provided
-     by the (a-sync event-loop) library file are
-     'compose-a-sync'-capable.  In addition, to make an ordinary body of
-     code which does not block (and which does not need to invoke
-     a-sync's await procedure) usable by compose-a-sync, the no-await
-     macro can be used to generate a 'compose-a-sync'-capable procedure
-     for it (see below).
+     await-task-in-thread!, await-task-in-event-loop!, await-timeout!,
+     await-getline!, await-geteveryline!  and await-getsomelines!
+     procedures provided by the *note (a-sync event-loop): event loop.
+     library file are 'compose-a-sync'-capable.  In addition, to make an
+     ordinary body of code which does not block (and which does not need
+     to invoke a-sync's await procedure) usable by compose-a-sync, the
+     no-await macro can be used to generate a 'compose-a-sync'-capable
+     procedure for it (see below).
 
      Each binding is initialized as if sequentially (although it is done
      asynchronously on the relevant event loop).  An initialization does
@@ -1199,8 +1222,8 @@ exceptions.
 Tag Table:
 Node: Top83
 Node: coroutines991
-Node: event loop14640
-Node: compose54158
-Node: try59613
+Node: event loop14672
+Node: compose55409
+Node: try60909
 
 End Tag Table

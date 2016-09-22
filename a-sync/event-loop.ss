@@ -78,6 +78,13 @@
 ;; mistake to call this procedure twice: if there are asynchronous
 ;; events pending (that is, if event-loop-run!  has not returned) you
 ;; will probably not get the results you expect.
+;;
+;; Note that if a default event-loop is constructed for you because no
+;; argument is passed (or #f is passed), no throttling arguments are
+;; applied to it (see the documentation on make-event-loop for more
+;; about that).  If throttling is wanted, the make-event-loop
+;; procedure should be called explicitly and the result passed to this
+;; procedure.
 (define set-default-event-loop!
   (case-lambda
     [() (set-default-event-loop! #f)]
@@ -875,6 +882,10 @@
 ;; of calling 'thunk' will be received.  As mentioned above, the thunk
 ;; itself will run in its own thread.
 ;;
+;; As the worker thread calls event-post!, it might be subject to
+;; throttling by the event loop concerned.  See the documentation on
+;; the make-event-loop procedure for further information about that.
+;;
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up (that is, before the worker thread starts), which
 ;; shouldn't happen unless memory is exhausted or pthread has run out
@@ -956,6 +967,9 @@
 ;; order to enable backpressure to be supplied if the 'worker' event
 ;; loop becomes overloaded: see the documentation on the
 ;; make-event-loop procedure for further information about that.
+;; (This procedure calls event-post! in both the 'waiter' and 'worker'
+;; event loops by the respective threads of the other, so either could
+;; be subject to throttling.)
 ;;
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up, which shouldn't happen unless memory is exhausted or
@@ -999,6 +1013,14 @@
 ;;
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.
+;;
+;; This procedure calls event-post! in the event loop concerned.  This
+;; is done in the same thread as that in which the event loop runs so
+;; it cannot of itself be throttled.  However it may contribute to the
+;; number of accumulated unexecuted tasks in the event loop and
+;; therefore contribute to the throttling of other threads by the
+;; loop.  See the documentation on the make-event-loop procedure for
+;; further information about that.
 ;;
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up (that is, before the task starts), which shouldn't
