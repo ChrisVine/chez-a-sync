@@ -541,10 +541,10 @@ as non-blocking to prevent a blocking read where it is not expected.
      event-post!  - see the documentation on make-event-loop for further
      details.
 
-     The 'el' (event loop) argument is optional: this procedure operates
-     on the event loop passed in as an argument, or if none is passed
-     (or #f is passed), on the default event loop.  This procedure is
-     thread safe - any thread may call it.
+     The 'loop' (event loop) argument is optional: this procedure
+     operates on the event loop passed in as an argument, or if none is
+     passed (or #f is passed), on the default event loop.  This
+     procedure is thread safe - any thread may call it.
 
      This procedure is first available in version 0.4 of this library.
 
@@ -1223,7 +1223,7 @@ Tag Table:
 Node: Top83
 Node: coroutines991
 Node: event loop14672
-Node: compose55409
-Node: try60909
+Node: compose55411
+Node: try60911
 
 End Tag Table
