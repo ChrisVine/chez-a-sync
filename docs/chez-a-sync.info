@@ -319,6 +319,8 @@ to call a wrapper for the poll() system call.  This has the consequence
 that in linux poll() applied to sockets can give rise to spurious
 wake-ups, which means that it may be best with sockets to set the socket
 as non-blocking to prevent a blocking read where it is not expected.
+Non-blocking ports are handled correctly by the await-getline!,
+await-geteveryline!  and await-getsomelines!  procedures.
 
    This library files provides the following procedures:
 
@@ -1223,7 +1225,7 @@ Tag Table:
 Node: Top83
 Node: coroutines991
 Node: event loop14672
-Node: compose55411
-Node: try60911
+Node: compose55533
+Node: try61033
 
 End Tag Table
