@@ -149,8 +149,9 @@
 ;; callback is ready to let it resume.  When it unblocks, the 'await'
 ;; argument returns the value (if any) passed to 'resume' by the
 ;; callback.  This async procedure must be called in the same thread
-;; as that in which the event loop runs.
-
+;; as that in which the event loop runs (as must 'await' and
+;; 'resume').
+;;
 ;; None of the code in the waitable procedure should block on other
 ;; things in the program, except by calls to await (which do not in
 ;; fact block, even though they appear to do so).

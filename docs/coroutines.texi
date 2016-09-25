@@ -65,7 +65,8 @@ callback, and the 'await' argument must only be called by the waitable
 procedure in order to block until the callback is ready to let it
 resume.  When it unblocks, the 'await' argument returns the value (if
 any) passed to 'resume' by the callback.  This async procedure must be
-called in the same thread as that in which the event loop runs.
+called in the same thread as that in which the event loop runs (as
+must 'await' and 'resume').
 
 None of the code in the waitable procedure should block on other
 things in the program, except by calls to await (which do not in fact
@@ -210,18 +211,36 @@ or this, to loop asynchronously with a series of results:
 @example
 (set-default-event-loop!) ;; if none has yet been set
 (a-sync (lambda (await resume)
+	  ;; executing task in event loop thread
 	  (event-post! (lambda ()
 			 (let loop ([count 0])
 			   (if (< count 5)
 			       (begin
-				 (resume count)
+				 (resume (* 2 count))
 				 (loop (1+ count)))
 			       (resume 'stop-iteration)))))
 	  (let loop ()
 	    (let ([res (await)])
 	      (when (not (eq? 'stop-iteration res))
 		(display res)(newline)
-		(loop))))))
+		(loop))))
+
+	  ;; executing task in a worker thread
+	  (fork-thread
+	   (lambda ()
+	     (let loop ([count 5])
+	       (if (< count 10)
+		   (begin
+		     (event-post! (lambda () (resume (* 2 count))))
+		     (loop (1+ count)))
+		   (event-post! (lambda () (resume 'stop-iteration)))))))
+	  (let loop ()
+	    (let ([res (await)])
+	      (when (not (eq? 'stop-iteration res))
+		(display res)(newline)
+		(loop))))
+	  (event-loop-block! #f)))
+(event-loop-block! #t) ;; worker thread in operation
 (event-loop-run!)
 @end example
 
