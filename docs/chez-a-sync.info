@@ -48,6 +48,9 @@ The (a-sync coroutines) library file provides the following procedures:
      with a lambda closure.  It is similar to ECMAScript generators and
      python generators.
 
+     If 'proc' raises a continuable exception, it will be converted by
+     this procedure into a non-continuable exception.
+
  -- Scheme Procedure: make-coroutine proc . args
      This procedure takes a generator procedure, namely a procedure
      which has a 'yield' parameter for its first or only argument,
@@ -75,6 +78,9 @@ The (a-sync coroutines) library file provides the following procedures:
      with a continuation value of #f.  This differs from the behaviour
      of make-iterator, which returns 'stop-iteration when the generator
      procedure finishes to completion and ignores its return value.
+
+     If 'proc' raises a continuable exception, it will be converted by
+     this procedure into a non-continuable exception.
 
  -- Scheme Procedure: a-sync waitable . args
      a-sync takes a waitable procedure (namely a procedure which takes
@@ -108,7 +114,7 @@ The (a-sync coroutines) library file provides the following procedures:
      the point where the most recent previous call to 'resume' was made
      by the last callback to execute.
 
-     An exception thrown in a waitable procedure before the first call
+     An exception raised in a waitable procedure before the first call
      to 'await' to be made by it which is not handled locally will
      propagate out of the a-sync procedure where it may be caught
      normally.  However, if so caught but a callback established by the
@@ -118,18 +124,26 @@ The (a-sync coroutines) library file provides the following procedures:
      the event-loop library file is used, this means that it will
      propagate out of the call to event-loop-run!.  It is therefore best
      if such exceptions are handled locally within the waitable
-     procedure.  Any exception thrown in the waitable procedure after
+     procedure.  Any exception raised in the waitable procedure after
      the first call to 'await' which is not handled locally will
-     propagate out of a-sync, where it may be caught, but again it is
-     best if it is handled within the waitable procedure.  If a callback
-     throws an exception, then it will propagate out of the event loop -
-     if the event loop in the event-loop library is used, this means
-     that it will propagate out of the call to event-loop-run!.  If an
-     exception propagates out of event-loop-run!  for that or some other
-     reason, then the event loop will be left in a valid state and it
-     will be as if event-loop-quit!  had been called on it, but it is
+     propagate into the previously called callback at the point where
+     'resume' was last called.  If this is handled in the callback, then
+     control will be returned to the event loop and the remainder of the
+     waitable procedure will not execute.  If that exception is not
+     handled locally in the callback, or if the callback raises an
+     exception of its own, then it will propagate out of the event loop
+     - if the event loop in the event-loop library file is used, this
+     means that it will propagate out of the call to event-loop-run!.
+     If an exception propagates out of event-loop-run!  for that or some
+     other reason, then the event loop will be left in a valid state and
+     it will be as if event-loop-quit!  had been called on it, but it is
      then up to the user to catch that exception once it is out of
      event-loop-run!  if she does not want the program to terminate.
+
+     With respect to what has been said about exceptions, one further
+     feature is that if the waitable procedure raises a continuable
+     exception which is not handled locally, it will be converted by
+     this procedure into a non-continuable exception.
 
      After the call to 'resume', the callback should normally just
      return (with a #t or #f value in the case of a file watch or a
@@ -946,13 +960,8 @@ await-geteveryline!  and await-getsomelines!  procedures.
      Exceptions may propagate out of this procedure if they arise while
      setting up (that is, before the first call to 'await' is made),
      which shouldn't happen unless memory is exhausted.  Subsequent
-     exceptions can emerge out of two places.  If they arise from port
-     errors, they will propagate out of event-loop-run!.  However, if
-     'proc' throws they will emerge out of this procedure and if user
-     code wants to deal with them, the user should put an exception
-     handler or guard block directly around the call to
-     await-geteveryline!.  Memory exhaustion could also cause exceptions
-     to propagate out of event-loop-run!  or this procedure.
+     exceptions (say, because of port errors) will propagate out of
+     event-loop-run!.
 
      If a continuable exception propagates out of this procedure, it
      will be converted into a non-continuable one (continuable
@@ -1010,13 +1019,8 @@ await-geteveryline!  and await-getsomelines!  procedures.
      Exceptions may propagate out of this procedure if they arise while
      setting up (that is, before the first call to 'await' is made),
      which shouldn't happen unless memory is exhausted.  Subsequent
-     exceptions can emerge out of two places.  If they arise from port
-     errors, they will propagate out of event-loop-run!.  However, if
-     'proc' throws they will emerge out of this procedure and if user
-     code wants to deal with them, the user should put an exception
-     handler or guard block directly around the call to
-     await-getsomelines!.  Memory exhaustion could also cause exceptions
-     to propagate out of event-loop-run!  or this procedure.
+     exceptions (say, because of port errors) will propagate out of
+     event-loop-run!.
 
      If a continuable exception propagates out of this procedure, it
      will be converted into a non-continuable one (continuable
@@ -1265,8 +1269,8 @@ exceptions.
 Tag Table:
 Node: Top83
 Node: coroutines991
-Node: event loop16330
-Node: compose57191
-Node: try62691
+Node: event loop17057
+Node: compose57160
+Node: try62660
 
 End Tag Table

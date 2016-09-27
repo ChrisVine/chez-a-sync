@@ -189,7 +189,44 @@
   (close-port out)
   (close-port in))
 
-;; Test 9: await-getsomelines! exception handling (also tests 'try' and strategy for await-geteveryline!)
+;; Test 9: await-getsomelines! exception handling (also tests strategy for await-geteveryline!)
+;; exception propagates out of event-loop-run!
+(let-values ([(in out) (make-pipe (buffer-mode block)
+				  (buffer-mode block)
+                                  (make-transcoder (latin-1-codec)))])
+  (define count 0)
+  (a-sync (lambda (await resume)
+	    (await-getsomelines! await resume
+				 main-loop
+				 in
+				 (lambda (line k)
+				   (set! count (1+ count))
+				   (when (= count 1)
+					 (assert (string=? line "test-string1")))
+				   (when (= count 2)
+					 (raise 'exit-exception))
+				   (when (= count 3)
+					 (assert #f)))) ;; we should never reach here
+	    (assert #f))) ;; we should never reach here
+  (put-string out "test-string1")
+  (newline out)
+  (put-string out "test-string2")
+  (newline out)
+  (put-string out "test-string3")
+  (newline out)
+  (flush-output-port out)
+  (try
+   (event-loop-run! main-loop)
+   (assert #f) ;; we should never reach here
+   (except c 
+	   [else
+	    (assert (eq? c 'exit-exception))]))
+  (close-port out)
+  (close-port in)
+  (test-result 2 count)
+  (print-result))
+
+;; Test 10: await-getsomelines! exception handling (also tests 'try' and strategy for await-geteveryline!)
 ;; exception caught within a-sync block
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -225,7 +262,7 @@
   (test-result 2 count)
   (print-result))
 
-;; Test 10: a-sync-write-watch!
+;; Test 11: a-sync-write-watch!
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -259,7 +296,7 @@
 	    (print-result)))
   (event-loop-run! main-loop))
 
-;; Test 11: compose-a-sync and no-await
+;; Test 12: compose-a-sync and no-await
 
 (compose-a-sync main-loop ((res (await-task-in-thread! (lambda ()
 							 (+ 5 10)))))
@@ -274,7 +311,7 @@
 (event-loop-block! #f main-loop)
 (set-default-event-loop! main-loop)
 
-;; Test 12: await-task!
+;; Test 13: await-task!
 
 (a-sync (lambda (await resume)
 	  (let ((res
@@ -285,7 +322,7 @@
 	    (print-result))))
 (event-loop-run!)
 
-;; Test 13: await-task-in-thread! without handler
+;; Test 14: await-task-in-thread! without handler
 
 ;; set a new default event loop
 (set-default-event-loop!)
@@ -302,7 +339,7 @@
 (event-loop-run!)
 (event-loop-block! #f)
   
-;; Test 14: await-task-in-thread! without handler (explicit loop argument)
+;; Test 15: await-task-in-thread! without handler (explicit loop argument)
 
 (a-sync (lambda (await resume)
 	  (let ((res
@@ -316,7 +353,7 @@
 (event-loop-run!)
 (event-loop-block! #f)
   
-;; Test 15: await-task-in-thread! with handler
+;; Test 16: await-task-in-thread! with handler
 
 (a-sync (lambda (await resume)
 	  (let ((res
@@ -333,7 +370,7 @@
 (event-loop-run!)
 (event-loop-block! #f)
 
-;; Test 16: await-task-in-event-loop!
+;; Test 17: await-task-in-event-loop!
 
 (let ()
   (define worker (make-event-loop 10 100000))
@@ -356,7 +393,7 @@
 	      (event-loop-block! #f worker))))
   (event-loop-run!))
 
-;; Test 17: await-timeout!
+;; Test 18: await-timeout!
 
 (a-sync (lambda (await resume)
 	  (let ((res
@@ -367,7 +404,7 @@
 	    (print-result))))
 (event-loop-run!)
   
-;; Test 18: await-getline! (also tests a-sync-read-watch!)
+;; Test 19: await-getline! (also tests a-sync-read-watch!)
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -384,7 +421,7 @@
   (close-port out)
   (close-port in))
 
-;; Test 19: await-geteveryline! (also tests a-sync-read-watch!)
+;; Test 20: await-geteveryline! (also tests a-sync-read-watch!)
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -411,7 +448,7 @@
   (event-loop-run!)
   (close-port in))
 
-;; Test 20: await-getsomelines! (also tests a-sync-read-watch!)
+;; Test 21: await-getsomelines! (also tests a-sync-read-watch!)
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -443,7 +480,43 @@
   (close-port out)
   (close-port in))
 
-;; Test 21: await-getsomelines! exception handling (also tests 'try' and strategy for await-geteveryline!)
+;; Test 22: await-getsomelines! exception handling (also tests strategy for await-geteveryline!)
+;; exception propagates out of event-loop-run!
+(let-values ([(in out) (make-pipe (buffer-mode block)
+				  (buffer-mode block)
+                                  (make-transcoder (latin-1-codec)))])
+  (define count 0)
+  (a-sync (lambda (await resume)
+	    (await-getsomelines! await resume
+				 in
+				 (lambda (line k)
+				   (set! count (1+ count))
+				   (when (= count 1)
+					 (assert (string=? line "test-string1")))
+				   (when (= count 2)
+					 (raise 'exit-exception))
+				   (when (= count 3)
+					 (assert #f)))) ;; we should never reach here
+	    (assert #f))) ;; we should never reach here
+  (put-string out "test-string1")
+  (newline out)
+  (put-string out "test-string2")
+  (newline out)
+  (put-string out "test-string3")
+  (newline out)
+  (flush-output-port out)
+  (try
+   (event-loop-run!)
+   (assert #f) ;; we should never reach here
+   (except c 
+	   [else
+	    (assert (eq? c 'exit-exception))]))
+  (close-port out)
+  (close-port in)
+  (test-result 2 count)
+  (print-result))
+
+;; Test 23: await-getsomelines! exception handling (also tests 'try' and strategy for await-geteveryline!)
 ;; exception caught within a-sync block
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -478,7 +551,7 @@
   (test-result 2 count)
   (print-result))
 
-;; Test 22: a-sync-write-watch!
+;; Test 24: a-sync-write-watch!
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -511,7 +584,7 @@
 	    (print-result)))
   (event-loop-run!))
 
-;; Test 23: compose-a-sync and no-await
+;; Test 25: compose-a-sync and no-await
 
 (compose-a-sync ((res (await-task-in-thread! (lambda ()
 					       (+ 5 10)))))

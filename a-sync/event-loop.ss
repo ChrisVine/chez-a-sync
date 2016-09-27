@@ -1222,13 +1222,8 @@
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up (that is, before the first call to 'await' is made),
 ;; which shouldn't happen unless memory is exhausted.  Subsequent
-;; exceptions can emerge out of two places.  If they arise from port
-;; errors, they will propagate out of event-loop-run!.  However, if
-;; 'proc' throws they will emerge out of this procedure and if user
-;; code wants to deal with them, the user should put an exception
-;; handler or guard block directly around the call to
-;; await-geteveryline!.  Memory exhaustion could also cause exceptions
-;; to propagate out of event-loop-run! or this procedure.
+;; exceptions (say, because of port errors) will propagate out of
+;; event-loop-run!.
 ;;
 ;; If a continuable exception propagates out of this procedure, it
 ;; will be converted into a non-continuable one (continuable
@@ -1345,13 +1340,8 @@
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up (that is, before the first call to 'await' is made),
 ;; which shouldn't happen unless memory is exhausted.  Subsequent
-;; exceptions can emerge out of two places.  If they arise from port
-;; errors, they will propagate out of event-loop-run!.  However, if
-;; 'proc' throws they will emerge out of this procedure and if user
-;; code wants to deal with them, the user should put an exception
-;; handler or guard block directly around the call to
-;; await-getsomelines!.  Memory exhaustion could also cause exceptions
-;; to propagate out of event-loop-run! or this procedure.
+;; exceptions (say, because of port errors) will propagate out of
+;; event-loop-run!.
 ;;
 ;; If a continuable exception propagates out of this procedure, it
 ;; will be converted into a non-continuable one (continuable

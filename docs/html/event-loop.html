@@ -703,13 +703,7 @@ thread as that in which the event loop runs.
 <p>Exceptions may propagate out of this procedure if they arise while
 setting up (that is, before the first call to &rsquo;await&rsquo; is made), which
 shouldn&rsquo;t happen unless memory is exhausted.  Subsequent exceptions
-can emerge out of two places.  If they arise from port errors, they
-will propagate out of event-loop-run!.  However, if &rsquo;proc&rsquo; throws they
-will emerge out of this procedure and if user code wants to deal with
-them, the user should put an exception handler or guard block directly
-around the call to await-geteveryline!.  Memory exhaustion could also
-cause exceptions to propagate out of event-loop-run! or this
-procedure.
+(say, because of port errors) will propagate out of event-loop-run!.
 </p>
 <p>If a continuable exception propagates out of this procedure, it will
 be converted into a non-continuable one (continuable exceptions are
@@ -769,13 +763,7 @@ thread as that in which the event loop runs.
 <p>Exceptions may propagate out of this procedure if they arise while
 setting up (that is, before the first call to &rsquo;await&rsquo; is made), which
 shouldn&rsquo;t happen unless memory is exhausted.  Subsequent exceptions
-can emerge out of two places.  If they arise from port errors, they
-will propagate out of event-loop-run!.  However, if &rsquo;proc&rsquo; throws they
-will emerge out of this procedure and if user code wants to deal with
-them, the user should put an exception handler or guard block directly
-around the call to await-getsomelines!.  Memory exhaustion could also
-cause exceptions to propagate out of event-loop-run! or this
-procedure.
+(say, because of port errors) will propagate out of event-loop-run!.
 </p>
 <p>If a continuable exception propagates out of this procedure, it will
 be converted into a non-continuable one (continuable exceptions are

@@ -79,6 +79,9 @@ executed can receive starting arguments in addition to the yield/break
 argument, to provide an alternative to binding them with a lambda
 closure.  It is similar to ECMAScript generators and python
 generators.
+</p>
+<p>If &rsquo;proc&rsquo; raises a continuable exception, it will be converted by this
+procedure into a non-continuable exception.
 </p></dd></dl>
 
 <dl>
@@ -108,6 +111,9 @@ evaluates is returned by the resumption continuation together with a
 continuation value of #f.  This differs from the behaviour of
 make-iterator, which returns &rsquo;stop-iteration when the generator
 procedure finishes to completion and ignores its return value.
+</p>
+<p>If &rsquo;proc&rsquo; raises a continuable exception, it will be converted by this
+procedure into a non-continuable exception.
 </p></dd></dl>
 
 <dl>
@@ -142,7 +148,7 @@ event loop by recommencing execution at the point where the most
 recent previous call to &rsquo;resume&rsquo; was made by the last callback to
 execute.
 </p>
-<p>An exception thrown in a waitable procedure before the first call to
+<p>An exception raised in a waitable procedure before the first call to
 &rsquo;await&rsquo; to be made by it which is not handled locally will propagate
 out of the a-sync procedure where it may be caught normally.  However,
 if so caught but a callback established by the same waitable procedure
@@ -151,18 +157,26 @@ that callback, where it will be uncatchable, and then out of the event
 loop - if the event loop in the event-loop library file is used, this
 means that it will propagate out of the call to event-loop-run!.  It
 is therefore best if such exceptions are handled locally within the
-waitable procedure.  Any exception thrown in the waitable procedure
+waitable procedure.  Any exception raised in the waitable procedure
 after the first call to &rsquo;await&rsquo; which is not handled locally will
-propagate out of a-sync, where it may be caught, but again it is best
-if it is handled within the waitable procedure.  If a callback throws
-an exception, then it will propagate out of the event loop - if the
-event loop in the event-loop library is used, this means that it will
+propagate into the previously called callback at the point where
+&rsquo;resume&rsquo; was last called.  If this is handled in the callback, then
+control will be returned to the event loop and the remainder of the
+waitable procedure will not execute.  If that exception is not handled
+locally in the callback, or if the callback raises an exception of its
+own, then it will propagate out of the event loop - if the event loop
+in the event-loop library file is used, this means that it will
 propagate out of the call to event-loop-run!.  If an exception
 propagates out of event-loop-run! for that or some other reason, then
 the event loop will be left in a valid state and it will be as if
 event-loop-quit! had been called on it, but it is then up to the user
 to catch that exception once it is out of event-loop-run! if she does
 not want the program to terminate.
+</p>
+<p>With respect to what has been said about exceptions, one further
+feature is that if the waitable procedure raises a continuable
+exception which is not handled locally, it will be converted by this
+procedure into a non-continuable exception.
 </p>
 <p>After the call to &rsquo;resume&rsquo;, the callback should normally just return
 (with a #t or #f value in the case of a file watch or a timeout on an

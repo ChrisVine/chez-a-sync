@@ -19,7 +19,8 @@
    make-iterator
    make-coroutine
    a-sync)
-  (import (chezscheme))
+  (import (a-sync try)
+	  (chezscheme))
 
 
 ;; this procedure takes a generator procedure, namely a procedure
@@ -43,6 +44,9 @@
 ;; yield/break argument, to provide an alternative to binding them
 ;; with a lambda closure.  It is similar to ECMAScript generators and
 ;; python generators.
+;;
+;; If 'proc' raises a continuable exception, it will be converted by
+;; this procedure into a non-continuable exception.
 (define (make-iterator proc . args)
   (define prompt-cont #f)
   (define iter-cont #f)
@@ -54,26 +58,26 @@
        (call/cc
 	(lambda (k)
 	  (set! iter-cont k)
-	  (prompt-cont arg)))]))
+	  (prompt-cont (lambda () arg))))]))
   (define iter
     (case-lambda
       [() (iter #f)]
       [(send-back)
        (if done
 	   'stop-iteration
-	   (call/cc
-	    (lambda (k)
-	      (set! prompt-cont k)
-	      (if iter-cont
-		  (iter-cont send-back)
-		  (begin
-		    (apply proc yield args)
-		    (set! done #t)
-		    ;; we have to invoke prompt-cont here explicitly
-		    ;; so that we exit at the continuation of the last
-		    ;; call to iter, not at the first one which
-		    ;; invoked proc
-		    (prompt-cont 'stop-iteration))))))]))
+	   ((call/cc
+	     (lambda (k)
+	       (set! prompt-cont k)
+	       (if iter-cont
+		   (iter-cont send-back)
+		   (begin
+		     ;; any exception must propagate in the context of
+		     ;; the current call to the iterator, not the
+		     ;; first
+		     (try (apply proc yield args)
+			  (except c (else (prompt-cont (lambda () (raise c))))))
+		     (set! done #t)
+		     (prompt-cont (lambda () 'stop-iteration))))))))]))
   iter)
 
 ;; this procedure takes a generator procedure, namely a procedure
@@ -102,6 +106,9 @@
 ;; with a continuation value of #f.  This differs from the behaviour
 ;; of make-iterator, which returns 'stop-iteration when the generator
 ;; procedure finishes to completion and ignores its return value.
+;;
+;; If 'proc' raises a continuable exception, it will be converted by
+;; this procedure into a non-continuable exception.
 (define (make-coroutine proc . args)
   (define prompt-cont #f)
   (define yield
@@ -114,28 +121,25 @@
 	    (case-lambda
 	      [() (resume #f)]
 	      [(arg)
-	       (call/cc
-		(lambda (kr)
-		  (set! prompt-cont kr)
-		  (ky arg)))]))
-	  (prompt-cont resume ret)))]))
+	       ((call/cc
+		 (lambda (kr)
+		   (set! prompt-cont kr)
+		   (ky arg))))]))
+	  (prompt-cont (lambda () (values resume ret)))))]))
   ;; 'arg' is ignored - it is provided only for consistency with the
   ;; interface of resume
   (define cor
     (case-lambda
       [() (cor #f)]
       [(arg)
-       (call/cc
-	(lambda (k)
-	  (set! prompt-cont k)
-	  ;; we have to pass the results of applying proc to a
-	  ;; variable 'ret' before passing it as a multiple value to
-	  ;; prompt-cont
-	  (let ([ret (apply proc yield args)])
-	    ;; we have to invoke prompt-cont here explicitly so that
-	    ;; we exit at the continuation of the last call to iter,
-	    ;; not at the first one which invoked proc
-	    (prompt-cont #f ret))))]))
+       ((call/cc
+	 (lambda (k)
+	   (set! prompt-cont k)
+	   ;; any exception must propagate in the context of the
+	   ;; current call to the coroutine, not the first
+	   (let ([ret (try (apply proc yield args)
+			   (except c (else (prompt-cont (lambda () (raise c))))))])
+	     (prompt-cont (lambda () (values #f ret)))))))]))
   cor)
      
 ;; a-sync takes a waitable procedure (namely a procedure which takes
@@ -169,7 +173,7 @@
 ;; the point where the most recent previous call to 'resume' was made
 ;; by the last callback to execute.
 ;;
-;; An exception thrown in a waitable procedure before the first call
+;; An exception raised in a waitable procedure before the first call
 ;; to 'await' to be made by it which is not handled locally will
 ;; propagate out of the a-sync procedure where it may be caught
 ;; normally.  However, if so caught but a callback established by the
@@ -179,18 +183,26 @@
 ;; the event-loop library file is used, this means that it will
 ;; propagate out of the call to event-loop-run!.  It is therefore best
 ;; if such exceptions are handled locally within the waitable
-;; procedure.  Any exception thrown in the waitable procedure after
+;; procedure.  Any exception raised in the waitable procedure after
 ;; the first call to 'await' which is not handled locally will
-;; propagate out of a-sync, where it may be caught, but again it is
-;; best if it is handled within the waitable procedure.  If a callback
-;; throws an exception, then it will propagate out of the event loop -
-;; if the event loop in the event-loop library is used, this means
-;; that it will propagate out of the call to event-loop-run!.  If an
-;; exception propagates out of event-loop-run! for that or some other
-;; reason, then the event loop will be left in a valid state and it
-;; will be as if event-loop-quit! had been called on it, but it is
+;; propagate into the previously called callback at the point where
+;; 'resume' was last called.  If this is handled in the callback, then
+;; control will be returned to the event loop and the remainder of the
+;; waitable procedure will not execute.  If that exception is not
+;; handled locally in the callback, or if the callback raises an
+;; exception of its own, then it will propagate out of the event loop
+;; - if the event loop in the event-loop library file is used, this
+;; means that it will propagate out of the call to event-loop-run!.
+;; If an exception propagates out of event-loop-run! for that or some
+;; other reason, then the event loop will be left in a valid state and
+;; it will be as if event-loop-quit! had been called on it, but it is
 ;; then up to the user to catch that exception once it is out of
 ;; event-loop-run! if she does not want the program to terminate.
+;;
+;; With respect to what has been said about exceptions, one further
+;; feature is that if the waitable procedure raises a continuable
+;; exception which is not handled locally, it will be converted by
+;; this procedure into a non-continuable exception.
 ;;
 ;; After the call to 'resume', the callback should normally just
 ;; return (with a #t or #f value in the case of a file watch or a
