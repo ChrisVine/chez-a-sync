@@ -95,26 +95,28 @@ An exception raised in a waitable procedure before the first call to
 'await' to be made by it which is not handled locally will propagate
 out of the a-sync procedure where it may be caught normally.  However,
 if so caught but a callback established by the same waitable procedure
-call still runs, the exception will re-propagate out of 'resume' in
-that callback, where it will be uncatchable, and then out of the event
-loop - if the event loop in the event-loop library file is used, this
-means that it will propagate out of the call to event-loop-run!.  It
-is therefore best if such exceptions are handled locally within the
-waitable procedure.  Any exception raised in the waitable procedure
-after the first call to 'await' which is not handled locally will
-propagate into the previously called callback at the point where
-'resume' was last called.  If this is handled in the callback, then
-control will be returned to the event loop and the remainder of the
-waitable procedure will not execute.  If that exception is not handled
-locally in the callback, or if the callback raises an exception of its
-own, then it will propagate out of the event loop - if the event loop
-in the event-loop library file is used, this means that it will
-propagate out of the call to event-loop-run!.  If an exception
-propagates out of event-loop-run! for that or some other reason, then
-the event loop will be left in a valid state and it will be as if
-event-loop-quit! had been called on it, but it is then up to the user
-to catch that exception once it is out of event-loop-run! if she does
-not want the program to terminate.
+call still runs and invokes 'resume', the waitable procedure will
+begin running again in the callback.  If the same exception is raised
+again in consequence, it will propagate out of 'resume' in that
+callback, and then out of the event loop - if the event loop in the
+event-loop library file is used, this means that it will propagate out
+of the call to event-loop-run!.  It is therefore best if such
+exceptions are handled locally within the waitable procedure.  Any
+exception raised in the waitable procedure after the first call to
+'await' which is not handled locally will propagate into the
+previously called callback at the point where 'resume' was last
+called.  If this is handled in the callback, then control will be
+returned to the event loop and the remainder of the waitable procedure
+will not execute.  If that exception is not handled locally in the
+callback, or if the callback raises an exception of its own, then it
+will propagate out of the event loop - if the event loop in the
+event-loop library file is used, this means that it will propagate out
+of the call to event-loop-run!.  If an exception propagates out of
+event-loop-run! for that or some other reason, then the event loop
+will be left in a valid state and it will be as if event-loop-quit!
+had been called on it, but it is then up to the user to catch that
+exception once it is out of event-loop-run! if she does not want the
+program to terminate.
 
 With respect to what has been said about exceptions, one further
 feature is that if the waitable procedure raises a continuable
