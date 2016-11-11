@@ -252,13 +252,12 @@ The (a-sync coroutines) library file provides the following procedures:
           (set-default-event-loop!) ;; if none has yet been set
           (a-sync (lambda (await resume)
           	  ;; executing task in event loop thread
-          	  (event-post! (lambda ()
-          			 (let loop ([count 0])
-          			   (if (< count 5)
-          			       (begin
-          				 (resume (* 2 count))
-          				 (loop (1+ count)))
-          			       (resume 'stop-iteration)))))
+          	  (let loop ([count 0])
+          	    (if (< count 5)
+          		(begin
+          		  (event-post! (lambda () (resume (* 2 count))))
+          		  (loop (+ count 1)))
+          		(event-post! (lambda () (resume 'stop-iteration)))))
           	  (let loop ()
           	    (let ([res (await)])
           	      (when (not (eq? 'stop-iteration res))
@@ -320,9 +319,35 @@ The (a-sync coroutines) library file provides the following procedures:
           				 (+ 1 1))))))
           (event-loop-run!)
 
+     or this, to loop asynchronously with a series of results:
+
+          (set-default-event-loop!) ;; if none has yet been set
+          (a-sync (lambda (await resume)
+          	  (await-generator! await resume
+          			    (lambda (yield)
+          			      (let loop ([count 0])
+          				(when (< count 5)
+          				  (yield (* 2 count))
+          				  (loop (+ count 1)))))
+          			    (lambda (val)
+          			      (display val)
+          			      (newline)))
+                    (await-generator-in-thread! await resume
+          				      (lambda (yield)
+          					(let loop ([count 5])
+          					  (when (< count 10)
+          					    (yield (* 2 count))
+          					    (loop (+ count 1)))))
+          				      (lambda (val)
+          					(display val)
+          					(newline)))
+          	  (event-loop-block! #f)))
+          (event-loop-block! #t) ;; worker thread in operation
+          (event-loop-run!)
+
      Or the compose-a-sync macro in the *note compose: compose. library
-     file can be used so that the last two examples are constructed as
-     follows (in this first case the two asynchronous operations run
+     file can be used so that these examples are constructed as follows
+     (in this first case the two asynchronous operations run
      consecutively)
 
           (set-default-event-loop!) ;; if none has yet been set
@@ -346,6 +371,30 @@ The (a-sync coroutines) library file provides the following procedures:
           (compose-a-sync ([ret (await-task! (lambda ()
           				     (+ 1 1)))])
           	   ((no-await (format #t "1 + 1 is ~a\n" ret))))
+          (event-loop-run!)
+
+     or this, to loop asynchronously with a series of results:
+
+          (set-default-event-loop!) ;; if none has yet been set
+          (compose-a-sync ()
+          		(await-generator! (lambda (yield)
+          				    (let loop ([count 0])
+          				      (when (< count 5)
+          					(yield (* 2 count))
+          					(loop (+ count 1)))))
+          				  (lambda (val)
+          				    (display val)
+          				    (newline)))
+          		(await-generator-in-thread! (lambda (yield)
+          					      (let loop ([count 5])
+          						(when (< count 10)
+          						  (yield (* 2 count))
+          						  (loop (+ count 1)))))
+          					    (lambda (val)
+          					      (display val)
+          					      (newline)))
+          		((no-await (event-loop-block! #f))))
+          (event-loop-block! #t) ;; worker thread in operation
           (event-loop-run!)
 
 
@@ -723,9 +772,9 @@ await-geteveryline!  and await-getsomelines!  procedures.
      This procedure is first available in version 0.4 of this library.
 
      Here is an example of the use of await-task-in-event-loop!:
-          (define waiter (make-event-loop))
+          (set-default-event-loop!)     ;; if none has yet been set
           (define worker (make-event-loop))
-          (event-loop-block! #t waiter)
+          (event-loop-block! #t)        ;; because the task runs in another thread
           (event-loop-block! #t worker)
 
           (fork-thread
@@ -734,11 +783,13 @@ await-geteveryline!  and await-getsomelines!  procedures.
 
           (a-sync (lambda (await resume)
           	  (let ([res
-          		 (await-task-in-event-loop! await resume waiter worker
+          		 (await-task-in-event-loop! await resume worker
           					    (lambda ()
           					      (+ 5 10)))])
           	    (format #t "~a\n" res)
-          (event-loop-run! waiter)
+          	    (event-loop-block! #f worker)
+          	    (event-loop-block! #f))))
+          (event-loop-run!)
 
  -- Scheme Procedure: await-task! await resume [loop] thunk
      The 'loop' argument is optional.  This is a convenience procedure
@@ -781,6 +832,201 @@ await-geteveryline!  and await-getsomelines!  procedures.
           				 (+ 1 1))))))
           (event-loop-run!)
 
+ -- Scheme Procedure: await-generator-in-thread! await resume [loop]
+          generator proc [handler]
+     The 'loop' and 'handler' arguments are optional.  The 'generator'
+     argument is a procedure taking one argument, namely a yield
+     argument (see the documentation on the make-iterator procedure for
+     further details).  This await-generator-in-thread!  procedure will
+     run 'generator' in its own worker thread, and whenever 'generator'
+     yields a value it will cause 'proc' to execute in the event loop
+     specified by the 'loop' argument (or in the default event loop if
+     no 'loop' argument is provided or if #f is provided as the 'loop'
+     argument - pattern matching is used to detect the type of the third
+     argument).
+
+     'proc' should be a procedure taking a single argument, namely the
+     value yielded by the generator.  If the optional 'handler' argument
+     is provided, then that handler will be run in the event loop thread
+     if 'generator' raises an exception; otherwise the program will
+     terminate if an unhandled exception propagates out of 'generator'.
+     'handler' should take a single argument, which will be the raised
+     condition object.
+
+     This procedure calls 'await' and will return when the generator has
+     finished or, if 'handler' is provided, upon the generator raising
+     an exception.  This procedure will return #f if the generator
+     completes normally, or 'chez-a-sync-thread-error if the generator
+     raises an exception and 'handler' is run.
+
+     This procedure is intended to be called in a waitable procedure
+     invoked by a-sync.  It will normally be necessary to call
+     event-loop-block!  before invoking this procedure.
+
+     This procedure must (like the a-sync procedure) be called in the
+     same thread as that in which the event loop runs.  As mentioned
+     above, the generator itself will run in its own thread.
+
+     As the worker thread calls event-post!, it might be subject to
+     throttling by the event loop concerned.  See the documentation on
+     the make-event-loop procedure for further information about that.
+
+     Exceptions may propagate out of this procedure if they arise while
+     setting up (that is, before the worker thread starts), which
+     shouldn't happen unless memory is exhausted or pthread has run out
+     of resources.  Exceptions arising during execution of the
+     generator, if not caught by a handler procedure, will terminate the
+     program.  Exceptions raised by the handler procedure will propagate
+     out of event-loop-run!.
+
+     This procedure is first available in version 0.6 of this library.
+
+     Here is an example of the use of await-generator-in-thread!:
+          (set-default-event-loop!) ;; if none has yet been set
+          (a-sync (lambda (await resume)
+                    (await-generator-in-thread! await resume
+          				      (lambda (yield)
+          					(let loop ([count 0])
+          					  (when (< count 5)
+          					    (yield (* 2 count))
+          					    (loop (+ count 1)))))
+          				      (lambda (val)
+          					(display val)
+          					(newline)))
+          	  (event-loop-block! #f)))
+          (event-loop-block! #t) ;; because the task runs in another thread
+          (event-loop-run!)
+
+ -- Scheme Procedure: await-generator-in-event-loop! await resume
+          [waiter] worker generator proc
+     The 'waiter' argument is optional.  The 'worker' argument is an
+     event loop running in a different thread than the one in which this
+     procedure is called, and is the one in which 'generator' will be
+     executed by posting an event to that loop.  The 'generator'
+     argument is a procedure taking one argument, namely a yield
+     argument (see the documentation on the make-iterator procedure for
+     further details), and whenever 'generator' yields a value this will
+     cause 'proc' to execute in the event loop specified by the 'waiter'
+     argument, or in the default event loop if no 'waiter' argument is
+     provided or if #f is provided as the 'waiter' argument.  'proc'
+     should be a procedure taking a single argument, namely the value
+     yielded by the generator.
+
+     This procedure is intended to be called in a waitable procedure
+     invoked by a-sync.  It will normally be necessary to call
+     event-loop-block!  on 'waiter' (or on the default event loop)
+     before invoking this procedure.
+
+     This procedure calls 'await' and will return when the generator has
+     finished.  It must (like the a-sync procedure) be called in the
+     same thread as that in which the 'waiter' or default event loop
+     runs (as the case may be).
+
+     This procedure acts, with await-task-in-event-loop!, as a form of
+     channel through which two different event loops may communicate.
+     It also offers a means by which a master event loop (the waiter or
+     default event loop) may allocate work to worker event loops for
+     execution.  It would be nice to have a pool of worker event loops
+     for the purpose, but that is a work for the future.
+
+     Depending on the circumstances, it may be desirable to provide
+     throttling arguments when constructing the 'worker' event loop, in
+     order to enable backpressure to be supplied if the 'worker' event
+     loop becomes overloaded: see the documentation on the
+     make-event-loop procedure for further information about that.
+     (This procedure calls event-post!  in both the 'waiter' and
+     'worker' event loops by the respective threads of the other, so
+     either could be subject to throttling.)
+
+     Exceptions may propagate out of this procedure if they arise while
+     setting up, which shouldn't happen unless memory is exhausted or
+     pthread has run out of resources.  Exceptions arising during
+     execution of the generator, if not caught locally, will propagate
+     out of the event-loop-run!  procedure called for the 'worker' event
+     loop.
+
+     This procedure is first available in version 0.6 of this library.
+
+     Here is an example of the use of await-generator-in-event-loop!:
+          (set-default-event-loop!)     ;; if none has yet been set
+          (define worker (make-event-loop))
+          (event-loop-block! #t)        ;; because the generator runs in another thread
+          (event-loop-block! #t worker)
+
+          (fork-thread
+           (lambda ()
+             (event-loop-run! worker)))
+
+          (a-sync (lambda (await resume)
+          	  (await-generator-in-event-loop! await resume worker
+          					  (lambda (yield)
+          					    (let loop ([count 0])
+          					      (when (< count 5)
+          						(yield (* 2 count))
+          						(loop (+ count 1)))))
+          					  (lambda (val)
+          					    (display val)
+          					    (newline)))
+          	  (event-loop-block! #f worker)
+          	  (event-loop-block! #f)))
+          (event-loop-run!)
+
+ -- Scheme Procedure: await-generator! await resume [loop] generator
+          proc
+     The 'loop' argument is optional.  The 'generator' argument is a
+     procedure taking one argument, namely a yield argument (see the
+     documentation on the make-iterator procedure for further details).
+     This await-generator!  procedure will run 'generator' in the event
+     loop specified by the 'loop' argument, or in the default event loop
+     if no 'loop' argument is provided or #f is provided as the 'loop'
+     argument.  Whenever 'generator' yields a value it will cause 'proc'
+     to execute in that event loop - each time 'proc' runs it will do so
+     as a separate event in the loop and so be multi-plexed with other
+     events.
+
+     This procedure is intended to be called in a waitable procedure
+     invoked by a-sync.  It is the single-threaded corollary of
+     await-generator-in-thread!.  This means that (unlike with
+     await-generator-in-thread!)  while 'generator' is running other
+     events in the event loop will not make progress, so blocking calls
+     (other than to the yield procedure) should not be made in
+     'generator'.  This procedure can be useful for the purpose of
+     implementing co-operative multi-tasking, say by composing tasks
+     with compose-a-sync (see compose.scm).
+
+     This procedure must (like the a-sync procedure) be called in the
+     same thread as that in which the event loop runs.
+
+     This procedure calls event-post!  in the event loop concerned.
+     This is done in the same thread as that in which the event loop
+     runs so it cannot of itself be throttled.  However it may
+     contribute to the number of accumulated unexecuted tasks in the
+     event loop and therefore contribute to the throttling of other
+     threads by the loop.  See the documentation on the make-event-loop
+     procedure for further information about that.
+
+     Exceptions may propagate out of this procedure if they arise while
+     setting up (that is, before the task starts), which shouldn't
+     happen unless memory is exhausted.  Exceptions arising during
+     execution of the generator, if not caught locally, will propagate
+     out of event-loop-run!.
+
+     This procedure is first available in version 0.6 of this library.
+
+     Here is an example of the use of await-generator!:
+          (set-default-event-loop!) ;; if none has yet been set
+          (a-sync (lambda (await resume)
+          	  (await-generator! await resume
+          			    (lambda (yield)
+          			      (let loop ([count 0])
+          				(when (< count 5)
+          				  (yield (* 2 count))
+          				  (loop (+ count 1)))))
+          			    (lambda (val)
+          			      (display val)
+          			      (newline)))))
+          (event-loop-run!)
+
  -- Scheme Procedure: await-timeout! await resume [loop] msecs thunk
      This is a convenience procedure for use with an event loop, which
      will run 'thunk' in the event loop thread when the timeout expires.
@@ -798,7 +1044,7 @@ await-geteveryline!  and await-getsomelines!  procedures.
      Exceptions may propagate out of this procedure if they arise while
      setting up (that is, before the first call to 'await' is made),
      which shouldn't happen unless memory is exhausted.  Exceptions
-     thrown by 'thunk', if not caught locally, will propagate out of
+     raised by 'thunk', if not caught locally, will propagate out of
      event-loop-run!.
 
      Here is an example of the use of event-timeout!:
@@ -843,10 +1089,10 @@ await-geteveryline!  and await-getsomelines!  procedures.
      a-sync procedure, it must (like the a-sync procedure) in practice
      be called in the same thread as that in which the event loop runs.
 
-     This procedure should not throw an exception unless memory is
-     exhausted.  If 'proc' throws, say because of port errors, and the
-     exception is not caught locally, it will propagate out of
-     event-loop-run!.
+     This procedure should not raise an exception unless memory is
+     exhausted.  If 'proc' raises an exception, say because of port
+     errors, and the exception is not caught locally, it will propagate
+     out of event-loop-run!.
 
      As an example of how to use a-sync-read-watch!, here is the
      implementation of await-getline!:
@@ -1142,14 +1388,15 @@ coroutines): coroutines. library file.
      arguments, and (if the optional 'loop' argument of this macro is
      used) takes the event loop as its third argument, followed by such
      further arguments as it requires.  All of the await-task!,
-     await-task-in-thread!, await-task-in-event-loop!, await-timeout!,
-     await-getline!, await-geteveryline!  and await-getsomelines!
-     procedures provided by the *note (a-sync event-loop): event loop.
-     library file are 'compose-a-sync'-capable.  In addition, to make an
-     ordinary body of code which does not block (and which does not need
-     to invoke a-sync's await procedure) usable by compose-a-sync, the
-     no-await macro can be used to generate a 'compose-a-sync'-capable
-     procedure for it (see below).
+     await-task-in-thread!, await-task-in-event-loop!, await-generator!,
+     await-generator-in-thread!, await-generator-in-event-loop!,
+     await-timeout!, await-getline!, await-geteveryline!  and
+     await-getsomelines!  procedures provided by the *note (a-sync
+     event-loop): event loop. library file are 'compose-a-sync'-capable.
+     In addition, to make an ordinary body of code which does not block
+     (and which does not need to invoke a-sync's await procedure) usable
+     by compose-a-sync, the no-await macro can be used to generate a
+     'compose-a-sync'-capable procedure for it (see below).
 
      Each binding is initialized as if sequentially (although it is done
      asynchronously on the relevant event loop).  An initialization does
@@ -1271,8 +1518,8 @@ exceptions.
 Tag Table:
 Node: Top83
 Node: coroutines991
-Node: event loop17165
-Node: compose57268
-Node: try62768
+Node: event loop19009
+Node: compose69027
+Node: try74610
 
 End Tag Table

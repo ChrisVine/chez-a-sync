@@ -99,7 +99,109 @@
 	      (event-loop-block! #f worker))))
   (event-loop-run! main-loop))
 
-;; Test 5: await-timeout!
+;; Test 5: await-generator!
+
+(let ()
+  (define lst '())
+  (a-sync (lambda (await resume)
+	    (await-generator! await resume main-loop
+			      (lambda (yield)
+				(let loop ([count 0])
+				  (when (< count 5)
+				    (yield (* 2 count))
+				    (loop (+ count 1)))))
+			      (lambda (val)
+				(set! lst (cons val lst))))
+	    (test-result (car lst) 8)
+	    (test-result (length lst) 5)
+	    (print-result)))
+  (event-loop-run! main-loop))
+
+;; Test 6: await-generator-in-thread! without handler
+
+(let ()
+  (define lst '())
+  (a-sync (lambda (await resume)
+	    (let ([res
+		   (await-generator-in-thread! await resume main-loop
+					       (lambda (yield)
+						 (let loop ([count 0])
+						   (when (< count 5)
+						     (yield (* 2 count))
+						     (loop (+ count 1)))))
+					       (lambda (val)
+						 (set! lst (cons val lst))))])
+	      (test-result (car lst) 8)
+	      (test-result (length lst) 5)
+	      (test-result res #f)
+	      (print-result)
+	      (event-loop-block! #f main-loop))))
+  (event-loop-block! #t main-loop)
+  (event-loop-run! main-loop))
+
+;; Test 7: await-generator-in-thread! with handler
+
+(let ()
+  (define lst '())
+  (a-sync (lambda (await resume)
+	    (let ([res
+		   (await-generator-in-thread! await resume main-loop
+					       (lambda (yield)
+						 (let loop ([count 0])
+						   (cond
+						    [(< count 5)
+						     (yield (* 2 count))
+						     (loop (+ count 1))]
+						    [(= count 5)
+						     (raise 'my-exception)
+						     ;; we never reach here
+						     (yield (* 2 count))
+						     (loop (+ count 1))]
+						    [else
+						     (assert #f)]))) ;; we should never reach here
+					       (lambda (val)
+						 (set! lst (cons val lst)))
+					       (lambda (c)
+						 (test-result c 'my-exception)
+						 (set! lst (cons 100 lst))))])
+	      (test-result (car lst) 100)
+	      (test-result (length lst) 6)
+	      (test-result res 'chez-a-sync-thread-error)
+	      (print-result)
+	      (event-loop-block! #f main-loop))))
+  (event-loop-block! #t main-loop)
+  (event-loop-run! main-loop))
+
+;; Test 8: await-generator-in-event-loop!
+
+(let ()
+  (define lst '())
+  (define worker (make-event-loop 10 100000))
+
+  (event-loop-block! #t main-loop)
+  (event-loop-block! #t worker)
+
+  (fork-thread
+   (lambda ()
+     (event-loop-run! worker)))
+
+  (a-sync (lambda (await resume)
+	    (await-generator-in-event-loop! await resume main-loop worker
+					    (lambda (yield)
+					      (let loop ([count 0])
+						(when (< count 5)
+						  (yield (* 2 count))
+						  (loop (+ count 1)))))
+					    (lambda (val)
+					      (set! lst (cons val lst))))
+	    (test-result (car lst) 8)
+	    (test-result (length lst) 5)
+	    (print-result)
+	    (event-loop-block! #f main-loop)))
+  (event-loop-block! #t main-loop)
+  (event-loop-run! main-loop))
+
+;; Test 9: await-timeout!
 
 (a-sync (lambda (await resume)
 	  (let ((res
@@ -110,7 +212,7 @@
 	    (print-result))))
 (event-loop-run! main-loop)
 
-;; Test 6: await-getline! (also tests a-sync-read-watch!)
+;; Test 10: await-getline! (also tests a-sync-read-watch!)
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -128,7 +230,7 @@
   (close-port out)
   (close-port in))
 
-;; Test 7: await-geteveryline! (also tests a-sync-read-watch!)
+;; Test 11: await-geteveryline! (also tests a-sync-read-watch!)
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -156,7 +258,7 @@
   (event-loop-run! main-loop)
   (close-port in))
 
-;; Test 8: await-getsomelines! (also tests a-sync-read-watch!)
+;; Test 12: await-getsomelines! (also tests a-sync-read-watch!)
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -189,7 +291,7 @@
   (close-port out)
   (close-port in))
 
-;; Test 9: await-getsomelines! exception handling (also tests strategy for await-geteveryline!)
+;; Test 13: await-getsomelines! exception handling (also tests strategy for await-geteveryline!)
 ;; exception propagates out of event-loop-run!
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -226,7 +328,7 @@
   (test-result 2 count)
   (print-result))
 
-;; Test 10: await-getsomelines! exception handling (also tests 'try' and strategy for await-geteveryline!)
+;; Test 14: await-getsomelines! exception handling (also tests 'try' and strategy for await-geteveryline!)
 ;; exception caught within a-sync block
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -262,7 +364,7 @@
   (test-result 2 count)
   (print-result))
 
-;; Test 11: a-sync-write-watch!
+;; Test 15: a-sync-write-watch!
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -296,7 +398,7 @@
 	    (print-result)))
   (event-loop-run! main-loop))
 
-;; Test 12: compose-a-sync and no-await
+;; Test 16: compose-a-sync and no-await
 
 (compose-a-sync main-loop ((res (await-task-in-thread! (lambda ()
 							 (+ 5 10)))))
@@ -311,7 +413,7 @@
 (event-loop-block! #f main-loop)
 (set-default-event-loop! main-loop)
 
-;; Test 13: await-task!
+;; Test 17: await-task!
 
 (a-sync (lambda (await resume)
 	  (let ((res
@@ -322,7 +424,7 @@
 	    (print-result))))
 (event-loop-run!)
 
-;; Test 14: await-task-in-thread! without handler
+;; Test 18: await-task-in-thread! without handler
 
 ;; set a new default event loop
 (set-default-event-loop!)
@@ -339,7 +441,7 @@
 (event-loop-run!)
 (event-loop-block! #f)
   
-;; Test 15: await-task-in-thread! without handler (explicit loop argument)
+;; Test 19: await-task-in-thread! without handler (explicit loop argument)
 
 (a-sync (lambda (await resume)
 	  (let ((res
@@ -353,7 +455,7 @@
 (event-loop-run!)
 (event-loop-block! #f)
   
-;; Test 16: await-task-in-thread! with handler
+;; Test 20: await-task-in-thread! with handler
 
 (a-sync (lambda (await resume)
 	  (let ((res
@@ -370,7 +472,7 @@
 (event-loop-run!)
 (event-loop-block! #f)
 
-;; Test 17: await-task-in-event-loop!
+;; Test 21: await-task-in-event-loop!
 
 (let ()
   (define worker (make-event-loop 10 100000))
@@ -393,7 +495,131 @@
 	      (event-loop-block! #f worker))))
   (event-loop-run!))
 
-;; Test 18: await-timeout!
+;; Test 22: await-generator!
+
+(let ()
+  (define lst '())
+  (a-sync (lambda (await resume)
+	    (await-generator! await resume
+			      (lambda (yield)
+				(let loop ([count 0])
+				  (when (< count 5)
+				    (yield (* 2 count))
+				    (loop (+ count 1)))))
+			      (lambda (val)
+				(set! lst (cons val lst))))
+	    (test-result (car lst) 8)
+	    (test-result (length lst) 5)
+	    (print-result)))
+  (event-loop-run!))
+
+;; Test 23: await-generator-in-thread! without handler
+
+(let ()
+  (define lst '())
+  (a-sync (lambda (await resume)
+	    (let ([res
+		   (await-generator-in-thread! await resume
+					       (lambda (yield)
+						 (let loop ([count 0])
+						   (when (< count 5)
+						     (yield (* 2 count))
+						     (loop (+ count 1)))))
+					       (lambda (val)
+						 (set! lst (cons val lst))))])
+	      (test-result (car lst) 8)
+	      (test-result (length lst) 5)
+	      (test-result res #f)
+	      (print-result)
+	      (event-loop-block! #f))))
+  (event-loop-block! #t)
+  (event-loop-run!))
+
+;; Test 24: await-generator-in-thread! without handler (explicit loop argument)
+
+(let ()
+  (define lst '())
+  (a-sync (lambda (await resume)
+	    (let ([res
+		   (await-generator-in-thread! await resume #f
+					       (lambda (yield)
+						 (let loop ([count 0])
+						   (when (< count 5)
+						     (yield (* 2 count))
+						     (loop (+ count 1)))))
+					       (lambda (val)
+						 (set! lst (cons val lst))))])
+	      (test-result (car lst) 8)
+	      (test-result (length lst) 5)
+	      (test-result res #f)
+	      (print-result)
+	      (event-loop-block! #f))))
+  (event-loop-block! #t)
+  (event-loop-run!))
+
+;; Test 25: await-generator-in-thread! with handler
+
+(let ()
+  (define lst '())
+  (a-sync (lambda (await resume)
+	    (let ([res
+		   (await-generator-in-thread! await resume
+					       (lambda (yield)
+						 (let loop ([count 0])
+						   (cond
+						    [(< count 5)
+						     (yield (* 2 count))
+						     (loop (+ count 1))]
+						    [(= count 5)
+						     (raise 'my-exception)
+						     ;; we never reach here
+						     (yield (* 2 count))
+						     (loop (+ count 1))]
+						    [else
+						     (assert #f)]))) ;; we should never reach here
+					       (lambda (val)
+						 (set! lst (cons val lst)))
+					       (lambda (c)
+						 (test-result c 'my-exception)
+						 (set! lst (cons 100 lst))))])
+	      (test-result (car lst) 100)
+	      (test-result (length lst) 6)
+	      (test-result res 'chez-a-sync-thread-error)
+	      (print-result)
+	      (event-loop-block! #f))))
+  (event-loop-block! #t)
+  (event-loop-run!))
+
+;; Test 26: await-generator-in-event-loop!
+
+(let ()
+  (define lst '())
+  (define worker (make-event-loop 10 100000))
+
+  (event-loop-block! #t)
+  (event-loop-block! #t worker)
+
+  (fork-thread
+   (lambda ()
+     (event-loop-run! worker)))
+
+  (a-sync (lambda (await resume)
+	    (await-generator-in-event-loop! await resume worker
+					    (lambda (yield)
+					      (let loop ([count 0])
+						(when (< count 5)
+						  (yield (* 2 count))
+						  (loop (+ count 1)))))
+					    (lambda (val)
+					      (set! lst (cons val lst))))
+	    (test-result (car lst) 8)
+	    (test-result (length lst) 5)
+	    (print-result)
+	    (event-loop-block! #f)))
+  (event-loop-block! #t)
+  (event-loop-run!))
+
+;; Test 27: await-timeout!
 
 (a-sync (lambda (await resume)
 	  (let ((res
@@ -404,7 +630,7 @@
 	    (print-result))))
 (event-loop-run!)
   
-;; Test 19: await-getline! (also tests a-sync-read-watch!)
+;; Test 28: await-getline! (also tests a-sync-read-watch!)
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -421,7 +647,7 @@
   (close-port out)
   (close-port in))
 
-;; Test 20: await-geteveryline! (also tests a-sync-read-watch!)
+;; Test 29: await-geteveryline! (also tests a-sync-read-watch!)
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -448,7 +674,7 @@
   (event-loop-run!)
   (close-port in))
 
-;; Test 21: await-getsomelines! (also tests a-sync-read-watch!)
+;; Test 30: await-getsomelines! (also tests a-sync-read-watch!)
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -480,7 +706,7 @@
   (close-port out)
   (close-port in))
 
-;; Test 22: await-getsomelines! exception handling (also tests strategy for await-geteveryline!)
+;; Test 31: await-getsomelines! exception handling (also tests strategy for await-geteveryline!)
 ;; exception propagates out of event-loop-run!
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -516,7 +742,7 @@
   (test-result 2 count)
   (print-result))
 
-;; Test 23: await-getsomelines! exception handling (also tests 'try' and strategy for await-geteveryline!)
+;; Test 32: await-getsomelines! exception handling (also tests 'try' and strategy for await-geteveryline!)
 ;; exception caught within a-sync block
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -551,7 +777,7 @@
   (test-result 2 count)
   (print-result))
 
-;; Test 24: a-sync-write-watch!
+;; Test 33: a-sync-write-watch!
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -584,7 +810,7 @@
 	    (print-result)))
   (event-loop-run!))
 
-;; Test 25: compose-a-sync and no-await
+;; Test 34: compose-a-sync and no-await
 
 (compose-a-sync ((res (await-task-in-thread! (lambda ()
 					       (+ 5 10)))))

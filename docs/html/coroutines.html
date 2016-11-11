@@ -289,13 +289,12 @@ consecutively:
 <pre class="example">(set-default-event-loop!) ;; if none has yet been set
 (a-sync (lambda (await resume)
 	  ;; executing task in event loop thread
-	  (event-post! (lambda ()
-			 (let loop ([count 0])
-			   (if (&lt; count 5)
-			       (begin
-				 (resume (* 2 count))
-				 (loop (1+ count)))
-			       (resume 'stop-iteration)))))
+	  (let loop ([count 0])
+	    (if (&lt; count 5)
+		(begin
+		  (event-post! (lambda () (resume (* 2 count))))
+		  (loop (+ count 1)))
+		(event-post! (lambda () (resume 'stop-iteration)))))
 	  (let loop ()
 	    (let ([res (await)])
 	      (when (not (eq? 'stop-iteration res))
@@ -362,9 +361,37 @@ summing of 1 and 1 will finish before the timeout)
 (event-loop-run!)
 </pre></div>
 
+<p>or this, to loop asynchronously with a series of results:
+</p>
+<div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(a-sync (lambda (await resume)
+	  (await-generator! await resume
+			    (lambda (yield)
+			      (let loop ([count 0])
+				(when (&lt; count 5)
+				  (yield (* 2 count))
+				  (loop (+ count 1)))))
+			    (lambda (val)
+			      (display val)
+			      (newline)))
+          (await-generator-in-thread! await resume
+				      (lambda (yield)
+					(let loop ([count 5])
+					  (when (&lt; count 10)
+					    (yield (* 2 count))
+					    (loop (+ count 1)))))
+				      (lambda (val)
+					(display val)
+					(newline)))
+	  (event-loop-block! #f)))
+(event-loop-block! #t) ;; worker thread in operation
+(event-loop-run!)
+</pre></div>
+
 <p>Or the compose-a-sync macro in the <a href="compose.html#compose">compose</a> library file
-can be used so that the last two examples are constructed as follows
-(in this first case the two asynchronous operations run consecutively)
+can be used so that these examples are constructed as follows (in this
+first case the two asynchronous operations run consecutively)
 </p>
 <div class="example">
 <pre class="example">(set-default-event-loop!) ;; if none has yet been set
@@ -390,6 +417,32 @@ summing of 1 and 1 will finish before the timeout)
 (compose-a-sync ([ret (await-task! (lambda ()
 				     (+ 1 1)))])
 	   ((no-await (format #t &quot;1 + 1 is ~a\n&quot; ret))))
+(event-loop-run!)
+</pre></div>
+
+<p>or this, to loop asynchronously with a series of results:
+</p>
+<div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(compose-a-sync ()
+		(await-generator! (lambda (yield)
+				    (let loop ([count 0])
+				      (when (&lt; count 5)
+					(yield (* 2 count))
+					(loop (+ count 1)))))
+				  (lambda (val)
+				    (display val)
+				    (newline)))
+		(await-generator-in-thread! (lambda (yield)
+					      (let loop ([count 5])
+						(when (&lt; count 10)
+						  (yield (* 2 count))
+						  (loop (+ count 1)))))
+					    (lambda (val)
+					      (display val)
+					      (newline)))
+		((no-await (event-loop-block! #f))))
+(event-loop-block! #t) ;; worker thread in operation
 (event-loop-run!)
 </pre></div>
 </dd></dl>
