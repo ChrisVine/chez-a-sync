@@ -1050,7 +1050,7 @@
 ;; argument (see the documentation on the make-iterator procedure for
 ;; further details).  This await-generator-in-thread! procedure will
 ;; run 'generator' in its own worker thread, and whenever 'generator'
-;; yields a value it will cause 'proc' to execute in the event loop
+;; yields a value will cause 'proc' to execute in the event loop
 ;; specified by the 'loop' argument (or in the default event loop if
 ;; no 'loop' argument is provided or if #f is provided as the 'loop'
 ;; argument - pattern matching is used to detect the type of the third
@@ -1147,16 +1147,16 @@
 ;;
 ;; The 'waiter' argument is optional.  The 'worker' argument is an
 ;; event loop running in a different thread than the one in which this
-;; procedure is called, and is the one in which 'generator' will be
-;; executed by posting an event to that loop.  The 'generator'
-;; argument is a procedure taking one argument, namely a yield
-;; argument (see the documentation on the make-iterator procedure for
-;; further details), and whenever 'generator' yields a value this will
-;; cause 'proc' to execute in the event loop specified by the 'waiter'
-;; argument, or in the default event loop if no 'waiter' argument is
-;; provided or if #f is provided as the 'waiter' argument.  'proc'
-;; should be a procedure taking a single argument, namely the value
-;; yielded by the generator.
+;; procedure is called.  The 'generator' argument is a procedure
+;; taking one argument, namely a yield argument (see the documentation
+;; on the make-iterator procedure for further details).  This
+;; await-generator-in-event-loop! procedure will cause 'generator' to
+;; run in the 'worker' event loop, and whenever 'generator' yields a
+;; value this will cause 'proc' to execute in the event loop specified
+;; by the 'waiter' argument, or in the default event loop if no
+;; 'waiter' argument is provided or if #f is provided as the 'waiter'
+;; argument.  'proc' should be a procedure taking a single argument,
+;; namely the value yielded by the generator.
 ;;
 ;; This procedure is intended to be called in a waitable procedure
 ;; invoked by a-sync.  It will normally be necessary to call
@@ -1221,13 +1221,17 @@
 ;; The 'loop' argument is optional.  The 'generator' argument is a
 ;; procedure taking one argument, namely a yield argument (see the
 ;; documentation on the make-iterator procedure for further details).
-;; This await-generator! procedure will run 'generator' in the event
-;; loop specified by the 'loop' argument, or in the default event loop
-;; if no 'loop' argument is provided or #f is provided as the 'loop'
-;; argument.  Whenever 'generator' yields a value it will cause 'proc'
-;; to execute in that event loop - each time 'proc' runs it will do so
-;; as a separate event in the loop and so be multi-plexed with other
-;; events.
+;; This await-generator! procedure will run 'generator', and whenever
+;; 'generator' yields a value will cause 'proc' to execute in the
+;; event loop specified by the 'loop' argument, or in the default
+;; event loop if no 'loop' argument is provided or #f is provided as
+;; the 'loop' argument.  'proc' should be a procedure taking a single
+;; argument, namely the value yielded by the generator.  Each time
+;; 'proc' runs it will do so as a separate event in the event loop and
+;; so be multi-plexed with other events.
+;;
+;; This procedure must (like the a-sync procedure) be called in the
+;; same thread as that in which the event loop runs.
 ;;
 ;; This procedure is intended to be called in a waitable procedure
 ;; invoked by a-sync.  It is the single-threaded corollary of
@@ -1238,9 +1242,6 @@
 ;; 'generator'.  This procedure can be useful for the purpose of
 ;; implementing co-operative multi-tasking, say by composing tasks
 ;; with compose-a-sync (see compose.scm).
-;;
-;; This procedure must (like the a-sync procedure) be called in the
-;; same thread as that in which the event loop runs.
 ;;
 ;; This procedure calls event-post! in the event loop concerned.  This
 ;; is done in the same thread as that in which the event loop runs so

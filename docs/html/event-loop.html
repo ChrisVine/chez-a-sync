@@ -523,7 +523,7 @@ argument is a procedure taking one argument, namely a yield argument
 (see the documentation on the make-iterator procedure for further
 details).  This await-generator-in-thread! procedure will run
 &rsquo;generator&rsquo; in its own worker thread, and whenever &rsquo;generator&rsquo; yields
-a value it will cause &rsquo;proc&rsquo; to execute in the event loop specified by
+a value will cause &rsquo;proc&rsquo; to execute in the event loop specified by
 the &rsquo;loop&rsquo; argument (or in the default event loop if no &rsquo;loop&rsquo;
 argument is provided or if #f is provided as the &rsquo;loop&rsquo; argument -
 pattern matching is used to detect the type of the third argument).
@@ -586,15 +586,16 @@ the handler procedure will propagate out of event-loop-run!.
 <dt><a name="index-await_002dgenerator_002din_002devent_002dloop_0021"></a>Scheme Procedure: <strong>await-generator-in-event-loop!</strong> <em>await resume [waiter] worker generator proc</em></dt>
 <dd><p>The &rsquo;waiter&rsquo; argument is optional.  The &rsquo;worker&rsquo; argument is an event
 loop running in a different thread than the one in which this
-procedure is called, and is the one in which &rsquo;generator&rsquo; will be
-executed by posting an event to that loop.  The &rsquo;generator&rsquo; argument
-is a procedure taking one argument, namely a yield argument (see the
-documentation on the make-iterator procedure for further details), and
-whenever &rsquo;generator&rsquo; yields a value this will cause &rsquo;proc&rsquo; to execute
-in the event loop specified by the &rsquo;waiter&rsquo; argument, or in the
-default event loop if no &rsquo;waiter&rsquo; argument is provided or if #f is
-provided as the &rsquo;waiter&rsquo; argument.  &rsquo;proc&rsquo; should be a procedure
-taking a single argument, namely the value yielded by the generator.
+procedure is called.  The &rsquo;generator&rsquo; argument is a procedure taking
+one argument, namely a yield argument (see the documentation on the
+make-iterator procedure for further details).  This
+await-generator-in-event-loop! procedure will cause &rsquo;generator&rsquo; to run
+in the &rsquo;worker&rsquo; event loop, and whenever &rsquo;generator&rsquo; yields a value
+this will cause &rsquo;proc&rsquo; to execute in the event loop specified by the
+&rsquo;waiter&rsquo; argument, or in the default event loop if no &rsquo;waiter&rsquo;
+argument is provided or if #f is provided as the &rsquo;waiter&rsquo; argument.
+&rsquo;proc&rsquo; should be a procedure taking a single argument, namely the
+value yielded by the generator.
 </p>
 <p>This procedure is intended to be called in a waitable procedure
 invoked by a-sync.  It will normally be necessary to call
@@ -662,12 +663,17 @@ event-loop-run! procedure called for the &rsquo;worker&rsquo; event loop.
 <dd><p>The &rsquo;loop&rsquo; argument is optional.  The &rsquo;generator&rsquo; argument is a
 procedure taking one argument, namely a yield argument (see the
 documentation on the make-iterator procedure for further details).
-This await-generator! procedure will run &rsquo;generator&rsquo; in the event loop
-specified by the &rsquo;loop&rsquo; argument, or in the default event loop if no
-&rsquo;loop&rsquo; argument is provided or #f is provided as the &rsquo;loop&rsquo; argument.
-Whenever &rsquo;generator&rsquo; yields a value it will cause &rsquo;proc&rsquo; to execute in
-that event loop - each time &rsquo;proc&rsquo; runs it will do so as a separate
-event in the loop and so be multi-plexed with other events.
+This await-generator! procedure will run &rsquo;generator&rsquo;, and whenever
+&rsquo;generator&rsquo; yields a value will cause &rsquo;proc&rsquo; to execute in the event
+loop specified by the &rsquo;loop&rsquo; argument, or in the default event loop if
+no &rsquo;loop&rsquo; argument is provided or #f is provided as the &rsquo;loop&rsquo;
+argument.  &rsquo;proc&rsquo; should be a procedure taking a single argument,
+namely the value yielded by the generator.  Each time &rsquo;proc&rsquo; runs it
+will do so as a separate event in the event loop and so be
+multi-plexed with other events.
+</p>
+<p>This procedure must (like the a-sync procedure) be called in the same
+thread as that in which the event loop runs.
 </p>
 <p>This procedure is intended to be called in a waitable procedure
 invoked by a-sync.  It is the single-threaded corollary of
@@ -678,9 +684,6 @@ events in the event loop will not make progress, so blocking calls
 This procedure can be useful for the purpose of implementing
 co-operative multi-tasking, say by composing tasks with
 compose-a-sync (see compose.scm).
-</p>
-<p>This procedure must (like the a-sync procedure) be called in the same
-thread as that in which the event loop runs.
 </p>
 <p>This procedure calls event-post! in the event loop concerned.  This is
 done in the same thread as that in which the event loop runs so it
