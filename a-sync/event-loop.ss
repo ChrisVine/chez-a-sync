@@ -1088,7 +1088,8 @@
 ;; of resources.  Exceptions arising during execution of the
 ;; generator, if not caught by a handler procedure, will terminate the
 ;; program.  Exceptions raised by the handler procedure will propagate
-;; out of event-loop-run!.
+;; out of event-loop-run!.  Exceptions raised by 'proc', if not caught
+;; locally, will also propagate out of event-loop-run!.
 ;;
 ;; This procedure is first available in version 0.6 of this library.
 (define (await-generator-in-thread! await resume . rest)
@@ -1189,7 +1190,9 @@
 ;; pthread has run out of resources.  Exceptions arising during
 ;; execution of the generator, if not caught locally, will propagate
 ;; out of the event-loop-run! procedure called for the 'worker' event
-;; loop.
+;; loop.  Exceptions arising during the execution of 'proc', if not
+;; caught locally, will propagate out of the event-loop-run! procedure
+;; called for the 'waiter' or default event loop (as the case may be).
 ;;
 ;; This procedure is first available in version 0.6 of this library.
 (define await-generator-in-event-loop!
@@ -1255,7 +1258,8 @@
 ;; setting up (that is, before the task starts), which shouldn't
 ;; happen unless memory is exhausted.  Exceptions arising during
 ;; execution of the generator, if not caught locally, will propagate
-;; out of event-loop-run!.
+;; out of await-generator!.  Exceptions raised by 'proc', if not
+;; caught locally, will propagate out of event-loop-run!.
 ;;
 ;; This procedure is first available in version 0.6 of this library.
 (define await-generator!
@@ -1460,7 +1464,8 @@
 ;; setting up (that is, before the first call to 'await' is made),
 ;; which shouldn't happen unless memory is exhausted.  Subsequent
 ;; exceptions (say, because of port errors) will propagate out of
-;; event-loop-run!.
+;; event-loop-run!.  Exceptions raised by 'proc', if not caught
+;; locally, will also propagate out of event-loop-run!.
 ;;
 ;; If a continuable exception propagates out of this procedure, it
 ;; will be converted into a non-continuable one (continuable
@@ -1578,7 +1583,8 @@
 ;; setting up (that is, before the first call to 'await' is made),
 ;; which shouldn't happen unless memory is exhausted.  Subsequent
 ;; exceptions (say, because of port errors) will propagate out of
-;; event-loop-run!.
+;; event-loop-run!.  Exceptions raised by 'proc', if not caught
+;; locally, will also propagate out of event-loop-run!.
 ;;
 ;; If a continuable exception propagates out of this procedure, it
 ;; will be converted into a non-continuable one (continuable
