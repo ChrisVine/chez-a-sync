@@ -540,7 +540,9 @@ object.
 finished or, if &rsquo;handler&rsquo; is provided, upon the generator raising an
 exception.  This procedure will return #f if the generator completes
 normally, or &rsquo;chez-a-sync-thread-error if the generator raises an
-exception and &rsquo;handler&rsquo; is run.
+exception and &rsquo;handler&rsquo; is run (the &rsquo;chez-a-sync-thread-error symbol
+is reserved to the implementation and should not be yielded by the
+generator).
 </p>
 <p>This procedure is intended to be called in a waitable procedure
 invoked by a-sync.  It will normally be necessary to call
@@ -579,7 +581,7 @@ propagate out of event-loop-run!.
 					(display val)
 					(newline)))
 	  (event-loop-block! #f)))
-(event-loop-block! #t) ;; because the task runs in another thread
+(event-loop-block! #t) ;; because the generator runs in another thread
 (event-loop-run!)
 </pre></div>
 </dd></dl>

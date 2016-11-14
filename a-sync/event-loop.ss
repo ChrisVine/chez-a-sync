@@ -1068,7 +1068,9 @@
 ;; finished or, if 'handler' is provided, upon the generator raising
 ;; an exception.  This procedure will return #f if the generator
 ;; completes normally, or 'chez-a-sync-thread-error if the generator
-;; raises an exception and 'handler' is run.
+;; raises an exception and 'handler' is run (the
+;; 'chez-a-sync-thread-error symbol is reserved to the implementation
+;; and should not be yielded by the generator).
 ;;
 ;; This procedure is intended to be called in a waitable procedure
 ;; invoked by a-sync.  It will normally be necessary to call
@@ -1135,12 +1137,13 @@
 	       (next (iter))))))))
   (let next ([res (await)])
     (cond
+     [(eq? res 'stop-iteration)
+      #f]
      [(eq? res 'chez-a-sync-thread-error)
       'chez-a-sync-thread-error]
-     [(not (eq? res 'stop-iteration))
+     [else 
       (proc res)
-      (next (await))]
-     [else #f])))
+      (next (await))])))
 
 ;; This is a convenience procedure whose signature is:
 ;;
