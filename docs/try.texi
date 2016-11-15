@@ -13,10 +13,10 @@ The cond-clauses are then evaluated as if in a cond expression.  If
 one of the cond tests is found to be true, or there is none found to
 be true but there is an else clause, then the relevant cond clause or
 else clause will be evaluated and returned.  If none of the cond tests
-in the cond-clauses are found to be true and there is no else clause,
-the exception condition will be re-raised as if by raise, for an
-enclosing try form, guard form or with-exception-handler form (if any)
-to handle.
+in the cond-clauses is found to be true and there is no else clause,
+the exception condition will be re-raised as if by raise, for a
+dynamically enclosing try form, guard form or with-exception-handler
+form (if any) to handle.
 
 The return value of try, if there is no exception raised by the body
 clauses or any exception raised is handled by a cond-clause, is the
