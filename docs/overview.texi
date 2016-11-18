@@ -1,0 +1,64 @@
+@node overview,coroutines,Top,
+
+@strong{An overview of asynchronous programming with coroutines}
+
+Asynchronous programming using coroutines might mitigate "callback
+hell", but it can still be troublesome to think about.  It can help to
+compare it to threads.
+
+Each 'a-sync' block (see @ref{coroutines,,(a-sync coroutines)} or
+'compose-a-sync' block (see @ref{compose,,(a-sync compose)} is a
+separate unit of computation, which appears within itself to proceed
+sequentially even though in fact it executes asynchronously on an
+event loop.  Each such block also appears to execute concurrently with
+other 'a-sync' or 'compose-a-sync' blocks using the same event loop.
+Each 'a-sync' or 'compose-a-sync' block is therefore in some sense
+analogous to a thread of execution.
+
+If the event loop provided by the @ref{event loop,,(a-sync
+event-loop)} library file is in use, the mechanism by which these
+"psuedo-threads" execute on the event loop is by a call to
+event-loop-run!.  event-loop-run! therefore behaves in a way which is
+in some sense analogous to a scheduler, although multi-plexing is
+co-operative and/or i/o event based rather than pre-emptive.
+
+event-loop-run! also performs the equivalent of a join operation on
+these "pseudo-threads" running on the event loop in question, because
+by default it returns when there are no further events to be dealt
+with (that is, when all "pseudo-threads" have completed).  So given
+the following code, the sum of 1 and 1 will only be printed when both
+the timeout has expired and the calculation has been made, both of
+which will run as if concurrently (the summing will complete before
+the timeout expires):
+
+@example
+(let ([loop (make-event-loop)]
+      [ret #f])
+  (a-sync (lambda (await resume)
+	    (await-timeout! await resume loop
+			    100
+			    (lambda () #f))))
+  (a-sync (lambda (await resume)
+	    (set! ret 
+		  (await-task! await resume loop
+			       (lambda ()
+				 (+ 1 1))))))
+  (event-loop-run! loop)
+  (display ret)(newline))
+@end example
+
+Apart from joining on event-loop-run!, there is no built in
+abstraction for two "pseudo-threads" (that is two 'a-sync' or
+'compose-a-sync' blocks) running in the same event loop to
+intercommunicate.  This can be done using shared data (helped by the
+fact that all the mutation would be carried out in the same native OS
+thread, the event-loop thread), but at present it is messy.  Instead
+of starting two intercommunicating "pseudo-threads", the preferred
+method of achieving a similar result is to use generators (see the
+await-generator! procedure in the @ref{event loop,,(a-sync
+event-loop)} library file).
+
+Apart from these "pseudo-threads", true parallelism is possible using
+native OS threads, with the await-task-in-thread!,
+await-task-in-event-loop!, await-generator-in-thread! and
+await-generator-in-event-loop! procedures.

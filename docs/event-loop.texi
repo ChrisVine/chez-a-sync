@@ -1,4 +1,4 @@
-@node event loop,compose,coroutines,Top
+@node event loop,compose,overview,Top
 
 The (a-sync event-loop) library file provides an event loop for
 asynchronous operations.  The event loop does not of itself start any

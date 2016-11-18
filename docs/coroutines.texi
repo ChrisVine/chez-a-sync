@@ -1,4 +1,4 @@
-@node coroutines,event loop,Top,Top
+@node coroutines,event loop,overview,Top
 
 The (a-sync coroutines) library file provides the following
 procedures:
@@ -388,4 +388,7 @@ or this, to loop asynchronously with a series of results:
 (event-loop-block! #t) ;; worker thread in operation
 (event-loop-run!)
 @end example
+
+For a further overview of the operation of 'a-sync', see the
+@ref{overview,,general overview}
 @end deffn
