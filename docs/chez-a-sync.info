@@ -43,7 +43,7 @@ analogous to a thread of execution.
 
    If the event loop provided by the *note (a-sync event-loop): event
 loop. library file is in use, the mechanism by which these
-"psuedo-threads" execute on the event loop is by a call to
+"pseudo-threads" execute on the event loop is by a call to
 event-loop-run!.  event-loop-run!  therefore behaves in a way which is
 in some sense analogous to a scheduler, although multi-plexing is
 co-operative and/or i/o event based rather than pre-emptive.
