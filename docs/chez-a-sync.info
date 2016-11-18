@@ -12,10 +12,12 @@ loop for chez scheme, and coroutines to enable an event loop (including
 other event loops) to be used with 'await' semantics to deal with
 inversion of control - otherwise known as "callback hell".
 
-   The documentation for the chez-a-sync package comprises five pages:
 * Menu:
 
+General overview
 * overview::       General overview of the operation of the library
+
+Library files
 * coroutines::     (a-sync coroutines) library file - provides coroutines for await semantics on asynchronous events
 * event loop::     (a-sync event-loop) library file - provides an event loop for asynchronous events
 * compose::        (a-sync compose) library file - provides the compose-a-sync macro interface for the a-sync coroutine
@@ -30,14 +32,14 @@ File: chez-a-sync.info,  Node: overview,  Next: coroutines,  Prev: Top
 hell", but it can still be troublesome to think about.  It can help to
 compare it to threads.
 
-   Each 'a-sync' block (see *note (a-sync coroutines): coroutines. or
-'compose-a-sync' block (see *note (a-sync compose): compose. is a
+   Each 'a-sync' block (see *note (a-sync coroutines): coroutines.) or
+'compose-a-sync' block (see *note (a-sync compose): compose.) is a
 separate unit of computation, which appears within itself to proceed
 sequentially even though in fact it executes asynchronously on an event
 loop.  Each such block also appears to execute concurrently with other
-'a-sync' or 'compose-a-sync' blocks using the same event loop.  Each
-'a-sync' or 'compose-a-sync' block is therefore in some sense analogous
-to a thread of execution.
+'a-sync' or 'compose-a-sync' blocks running on the same event loop.
+Each 'a-sync' or 'compose-a-sync' block is therefore in some sense
+analogous to a thread of execution.
 
    If the event loop provided by the *note (a-sync event-loop): event
 loop. library file is in use, the mechanism by which these
@@ -71,7 +73,7 @@ timeout expires):
 
    Apart from joining on event-loop-run!, there is no built in
 abstraction for two "pseudo-threads" (that is two 'a-sync' or
-'compose-a-sync' blocks) running in the same event loop to
+'compose-a-sync' blocks) running on the same event loop to
 intercommunicate.  This can be done using shared data (helped by the
 fact that all the mutation would be carried out in the same native OS
 thread, the event-loop thread), but at present it is messy.  Instead of
@@ -1595,10 +1597,10 @@ exceptions.
 
 Tag Table:
 Node: Top83
-Node: overview1049
-Node: coroutines3993
-Node: event loop22122
-Node: compose72990
-Node: try78573
+Node: overview1010
+Node: coroutines3960
+Node: event loop22089
+Node: compose72957
+Node: try78540
 
 End Tag Table

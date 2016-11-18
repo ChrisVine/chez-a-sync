@@ -16,9 +16,11 @@ event loop for chez scheme, and coroutines to enable an event loop
 deal with inversion of control -- otherwise known as ``callback
 hell''.
 
-The documentation for the chez-a-sync package comprises five pages:
 @menu
+General overview
 * overview::       General overview of the operation of the library
+
+Library files
 * coroutines::     (a-sync coroutines) library file - provides coroutines for await semantics on asynchronous events
 * event loop::     (a-sync event-loop) library file - provides an event loop for asynchronous events
 * compose::        (a-sync compose) library file - provides the compose-a-sync macro interface for the a-sync coroutine
