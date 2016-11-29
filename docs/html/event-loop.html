@@ -235,9 +235,10 @@ if the size of the buffer is greater than the number of characters
 that the file can receive without blocking, blocking might still
 occur.  Therefore, this procedure will generally work best with
 unbuffered ports (say by using the open-file-output-port procedure
-with a buffer-mode of none), or with ports which have been set
-non-blocking so that a partial write is possible without blocking the
-writer.
+with a buffer-mode of none or by applying the
+set-textual-port-output-size! procedure to the port with a value of
+0), or with ports which have been set non-blocking so that a partial
+write is possible without blocking the writer.
 </p>
 <p>This procedure should not throw an exception unless memory is
 exhausted.  If &rsquo;proc&rsquo; throws, say because of port errors, and the
@@ -1034,6 +1035,66 @@ called in the same thread as that in which the event loop runs.
 exhausted.  If &rsquo;proc&rsquo; throws, say because of port errors, and the
 exception is not caught locally, it will propagate out of
 event-loop-run!.
+</p>
+<p>As an example of how to use a-sync-write-watch!, here is the
+implementation of await-put-string!:
+</p><div class="example">
+<pre class="example">(define await-put-string! 
+  (case-lambda
+    [(await resume port text) (await-put-string! await resume #f port text)]
+    [(await resume loop port text)
+     (define length (string-length text))
+     (define index 0)
+     (a-sync-write-watch! resume
+			  port
+			  (lambda (status)
+			    (set! index (+ index (put-string-some port
+								  text
+								  index
+								  (- length index))))
+			    (if (&lt; index length)
+				'more
+				#f))
+			  loop)
+     (let next ((res (await)))
+       (if (eq? res 'more)
+	   (next (await))
+	   (event-loop-remove-write-watch! port loop)))]))
+</pre></div>
+</dd></dl>
+
+<dl>
+<dt><a name="index-await_002dput_002dstring_0021"></a>Scheme Procedure: <strong>await-put-string!</strong> <em>await resume [loop] port text</em></dt>
+<dd><p>This is a convenience procedure for use in an event loop, which will
+start a write watch on &rsquo;port&rsquo; for writing a string to the port.  It
+calls &rsquo;await&rsquo; while waiting for output to become available.  Provided
+&rsquo;port&rsquo; is a non-blocking port, the event loop will not be blocked by
+this procedure even if only individual characters can be written at
+any one time.  It is intended to be called in a waitable procedure
+invoked by a-sync, and this procedure is implemented using
+a-sync-write-watch!.  The &rsquo;loop&rsquo; argument is optional: this procedure
+operates on the event loop passed in as an argument, or if none is
+passed (or #f is passed), on the default event loop.
+</p>
+<p>&rsquo;port&rsquo; must be non-blocking (say by applying set-port-nonblocking! to
+the port), or this procedure may block the event loop when writing.
+In addition, it should be unbuffered (say by applying the
+set-textual-port-output-size! procedure to the port with a value of
+0), or any buffer flushing operation may also block.
+</p>
+<p>This procedure must (like the a-sync procedure) be called in the same
+thread as that in which the event loop runs.
+</p>
+<p>Exceptions may propagate out of this procedure if they arise while
+setting up (that is, before the first call to &rsquo;await&rsquo; is made),
+which shouldn&rsquo;t happen unless memory is exhausted.  Subsequent
+exceptions (say, because of port errors) will propagate out of
+event-loop-run!.
+</p>
+<p>This procedure is first available in version 0.7 of this library.
+</p>
+<p>An example of the use of this procedure can be found in the
+example-socket.ss file in the docs directory.
 </p></dd></dl>
 
 <dl>
