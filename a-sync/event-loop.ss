@@ -433,7 +433,7 @@
 					   #f)])
 		       (if action
 			   (when (not (action 'excpt))
-			     (_remove-read-watch-impl! elt el))
+			     (with-mutex mutex (_remove-read-watch-impl! elt el)))
 			   (error "_event-loop-run-impl"
 				  "No action in event loop for read file: " `(,elt)))))
 		   (caddr res))
@@ -446,7 +446,7 @@
 					   #f)])
 		       (if action
 			   (when (not (action 'in))
-			     (_remove-read-watch-impl! elt el))
+			     (with-mutex mutex (_remove-read-watch-impl! elt el)))
 			   (error "_event-loop-run-impl"
 				  "No action in event loop for read file: " `(,elt)))))
 		   (remv event-fd (car res)))
@@ -460,7 +460,7 @@
 					   #f)])
 		       (if action
 			   (when (not (action 'out))
-			     (_remove-write-watch-impl! elt el))
+			     (with-mutex mutex (_remove-write-watch-impl! elt el)))
 			   (error "_event-loop-run-impl"
 				  "No action in event loop for write file: " `(,elt)))))
 		   (cadr res))
