@@ -218,12 +218,13 @@
 ;; case where the callback has been removed from the event loop by
 ;; returning false but the waitable procedure still thinks it has a
 ;; call to 'await' to be made.  The event-loop module has await-task!,
-;; await-task-in-thread!, await-task-in-event-loop!, await-timeout!,
-;; a-sync-read-watch!, await-getline!, await-geteveryline!,
-;; await-getsomelines!, a-sync-write-watch! and await-put-string!
-;; convenience procedures which will correctly set this up for you
-;; automatically.  If those convenience procedures are used,
-;; exceptions should always be handled locally in the waitable
+;; await-task-in-thread!, await-task-in-event-loop!, await-generator!,
+;; await-generator-in-thread!, await-generator-in-event-loop!,
+;; await-timeout!, a-sync-read-watch!, await-getline!,
+;; await-geteveryline!, await-getsomelines!, a-sync-write-watch! and
+;; await-put-string!  convenience procedures which will correctly set
+;; this up for you automatically.  If those convenience procedures are
+;; used, exceptions should always be handled locally in the waitable
 ;; procedure (and if the callback might throw, in the callback also)
 ;; if it is undesirable that uncaught exceptions propagate out of
 ;; event-loop-run!.  In the case of await-task-in-thread!, that
