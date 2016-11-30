@@ -389,116 +389,118 @@
   (define q (_q-get el))
   (define event-in (_event-in-get el))
   (define event-fd (port-file-descriptor event-in))
+  (define read-files #f)
+  (define read-files-actions #f)
+  (define write-files #f)
+  (define write-files-actions #f)
 
   (with-mutex mutex (_loop-thread-set! el (get-thread-id)))
 
   (try
-   ;; we don't need to use the mutex in this procedure except in
-   ;; relation to q, _done-get and _block-get, as we only access the
-   ;; current-timeout field of an event loop object, any individual
-   ;; timeout item vectors, and any of the read-files,
-   ;; read-files-actions, write-files and write-files-actions fields
-   ;; in the event loop thread
    (let loop1 ()
+     ;; we don't need to use the mutex in this procedure to access
+     ;; the current-timeout field of an event loop object or any
+     ;; individual timeout item vectors, as we only do this in the
+     ;; event loop thread
      (_process-timeouts el)
-     (when (not (and (null? (_read-files-get el))
-		     (null? (_write-files-get el))
+     ;; we must assign these under a mutex so that we get a
+     ;; consistent view on each run
+     (with-mutex mutex
+       (set! read-files (_read-files-get el))
+       (set! read-files-actions (_read-files-actions-get el))
+       (set! write-files (_write-files-get el))
+       (set! write-files-actions (_write-files-actions-get el)))
+
+     (when (not (and (null? read-files)
+		     (null? write-files)
 		     (null? (_timeouts-get el))
 		     (with-mutex mutex (and (q-empty? q)
 					    (not (_block-get el))))))
-       ;; we provide local versions in order to take a consistent view
-       ;; on each run, since we might remove items from the lists
-       ;; after executing the callbacks
-       (let ((read-files (_read-files-get el))
-	     (read-files-actions (_read-files-actions-get el))
-	     (write-files (_write-files-get el))
-	     (write-files-actions (_write-files-actions-get el))
-	     (current-timeout (_current-timeout-get el)))
-	 (let ([res (poll (_poll-table-get el) (_poll-table-size-get el)
-			  (_read-ports-hash-get el) (_write-ports-hash-get el)
-			  (_out-read-bv-get el) (_out-write-bv-get el) (_out-except-bv-get el)
-			  (if current-timeout
-			      (let ((msecs (_time-remaining (vector-ref current-timeout 0))))
-				(if (< msecs 0) 0 msecs))
-			      -1))])
-	   ;; deal with POLLPRI events first
-	   (for-each (lambda (elt)
-		       (let ([action
-			      ;; we only poll for POLLPRI on read descriptors
-			      (hashtable-ref read-files-actions
-					     (_fd-or-port->fd elt)
-					     #f)])
-			 (if action
-			     (when (not (action 'excpt))
-			       (_remove-read-watch-impl! elt el))
-			     (error "_event-loop-run-impl"
-				    "No action in event loop for read file: " `(,elt)))))
-		     (caddr res))
-	   ;; this deals with POLLIN, POLLHUP, POLLERR and POLLNVAL
-	   ;; events on read file descriptors
-	   (for-each (lambda (elt)
-		       (let ([action
-			      (hashtable-ref read-files-actions
-					     (_fd-or-port->fd elt)
-					     #f)])
-			 (if action
-			     (when (not (action 'in))
-			       (_remove-read-watch-impl! elt el))
-			     (error "_event-loop-run-impl"
-				    "No action in event loop for read file: " `(,elt)))))
-		     (remv event-fd (car res)))
-	   ;; this deals with POLLIN, POLLHUP, POLLERR and POLLNVAL
-	   ;; events on write file descriptors (although I don't think
-	   ;; POLLHUP can occur with these)
-	   (for-each (lambda (elt)
-		       (let ([action
-			      (hashtable-ref write-files-actions
-					     (_fd-or-port->fd elt)
-					     #f)])
-			 (if action
-			     (when (not (action 'out))
-			       (_remove-write-watch-impl! elt el))
-			     (error "_event-loop-run-impl"
-				    "No action in event loop for write file: " `(,elt)))))
-		     (cadr res))
-
-	   ;; the strategy with posted events is first to empty the
-	   ;; event pipe (the only purpose of which is to cause the
-	   ;; event loop to unblock) and then run any events queued
-	   ;; in the queue.  This (i) eliminates any concerns that
-	   ;; events might go missing if the pipe fills up, and (ii)
-	   ;; ensures that if a timeout or watch callback has posted
-	   ;; an event (say ending the timeout or watch), that will
-	   ;; have been acted on by the time the event loop begins
-	   ;; its next iteration.
-	   (when (memv event-fd (car res))
-	     (let loop2 ()
-	       (let ((b (get-u8 event-in)))
-		 (when (and (input-port-ready? event-in)
-			    (not (eof-object? b))) ;; this shouldn't ever happen
-		   (loop2)))))
-	   (let loop3 ()
-	     (let ((action (with-mutex mutex
-			     (if (q-empty? q)
-				 (begin
-				   ;; num-tasks should be 0 with an
-				   ;; empty queue anyway, but ...
-				   (_num-tasks-set! el 0)
-				   #f)
-				 (begin
-				   (_num-tasks-set! el (- (_num-tasks-get el) 1))
-				   (q-deq! q))))))
-	       (when action
-		 (action)
-		 ;; one of the posted events may have called
-		 ;; event-loop-quit!, so test for it
-		 (when (not (with-mutex mutex (_done-get el)))
-		   (loop3))))))
-	 (if (not (with-mutex mutex (_done-get el)))
-	     (loop1)
-	     ;; clear out any stale events before returning and
-	     ;; unblocking
-	     (_event-loop-reset! el)))))
+       (let* ([current-timeout (_current-timeout-get el)]
+	      [res (poll (_poll-table-get el) (_poll-table-size-get el)
+			 (_read-ports-hash-get el) (_write-ports-hash-get el)
+			 (_out-read-bv-get el) (_out-write-bv-get el) (_out-except-bv-get el)
+			 (if current-timeout
+			     (let ((msecs (_time-remaining (vector-ref current-timeout 0))))
+			       (if (< msecs 0) 0 msecs))
+			     -1))])
+	 ;; deal with POLLPRI events first
+	 (for-each (lambda (elt)
+		     (let ([action
+			    ;; we only poll for POLLPRI on read descriptors
+			    (hashtable-ref read-files-actions
+					   (_fd-or-port->fd elt)
+					   #f)])
+		       (if action
+			   (when (not (action 'excpt))
+			     (_remove-read-watch-impl! elt el))
+			   (error "_event-loop-run-impl"
+				  "No action in event loop for read file: " `(,elt)))))
+		   (caddr res))
+	 ;; this deals with POLLIN, POLLHUP, POLLERR and POLLNVAL
+	 ;; events on read file descriptors
+	 (for-each (lambda (elt)
+		     (let ([action
+			    (hashtable-ref read-files-actions
+					   (_fd-or-port->fd elt)
+					   #f)])
+		       (if action
+			   (when (not (action 'in))
+			     (_remove-read-watch-impl! elt el))
+			   (error "_event-loop-run-impl"
+				  "No action in event loop for read file: " `(,elt)))))
+		   (remv event-fd (car res)))
+	 ;; this deals with POLLIN, POLLHUP, POLLERR and POLLNVAL
+	 ;; events on write file descriptors (although I don't think
+	 ;; POLLHUP can occur with these)
+	 (for-each (lambda (elt)
+		     (let ([action
+			    (hashtable-ref write-files-actions
+					   (_fd-or-port->fd elt)
+					   #f)])
+		       (if action
+			   (when (not (action 'out))
+			     (_remove-write-watch-impl! elt el))
+			   (error "_event-loop-run-impl"
+				  "No action in event loop for write file: " `(,elt)))))
+		   (cadr res))
+	 ;; the strategy with posted events is first to empty the
+	 ;; event pipe (the only purpose of which is to cause the
+	 ;; event loop to unblock) and then run any events queued
+	 ;; in the queue.  This (i) eliminates any concerns that
+	 ;; events might go missing if the pipe fills up, and (ii)
+	 ;; ensures that if a timeout or watch callback has posted
+	 ;; an event (say ending the timeout or watch), that will
+	 ;; have been acted on by the time the event loop begins
+	 ;; its next iteration.
+	 (when (memv event-fd (car res))
+	   (let loop2 ()
+	     (let ((b (get-u8 event-in)))
+	       (when (and (input-port-ready? event-in)
+			  (not (eof-object? b))) ;; this shouldn't ever happen
+		 (loop2)))))
+	 (let loop3 ()
+	   (let ((action (with-mutex mutex
+			   (if (q-empty? q)
+			       (begin
+				 ;; num-tasks should be 0 with an
+				 ;; empty queue anyway, but ...
+				 (_num-tasks-set! el 0)
+				 #f)
+			       (begin
+				 (_num-tasks-set! el (- (_num-tasks-get el) 1))
+				 (q-deq! q))))))
+	     (when action
+	       (action)
+	       ;; one of the posted events may have called
+	       ;; event-loop-quit!, so test for it
+	       (when (not (with-mutex mutex (_done-get el)))
+		 (loop3))))))
+       (if (not (with-mutex mutex (_done-get el)))
+	   (loop1)
+	   ;; clear out any stale events before returning and
+	   ;; unblocking
+	   (_event-loop-reset! el))))
    (except c
 	   [else
 	    ;; something threw, probably a callback.  Put the event
@@ -508,9 +510,11 @@
 
 ;; This procedure is only called in the event loop thread, by
 ;; event-loop-run!  The only things requiring protection by a mutex
-;; are the q, done-set, event-out, num-tasks and loop-thread fields of
-;; the event loop object.  However, for consistency we deal with all
-;; operations on the event pipe below via the mutex.
+;; are the q, done-set, event-out, num-tasks and loop-thread fields,
+;; of the event loop object together with the read-files,
+;; read-files-actions, write-files and write-files-actions fields.
+;; However, for consistency we deal with all operations on the event
+;; pipe below via the mutex.
 (define (_event-loop-reset! el)
   ;; the only foolproof way of vacating a unix pipe is to close it and
   ;; then create another one
@@ -530,14 +534,14 @@
 	  (loop))))
     (_done-set! el #f)
     (_num-tasks-set! el 0)
-    (_loop-thread-set! el #f))
-  (_read-files-set! el '())
-  (hashtable-clear! (_read-files-actions-get el))
-  (_write-files-set! el '())
-  (hashtable-clear! (_write-files-actions-get el))
-  (_timeouts-set! el '())
-  (_current-timeout-set! el #f)
-  (_set-poll-caches! el))
+    (_loop-thread-set! el #f)
+    (_read-files-set! el '())
+    (hashtable-clear! (_read-files-actions-get el))
+    (_write-files-set! el '())
+    (hashtable-clear! (_write-files-actions-get el))
+    (_timeouts-set! el '())
+    (_current-timeout-set! el #f)
+    (_set-poll-caches! el)))
 
 ;; The 'el' (event loop) argument is optional.  This procedure will
 ;; start a read watch in the event loop passed in as an argument, or
@@ -564,9 +568,7 @@
 ;; multi-byte/character reading procedures on non-blocking ports).
 ;;
 ;; This procedure should not throw an exception unless memory is
-;; exhausted.  If 'proc' throws, say because of port errors, and the
-;; exception is not caught locally, it will propagate out of
-;; event-loop-run!.
+;; exhausted.
 (define event-loop-add-read-watch!
   (case-lambda
     [(file proc) (event-loop-add-read-watch! file proc #f)]
@@ -575,17 +577,24 @@
        (when (not el) 
 	 (error "event-loop-add-read-watch!"
 		"No default event loop set for call to event-loop-add-read-watch!"))
-       (event-post! (lambda ()
-		      (_read-files-set!
-		       el
-		       (cons file
-			     (remp (lambda (elt) (_file-equal? file elt))
-				   (_read-files-get el))))
-		      (hashtable-set! (_read-files-actions-get el)
-				      (_fd-or-port->fd file)
-				      proc)
-		      (_set-poll-caches! el))
-		    el))]))
+       (with-mutex (_mutex-get el)
+	 (_read-files-set! el
+			   (cons file
+				 (remp (lambda (elt) (_file-equal? file elt))
+				       (_read-files-get el))))
+	 (hashtable-set! (_read-files-actions-get el)
+			 (_fd-or-port->fd file)
+			 proc)
+	 (_set-poll-caches! el)
+	 ;; if the event pipe is full and an EAGAIN error arises, we
+	 ;; can just swallow it.  The only purpose of writing #\x is
+	 ;; to cause the select procedure to return and reloop to pick
+	 ;; up the new file watch list.
+	 (let ([out (_event-out-get el)])
+	   ;; use put-bytevector-some because it has a defined result
+	   ;; with non-blocking ports
+	   (put-bytevector-some out (make-bytevector 1 1) 0 1)
+	   (flush-output-port out))))]))
 
 ;; The 'el' (event loop) argument is optional.  This procedure will
 ;; start a write watch in the event loop passed in as an argument, or
@@ -626,9 +635,7 @@
 ;; so that a partial write is possible without blocking the writer.
 ;;
 ;; This procedure should not throw an exception unless memory is
-;; exhausted.  If 'proc' throws, say because of port errors, and the
-;; exception is not caught locally, it will propagate out of
-;; event-loop-run!.
+;; exhausted.
 (define event-loop-add-write-watch!
   (case-lambda
     [(file proc) (event-loop-add-write-watch! file proc #f)]
@@ -637,17 +644,24 @@
        (when (not el) 
 	 (error "event-loop-add-write-watch!"
 		"No default event loop set for call to event-loop-add-write-watch!"))
-       (event-post! (lambda ()
-		      (_write-files-set!
-		       el
-		       (cons file
-			     (remp (lambda (elt) (_file-equal? file elt))
-				   (_write-files-get el))))
-		      (hashtable-set! (_write-files-actions-get el)
-				      (_fd-or-port->fd file)
-				      proc)
-		      (_set-poll-caches! el))
-		    el))]))
+       (with-mutex (_mutex-get el)
+	 (_write-files-set! el
+			    (cons file
+				  (remp (lambda (elt) (_file-equal? file elt))
+					(_write-files-get el))))
+	 (hashtable-set! (_write-files-actions-get el)
+			 (_fd-or-port->fd file)
+			 proc)
+	 (_set-poll-caches! el)
+	 ;; if the event pipe is full and an EAGAIN error arises, we
+	 ;; can just swallow it.  The only purpose of writing #\x is
+	 ;; to cause the select procedure to return and reloop to pick
+	 ;; up the new file watch list.
+	 (let ([out (_event-out-get el)])
+	   ;; use put-bytevector-some because it has a defined result
+	   ;; with non-blocking ports
+	   (put-bytevector-some out (make-bytevector 1 1) 0 1)
+	   (flush-output-port out))))]))
 
 ;; The 'el' (event loop) argument is optional.  This procedure will
 ;; remove a read watch from the event loop passed in as an argument,
@@ -664,9 +678,17 @@
        (when (not el) 
 	 (error "event-loop-remove-read-watch!"
 		"No default event loop set for call to event-loop-remove-read-watch!"))
-       (event-post! (lambda ()
-		      (_remove-read-watch-impl! file el))
-		    el))]))
+       (with-mutex (_mutex-get el)
+	 (_remove-read-watch-impl! file el)
+	 ;; if the event pipe is full and an EAGAIN error arises, we
+	 ;; can just swallow it.  The only purpose of writing #\x is
+	 ;; to cause the select procedure to return and reloop to pick
+	 ;; up the new file watch list.
+	 (let ([out (_event-out-get el)])
+	   ;; use put-bytevector-some because it has a defined result
+	   ;; with non-blocking ports
+	   (put-bytevector-some out (make-bytevector 1 1) 0 1)
+	   (flush-output-port out))))]))
 
 ;; The 'el' (event loop) argument is optional.  This procedure will
 ;; remove a write watch from the event loop passed in as an argument,
@@ -683,9 +705,17 @@
        (when (not el) 
 	 (error "event-loop-remove-write-watch!"
 		"No default event loop set for call to event-loop-remove-write-watch!"))
-       (event-post! (lambda ()
-		      (_remove-write-watch-impl! file el))
-		    el))]))
+       (with-mutex (_mutex-get el)
+	 (_remove-write-watch-impl! file el)
+	 ;; if the event pipe is full and an EAGAIN error arises, we
+	 ;; can just swallow it.  The only purpose of writing #\x is
+	 ;; to cause the select procedure to return and reloop to pick
+	 ;; up the new file watch list.
+	 (let ([out (_event-out-get el)])
+	   ;; use put-bytevector-some because it has a defined result
+	   ;; with non-blocking ports
+	   (put-bytevector-some out (make-bytevector 1 1) 0 1)
+	   (flush-output-port out))))]))
 
 ;; The 'el' (event loop) argument is optional.  This procedure will
 ;; post a callback for execution in the event loop passed in as an

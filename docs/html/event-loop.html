@@ -196,9 +196,7 @@ char-ready? or input-port-ready?, or by using chez scheme&rsquo;s various
 multi-byte/character reading procedures on non-blocking ports).
 </p>
 <p>This procedure should not throw an exception unless memory is
-exhausted.  If &rsquo;proc&rsquo; throws, say because of port errors, and the
-exception is not caught locally, it will propagate out of
-event-loop-run!.
+exhausted.
 </p></dd></dl>
 
 <dl>
@@ -241,9 +239,7 @@ set-textual-port-output-size! procedure to the port with a value of
 write is possible without blocking the writer.
 </p>
 <p>This procedure should not throw an exception unless memory is
-exhausted.  If &rsquo;proc&rsquo; throws, say because of port errors, and the
-exception is not caught locally, it will propagate out of
-event-loop-run!.
+exhausted.
 </p></dd></dl>
 
 <dl>

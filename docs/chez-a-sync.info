@@ -606,9 +606,7 @@ await-geteveryline!  and await-getsomelines!  procedures.
      multi-byte/character reading procedures on non-blocking ports).
 
      This procedure should not throw an exception unless memory is
-     exhausted.  If 'proc' throws, say because of port errors, and the
-     exception is not caught locally, it will propagate out of
-     event-loop-run!.
+     exhausted.
 
  -- Scheme Procedure: event-loop-add-write-watch! file proc [loop]
      The 'loop' (event loop) argument is optional.  This procedure will
@@ -650,9 +648,7 @@ await-geteveryline!  and await-getsomelines!  procedures.
      so that a partial write is possible without blocking the writer.
 
      This procedure should not throw an exception unless memory is
-     exhausted.  If 'proc' throws, say because of port errors, and the
-     exception is not caught locally, it will propagate out of
-     event-loop-run!.
+     exhausted.
 
  -- Scheme Procedure: event-loop-remove-read-watch! file [loop]
      The 'loop' (event loop) argument is optional.  This procedure will
@@ -1660,7 +1656,7 @@ Node: Top83
 Node: overview1010
 Node: coroutines3960
 Node: event loop22191
-Node: compose75799
-Node: try81407
+Node: compose75519
+Node: try81127
 
 End Tag Table

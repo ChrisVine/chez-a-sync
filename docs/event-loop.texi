@@ -136,9 +136,7 @@ char-ready? or input-port-ready?, or by using chez scheme's various
 multi-byte/character reading procedures on non-blocking ports).
 
 This procedure should not throw an exception unless memory is
-exhausted.  If 'proc' throws, say because of port errors, and the
-exception is not caught locally, it will propagate out of
-event-loop-run!.
+exhausted.
 @end deffn
 
 @deffn {Scheme Procedure} event-loop-add-write-watch! file proc [loop]
@@ -180,9 +178,7 @@ set-textual-port-output-size! procedure to the port with a value of
 write is possible without blocking the writer.
 
 This procedure should not throw an exception unless memory is
-exhausted.  If 'proc' throws, say because of port errors, and the
-exception is not caught locally, it will propagate out of
-event-loop-run!.
+exhausted.
 @end deffn
 
 @deffn {Scheme Procedure} event-loop-remove-read-watch! file [loop]
