@@ -60,7 +60,7 @@
 (include "helper/queue.ss")
 (include "helper/errno.ss")
 (include "helper/match.ss")
-
+(include "helper/unix_write.ss")
 
 ;; this variable is not exported - use the accessors below
 (define ***default-event-loop*** #f)
@@ -1751,11 +1751,34 @@
 ;; loop passed in as an argument, or if none is passed (or #f is
 ;; passed), on the default event loop.
 ;;
-;; 'port' must be a non-blocking port, or this procedure may block the
-;; event loop when writing.  In addition, it should be unbuffered (say
+;; 'port' must be a non-blocking port.  It should be unbuffered (say
 ;; by applying the set-textual-port-output-size! procedure to the port
-;; with a value of 0), or any buffer flushing operation may also
-;; block.
+;; with a value of 0), but if using a port constructed with
+;; 'open-fd-output-port' or 'open-fd-input/output-port', chez scheme
+;; does not in fact fully implement no buffering on textual ports in
+;; order to support multi-byte encodings.  This means that if a read
+;; were to be followed by a write (which includes a flush) on a
+;; textual port constructed by 'open-fd-input/output-port', an
+;; exception will occur when attempting a seek when moving from
+;; reading to writing.  (Seeking when moving from reading to writing
+;; is necessary for buffered input-output ports for seekable files,
+;; but not for ports for files, such as sockets, which have no file
+;; position pointer and so are not seekable.)
+;;
+;; To deal with this, this procedure by-passes the port's output
+;; buffer and sends the output to the underlying file descriptor
+;; directly.  Accordingly, if using a port for a socket constructed by
+;; 'open-fd-input/output-port' which has previously been used for
+;; output by a procedure other than this one, the following approach
+;; should be adopted: (i) the port should be drained of input and any
+;; characters drained dealt with appropriately, (ii) the
+;; 'clear-input-port' procedure should be applied to the port to reset
+;; input buffer pointers, and (iii) anything in the output buffer
+;; should then be flushed.  Thereafter the await-get*line procedures
+;; and this procedure may be used for the port.  If using a port
+;; constructed by 'open-fd-output-port' which has previously been used
+;; for output by a procedure other than this one then it should be
+;; flushed before this procedure is called.
 ;;
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.
@@ -1763,23 +1786,25 @@
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up (that is, before the first call to 'await' is made),
 ;; which shouldn't happen unless memory is exhausted.  Subsequent
-;; exceptions (say, because of port errors) will propagate out of
-;; event-loop-run!.
+;; exceptions (say, because of port or conversion errors) will
+;; propagate out of event-loop-run!.
 ;;
 ;; This procedure is first available in version 0.7 of this library.
 (define await-put-string! 
   (case-lambda
     [(await resume port text) (await-put-string! await resume #f port text)]
     [(await resume loop port text)
-     (define length (string-length text))
+     (define bv (string->bytevector text (port-transcoder port)))
+     (define length (bytevector-length bv))
      (define index 0)
+     (define fd (port-file-descriptor port))
      (a-sync-write-watch! resume
 			  port
 			  (lambda (status)
-			    (set! index (+ index (put-string-some port
-								  text
-								  index
-								  (- length index))))
+			    (set! index (+ index (c-write fd
+							  bv
+							  index
+							  (- length index))))
 			    (if (< index length)
 				'more
 				#f))

@@ -25,40 +25,6 @@
 ;;
 ;; This file uses the chez-sockets implementation from
 ;; https://github.com/arcfide/chez-sockets
-;;
-;; !!BEWARE!! : the code in this file works because there is only a
-;; write to the socket port constructed by 'make-sockport' (the GET
-;; request) followed by a read (the reading of the response to the GET
-;; request).  If the read were to be followed by a further write, the
-;; code would fail with an exception, because ports constructed with
-;; open-fd-input/output-port attempt a seek when moving from reading
-;; to writing.  Seeking when moving from reading to writing is
-;; necessary for buffered input-output ports for seekable files, but
-;; not for ports for files, such as sockets, which have no file
-;; position pointer and so are not seekable.  This is probably a bug
-;; in Chez Scheme's port implementation, but there are three ways of
-;; dealing with a case where there is to be a read followed by a write
-;; on a port for a socket:
-;;
-;;   (i) where all writes and reads follow a request->response format,
-;;   and it is known when each response has ended so there can be
-;;   nothing further to arrive in the read buffer before the next
-;;   write is made, the 'clear-input-port' procedure can be called,
-;;   which will reset all the input buffer pointers ready for a write
-;;   to be made.
-;;
-;;   (ii) where that is not the case, the socket port can be made
-;;   unbuffered for input (as well as output) by constructing the port
-;;   with a buffer mode of 'none', so that the 'clear-input-port'
-;;   procedure can always safely be called when moving from reading to
-;;   writing.  This is not quite as bad as it seems, because with this
-;;   approach reading will normally take individual characters from
-;;   the socket's network buffer as maintained by the socket
-;;   implementation.  Testing should reveal whether an unbuffered
-;;   input port is problematic for the use case in question.
-;;
-;;   (iii) if all else fails, a custom implementation of a socket port
-;;   with input buffering will have to be made.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -123,10 +89,6 @@
        (let-values ([(header body) (read-response-async await resume sockport)])
 	 (display body)
 	 (newline))
-       (clear-input-port sockport) ;; we don't actually need to do
-				   ;; this because there is no further
-				   ;; write - see introductory
-				   ;; remarks.
        (event-loop-block! #f)))))
 
 (event-loop-block! #t)
