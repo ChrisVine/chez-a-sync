@@ -40,8 +40,8 @@
 			     (make-who-condition "make-pipe")
 			     (make-message-condition "C pipe() function returned an error")
 			     (make-irritants-condition `(errno ,(a-sync-errno))))))
-	 (values
-	  (open-fd-input-port (bytevector-s32-native-ref read-bv 0)
-			      read-b-mode transcoder)
-	  (open-fd-output-port (bytevector-s32-native-ref write-bv 0)
-			       write-b-mode transcoder))))]))
+	 (let ([in (open-fd-input-port (bytevector-s32-native-ref read-bv 0)
+				       read-b-mode transcoder)]
+	       [out (open-fd-output-port (bytevector-s32-native-ref write-bv 0)
+					 write-b-mode transcoder)])
+	   (values in out))))]))
