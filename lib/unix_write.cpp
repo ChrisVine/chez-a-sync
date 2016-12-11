@@ -14,6 +14,8 @@
  permissions and limitations under the License.
 */
 
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <errno.h>
 
@@ -27,6 +29,15 @@ ssize_t a_sync_c_write(int fd, const char* buf, size_t begin, size_t count) {
   if (ret == -1 && (errno == EAGAIN || errno == EWOULDBLOCK))
     return 0;
   return ret;
+}
+
+int a_sync_regular_file_p(int fd) {
+  struct stat buf;
+  if (fstat(fd, &buf) == -1)
+    return -1;
+  if (S_ISREG(buf.st_mode))
+    return 1;
+  return 0;
 }
 
 } // extern "C"

@@ -1780,14 +1780,20 @@
 ;; for output by a procedure other than this one then it should be
 ;; flushed before this procedure is called.
 ;;
+;; This procedure will raise a &serious exception if passed a regular
+;; file with a file position pointer: there should be no need to use
+;; this procedure with regular files, because they cannot normally
+;; block on write and are always signalled as ready.
+;;
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.
 ;;
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up (that is, before the first call to 'await' is made),
-;; which shouldn't happen unless memory is exhausted.  Subsequent
-;; exceptions (say, because of port or conversion errors) will
-;; propagate out of event-loop-run!.
+;; which shouldn't happen unless memory is exhausted or a regular file
+;; is passed to this procedure.  Subsequent exceptions (say, because
+;; of port or conversion errors) will propagate out of
+;; event-loop-run!.
 ;;
 ;; This procedure is first available in version 0.7 of this library.
 (define await-put-string! 
@@ -1798,6 +1804,7 @@
      (define length (bytevector-length bv))
      (define index 0)
      (define fd (port-file-descriptor port))
+     (raise-exception-if-regular-file fd)
      (a-sync-write-watch! resume
 			  port
 			  (lambda (status)

@@ -47,3 +47,17 @@
 			     (make-irritants-condition `(errno ,(a-sync-errno))))))
     res))
 	
+(define a-sync-regular-file-p (foreign-procedure "a_sync_regular_file_p"
+						 (int)
+						 int))
+
+(define (raise-exception-if-regular-file fd)
+  (case (a-sync-regular-file-p fd)
+    [(0) #f]
+    [(1) (raise (condition (make-serious-condition)
+			   (make-who-condition "raise-condition-if-regular-file")
+			   (make-message-condition "await-put-string! procedure cannot be used with regular files")))]
+    [(-1) (raise (condition (make-serious-condition)
+			    (make-who-condition "raise-condition-if-regular-file")
+			    (make-message-condition "C fstat() function returned an error")
+			    (make-irritants-condition `(errno ,(a-sync-errno)))))]))
