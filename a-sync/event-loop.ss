@@ -1743,7 +1743,7 @@
 ;;   (await-put-bytevector! await resume [loop] port text)
 ;;
 ;; This procedure will start a write watch on 'port' for writing the
-;; contents of a bytevector to the port.  It calls 'await' while
+;; contents of a bytevector 'bv' to the port.  It calls 'await' while
 ;; waiting for output to become available.  Provided 'port' is a
 ;; non-blocking port, the event loop will not be blocked by this
 ;; procedure even if only individual bytes can be written at any one
@@ -1835,12 +1835,12 @@
 ;;   (await-put-string! await resume [loop] port text)
 ;;
 ;; This procedure will start a write watch on 'port' for writing a
-;; string to the port.  It calls 'await' while waiting for output to
-;; become available.  Provided 'port' is a non-blocking port, the
-;; event loop will not be blocked by this procedure even if only
-;; individual characters or part characters can be written at any one
-;; time.  It is intended to be called in a waitable procedure invoked
-;; by a-sync, and this procedure is implemented using
+;; string 'text' to the port.  It calls 'await' while waiting for
+;; output to become available.  Provided 'port' is a non-blocking
+;; port, the event loop will not be blocked by this procedure even if
+;; only individual characters or part characters can be written at any
+;; one time.  It is intended to be called in a waitable procedure
+;; invoked by a-sync, and this procedure is implemented using
 ;; await-put-bytevector!.  The 'loop' argument is optional: this
 ;; procedure operates on the event loop passed in as an argument, or
 ;; if none is passed (or #f is passed), on the default event loop.
