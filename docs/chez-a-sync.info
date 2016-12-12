@@ -1509,7 +1509,7 @@ the worker thread should post the closing as an event using event-post!.
      of port or conversion errors) will propagate out of
      event-loop-run!.
 
-     This procedure is first available in version 0.7 of this library.
+     This procedure is first available in version 0.8 of this library.
 
      An example of the use of await-put-string!, which is implemented
      using this procedure, can be found in the example-socket.ss file in

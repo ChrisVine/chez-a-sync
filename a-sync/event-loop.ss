@@ -1805,7 +1805,7 @@
 ;; of port or conversion errors) will propagate out of
 ;; event-loop-run!.
 ;;
-;; This procedure is first available in version 0.7 of this library.
+;; This procedure is first available in version 0.8 of this library.
 (define await-put-bytevector!
   (case-lambda
     [(await resume port bv) (await-put-string! await resume #f port bv)]
