@@ -28,15 +28,15 @@
 					  (int u8* size_t size_t)
 					  ssize_t))
 
-;; This procedure is used by await-put-string! and is exported by
-;; event-loop.ss so that it can be used by other asynchronous
-;; procedures.  It makes a block write directly to output, bypassing
-;; any output buffers, using unix write.  It is intended for use with
-;; asynchronous procedures which must not block and must write
-;; immediately without requiring a subsequent flush to do so (chez
-;; scheme's textual ports always implement some buffering and will not
-;; write without a flush, irrespective of their buffering status on
-;; construction).
+;; This procedure is used by await-put-bytevector! (and so by
+;; await-put-string!) and is exported by event-loop.ss so that it can
+;; be used by other asynchronous procedures.  It makes a block write
+;; directly to output, bypassing any output buffers, using unix write.
+;; It is intended for use with asynchronous procedures which must not
+;; block and must write immediately without requiring a subsequent
+;; flush to do so (chez scheme's textual ports always implement some
+;; buffering and will not write without a flush, irrespective of their
+;; buffering status on construction).
 ;;
 ;; This procedure provides a 'begin' parameter indicating the start of
 ;; the sequence of bytes to be written, as an index.  'fd' is the file
