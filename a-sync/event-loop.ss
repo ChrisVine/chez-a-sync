@@ -49,6 +49,7 @@
    await-geteveryline!
    await-getsomelines!
    await-put-string!
+   c-write
    make-pipe)
   (import
    (a-sync try)
@@ -60,7 +61,7 @@
 (include "helper/queue.ss")
 (include "helper/errno.ss")
 (include "helper/match.ss")
-(include "helper/unix_write.ss")
+(include "helper/unix-write.ss")
 
 ;; this variable is not exported - use the accessors below
 (define ***default-event-loop*** #f)
