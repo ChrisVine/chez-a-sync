@@ -998,54 +998,125 @@ implementation of await-put-string!:
 @end example
 @end deffn
 
-@deffn {Scheme Procedure} await-put-string! await resume [loop] port text
+@deffn {Scheme Procedure} await-put-bytevector! await resume [loop] port text
 This is a convenience procedure for use in an event loop, which will
-start a write watch on 'port' for writing a string to the port.  It
-calls 'await' while waiting for output to become available.  Provided
-'port' is a non-blocking port, the event loop will not be blocked by
-this procedure even if only individual characters can be written at
-any one time.  It is intended to be called in a waitable procedure
-invoked by a-sync, and this procedure is implemented using
-a-sync-write-watch!.  The 'loop' argument is optional: this procedure
-operates on the event loop passed in as an argument, or if none is
-passed (or #f is passed), on the default event loop.
+start a write watch on 'port' for writing the contents of a bytevector
+to the port.  It calls 'await' while waiting for output to become
+available.  Provided 'port' is a non-blocking port, the event loop
+will not be blocked by this procedure even if only individual bytes
+can be written at any one time.  It is intended to be called in a
+waitable procedure invoked by a-sync, and this procedure is
+implemented using a-sync-write-watch!.  The 'loop' argument is
+optional: this procedure operates on the event loop passed in as an
+argument, or if none is passed (or #f is passed), on the default event
+loop.
 
-'port' must be a non-blocking port.  It should be unbuffered (say
-by applying the set-textual-port-output-size! procedure to the port
-with a value of 0), but if using a port constructed with
-'open-fd-output-port' or 'open-fd-input/output-port', chez scheme
-does not in fact fully implement no buffering on textual ports in
-order to support multi-byte encodings.  This means that if a read
-were to be followed by a write (which includes a flush) on a
-textual port constructed by 'open-fd-input/output-port', an
-exception will occur when attempting a seek when moving from
-reading to writing.  (Seeking when moving from reading to writing
-is necessary for buffered input-output ports for seekable files,
-but not for ports for files, such as sockets, which have no file
-position pointer and so are not seekable.)
+'port' must be a non-blocking port, and may be a binary port or a
+textual port.  It should be unbuffered for output (say by applying the
+set-binary-port-output-size! or set-textual-port-output-size!
+procedure to the port with a value of 0).  Having buffering on for
+input ports is generally desirable, but this leads to a complication
+with input-output ports (say for sockets) constructed with
+'open-fd-input/output-port' with input buffering on, because if a read
+on the port were to be followed by a write (which includes a flush),
+an exception will occur when attempting a seek when moving from
+reading to writing.  (Seeking when moving from reading to writing is
+necessary for buffered input-output ports for seekable files, but not
+for ports for files, such as sockets, which have no file position
+pointer and so are not seekable.)  In addition chez scheme does not in
+fact fully implement no buffering on textual ports, probably in order
+to support multi-byte encodings.
 
-To deal with this, this procedure by-passes the port's output
-buffer and sends the output to the underlying file descriptor
-directly.  Accordingly, if using a port for a socket constructed by
-'open-fd-input/output-port' which has previously been used for
-output by a procedure other than this one, the following approach
-should be adopted: (i) the port should be drained of input and any
-characters drained dealt with appropriately, (ii) the
-'clear-input-port' procedure should be applied to the port to reset
-input buffer pointers, and (iii) anything in the output buffer
-should then be flushed.  Thereafter the await-get*line procedures
-and this procedure may be used for the port.  If using a port
-constructed by 'open-fd-output-port' which has previously been used
-for output by a procedure other than this one then it should be
-flushed before this procedure is called.
+To deal with this, this procedure by-passes the port's output buffer
+and sends the output to the underlying file descriptor directly.
+Accordingly, if using a binary port constructed by
+'open-fd-input/output-port' which has had buffering on, or if using a
+textual port constructed by that procedure with or without buffering,
+and the port has previously been used for output by a procedure other
+than c-write or an await-put* procedure, the following approach should
+be adopted: (i) the port should be drained of input and any bytes
+drained dealt with appropriately, (ii) the 'clear-input-port'
+procedure should be applied to the port to reset input buffer
+pointers, and (iii) anything in the output buffer should then be
+flushed.  Thereafter the await-get*line, c-write and await-put*
+procedures may be used for the port.  If using a binary port
+constructed by 'open-fd-output-port' with buffering on or a textual
+port constructed by that procedure with or without buffering, and the
+port has previously been used for output by a procedure other than
+c-write or an await-put* procedure, then it should be flushed before
+this procedure is called.
 
 This procedure will raise a &serious exception if passed a regular
 file with a file position pointer: there should be no need to use this
 procedure with regular files, because they cannot normally block on
 write and are always signalled as ready.
 
-This procedure must (like the a-sync procedure) be called in the
-same thread as that in which the event loop runs.
+This procedure must (like the a-sync procedure) be called in the same
+thread as that in which the event loop runs.
+
+Exceptions may propagate out of this procedure if they arise while
+setting up (that is, before the first call to 'await' is made), which
+shouldn't happen unless memory is exhausted or a regular file is
+passed to this procedure.  Subsequent exceptions (say, because of port
+or conversion errors) will propagate out of event-loop-run!.
+
+This procedure is first available in version 0.7 of this library.
+
+An example of the use of await-put-string!, which is implemented using
+this procedure, can be found in the example-socket.ss file in the docs
+directory.
+@end deffn
+
+@deffn {Scheme Procedure} await-put-string! await resume [loop] port text
+This is a convenience procedure for use in an event loop, which will
+start a write watch on 'port' for writing a string to the port.  It
+calls 'await' while waiting for output to become available.  Provided
+'port' is a non-blocking port, the event loop will not be blocked by
+this procedure even if only individual characters or part characters
+can be written at any one time.  It is intended to be called in a
+waitable procedure invoked by a-sync, and this procedure is
+implemented using await-put-bytevector!.  The 'loop' argument is
+optional: this procedure operates on the event loop passed in as an
+argument, or if none is passed (or #f is passed), on the default event
+loop.
+
+'port' must be a non-blocking textual port.  It should be unbuffered
+for output (say by applying the set-textual-port-output-size!
+procedure to the port with a value of 0), but if using a port
+constructed with 'open-fd-output-port' or 'open-fd-input/output-port',
+chez scheme does not in fact fully implement no buffering on textual
+ports, probably in order to support multi-byte encodings.  As
+explained in relation to await-put-bytevector!, this means that if a
+read were to be followed by a write (which includes a flush) on a
+textual port constructed by 'open-fd-input/output-port', an exception
+will occur when attempting a seek when moving from reading to writing.
+(Seeking when moving from reading to writing is necessary for buffered
+input-output ports for seekable files, but not for ports for files,
+such as sockets, which have no file position pointer and so are not
+seekable.)
+
+To deal with this, this procedure by-passes the port's output buffer
+and sends the output to the underlying file descriptor directly.
+Accordingly, if using a port for a socket constructed by
+'open-fd-input/output-port' which has previously been used for output
+by a procedure other than c-write or an await-put* procedure, the
+following approach should be adopted: (i) the port should be drained
+of input and any characters drained dealt with appropriately, (ii) the
+'clear-input-port' procedure should be applied to the port to reset
+input buffer pointers, and (iii) anything in the output buffer should
+then be flushed.  Thereafter the await-get*line, c-write and
+await-put* procedures may be used for the port.  If using a port
+constructed by 'open-fd-output-port' which has previously been used
+for output by a procedure other than c-write or an await-put*
+procedure, then it should be flushed before this procedure is called.
+
+This procedure will raise a &serious exception if passed a regular
+file with a file position pointer: there should be no need to use this
+procedure with regular files, because they cannot normally block on
+write and are always signalled as ready.
+
+This procedure must (like the a-sync procedure) be called in the same
+thread as that in which the event loop runs.
 
 Exceptions may propagate out of this procedure if they arise while
 setting up (that is, before the first call to 'await' is made), which
