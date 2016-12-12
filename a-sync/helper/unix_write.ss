@@ -28,16 +28,36 @@
 					  (int u8* size_t size_t)
 					  ssize_t))
 
-;; Signature: (a-sync-c-write fd bytevector begin end)
+;; This procedure is used by await-put-string! and is exported by
+;; event-loop.ss so that it can be used by other asynchronous
+;; procedures.  It makes a block write directly to output, bypassing
+;; any output buffers, using unix write.  It is intended for use with
+;; asynchronous procedures which must not block and must write
+;; immediately without requiring a subsequent flush to do so (chez
+;; scheme's textual ports always implement some buffering and will not
+;; write without a flush, irrespective of their buffering status on
+;; construction).
 ;;
-;; This forwards to unix write, but provides a begin parameter
-;; indicating the start of the bytes to be written.  The sum of begin
-;; and count must not be more than the size of the bytevector.  This
-;; enables a bytevector to be used repeatedly until all of it has been
-;; sent.
+;; This procedure provides a 'begin' parameter indicating the start of
+;; the sequence of bytes to be written, as an index.  'fd' is the file
+;; descriptor of the device to be written to.  'bv' is a bytevector
+;; containing the bytes to be written.  'count' is the maximum number
+;; of bytes to be written.  Because this procedure is intended for use
+;; with non-blocking ports, it may write less than 'count' bytes: only
+;; the number of bytes available to the device to be written to will
+;; be written at any one time.  The sum of 'begin' and 'count' must
+;; not be more than the length of the bytevector.  The use of a
+;; separate 'begin' index enables the same bytevector to be written
+;; from repeatedly until all of it has been sent.
 ;;
-;; Returns: the number of bytes written (so 0 returned on EAGAIN or
-;; EWOULDBLOCK), or on error a serious-condition is raised
+;; This procedure returns immediately with the number of bytes written
+;; (so 0 is returned if the file descriptor is not available for
+;; writing because the device is full).  On a write error other than
+;; EAGAIN, EWOULDBLOCK or EINTR, a &serious exception is raised which
+;; will give the errno number as an irritant.  EINTR is handled
+;; internally and is not an error.
+;;
+;; This procedure is first available in version 0.8 of this library.
 (define (c-write fd bv begin count)
   (let ([res (a-sync-c-write fd bv begin count)])
     (when (= res -1)
