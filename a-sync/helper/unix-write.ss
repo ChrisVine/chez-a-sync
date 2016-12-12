@@ -40,22 +40,25 @@
 ;;
 ;; This procedure provides a 'begin' parameter indicating the start of
 ;; the sequence of bytes to be written, as an index.  'fd' is the file
-;; descriptor of the device to be written to.  'bv' is a bytevector
-;; containing the bytes to be written.  'count' is the maximum number
-;; of bytes to be written.  Because this procedure is intended for use
-;; with non-blocking ports, it may write less than 'count' bytes: only
-;; the number of bytes available to the device to be written to will
-;; be written at any one time.  The sum of 'begin' and 'count' must
-;; not be more than the length of the bytevector.  The use of a
-;; separate 'begin' index enables the same bytevector to be written
-;; from repeatedly until all of it has been sent.
+;; descriptor of the device to be written to, and it should be
+;; non-blocking (say, 'fd' is derived from a port to which
+;; set-port-nonblocking! has been applied with an argument of #t).
+;; 'bv' is a bytevector containing the bytes to be written.  'count'
+;; is the maximum number of bytes to be written.  Because this
+;; procedure is intended for use with non-blocking ports, it may write
+;; less than 'count' bytes: only the number of bytes available to the
+;; device to be written to will be written at any one time.  The sum
+;; of 'begin' and 'count' must not be more than the length of the
+;; bytevector.  The use of a separate 'begin' index enables the same
+;; bytevector to be written from repeatedly until all of it has been
+;; sent.
 ;;
-;; This procedure returns immediately with the number of bytes written
-;; (so 0 is returned if the file descriptor is not available for
-;; writing because the device is full).  On a write error other than
-;; EAGAIN, EWOULDBLOCK or EINTR, a &serious exception is raised which
-;; will give the errno number as an irritant.  EINTR is handled
-;; internally and is not an error.
+;; Provided 'fd' is non-blocking, this procedure returns immediately
+;; with the number of bytes written (so 0 is returned if the file
+;; descriptor is not available for writing because the device is
+;; full).  On a write error other than EAGAIN, EWOULDBLOCK or EINTR, a
+;; &serious exception is raised which will give the errno number as an
+;; irritant.  EINTR is handled internally and is not an error.
 ;;
 ;; This procedure is first available in version 0.8 of this library.
 (define (c-write fd bv begin count)
