@@ -970,16 +970,16 @@ exception is not caught locally, it will propagate out of
 event-loop-run!.
 
 As an example of how to use a-sync-write-watch!, here is the
-implementation of await-put-string!:
+implementation of await-put-bytevector!:
 @example
-(define await-put-string! 
+(define await-put-bytevector!
   (case-lambda
-    [(await resume port text) (await-put-string! await resume #f port text)]
-    [(await resume loop port text)
-     (define bv (string->bytevector text (port-transcoder port)))
+    [(await resume port bv) (await-put-string! await resume #f port bv)]
+    [(await resume loop port bv)
      (define length (bytevector-length bv))
      (define index 0)
      (define fd (port-file-descriptor port))
+     (raise-exception-if-regular-file fd)
      (a-sync-write-watch! resume
 			  port
 			  (lambda (status)
