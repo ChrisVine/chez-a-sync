@@ -1240,8 +1240,9 @@ the worker thread should post the closing as an event using event-post!.
      This is a convenience procedure for use with an event loop, which
      will start a read watch on 'port' for a line of input.  It calls
      'await' while waiting for input and will return the line of text
-     received (without the terminating '\n' character).  'port' must be
-     a textual port.  The event loop will not be blocked by this
+     received (without the terminating '\n' character).  'port' should
+     be a textual port and should be non-blocking.  Provided 'port' is a
+     non-blocking port, the event loop will not be blocked by this
      procedure even if only individual characters are available at any
      one time.  It is intended to be called in a waitable procedure
      invoked by a-sync, and this procedure is implemented using
@@ -1279,18 +1280,19 @@ the worker thread should post the closing as an event using event-post!.
      'await' while waiting for input and will apply 'proc' to every
      complete line of text received (without the terminating '\n'
      character).  'proc' should be a procedure taking a string as its
-     only argument.  'port' should be a textual port.
+     only argument.  'port' should be a textual port and should be
+     non-blocking.
 
-     The event loop will not be blocked by this procedure even if only
-     individual characters are available at any one time.  It is
-     intended to be called in a waitable procedure invoked by a-sync,
-     and this procedure is implemented using a-sync-read-watch!.  Unlike
-     the await-getline!  procedure, the watch will continue after a line
-     of text has been received in order to receive further lines.  The
-     watch will not end until end-of-file or an exceptional condition
-     ('excpt) is reached.  In the event of that happening, this
-     procedure will end and return an end-of-file object or #f
-     respectively.
+     Provided 'port' is a non-blocking port, the event loop will not be
+     blocked by this procedure even if only individual characters are
+     available at any one time.  It is intended to be called in a
+     waitable procedure invoked by a-sync, and this procedure is
+     implemented using a-sync-read-watch!.  Unlike the await-getline!
+     procedure, the watch will continue after a line of text has been
+     received in order to receive further lines.  The watch will not end
+     until end-of-file or an exceptional condition ('excpt) is reached.
+     In the event of that happening, this procedure will end and return
+     an end-of-file object or #f respectively.
 
      The 'loop' argument is optional: this procedure operates on the
      event loop passed in as an argument, or if none is passed (or #f is
@@ -1340,17 +1342,18 @@ the worker thread should post the closing as an event using event-post!.
      terminating '\n' character).  'proc' should be a procedure taking
      two arguments, a string as the first argument containing the line
      of text read, and an escape continuation as its second.  'port'
-     should be a textual port.
+     should be a textual port and should be non-blocking.
 
-     The event loop will not be blocked by this procedure even if only
-     individual characters are available at any one time.  It is
-     intended to be called in a waitable procedure invoked by a-sync.
-     This procedure is implemented using a-sync-read-watch!.  The watch
-     will not end until end-of-file or an exceptional condition ('excpt)
-     is reached, which would cause this procedure to end and return an
-     end-of-file object or #f respectively, or until the escape
-     continuation is invoked, in which case the value passed to the
-     escape continuation will be returned.
+     Provided 'port' is a non-blocking port, the event loop will not be
+     blocked by this procedure even if only individual characters are
+     available at any one time.  It is intended to be called in a
+     waitable procedure invoked by a-sync.  This procedure is
+     implemented using a-sync-read-watch!.  The watch will not end until
+     end-of-file or an exceptional condition ('excpt) is reached, which
+     would cause this procedure to end and return an end-of-file object
+     or #f respectively, or until the escape continuation is invoked, in
+     which case the value passed to the escape continuation will be
+     returned.
 
      The 'loop' argument is optional: this procedure operates on the
      event loop passed in as an argument, or if none is passed (or #f is
@@ -1386,6 +1389,147 @@ the worker thread should post the closing as an event using event-post!.
           					   "The line was: ~A\n"
           					   line))))))
           (event-loop-run!)
+
+ -- Scheme Procedure: await-getblock! await resume [loop] port size
+     This is a convenience procedure for use with an event loop, which
+     will start a read watch on 'port' for a block of data, such as a
+     binary record, of size 'size'.  It calls 'await' while waiting for
+     input and will return a pair, normally comprising as its car a
+     bytevector of length 'size' containing the data, and as its cdr the
+     number of bytes received (which will be the same as 'size' unless
+     an end-of-file object was encountered part way through receiving
+     the data).  'port' should be a binary port and should be
+     non-blocking.
+
+     Provided 'port' is a non-blocking port, the event loop will not be
+     blocked by this procedure even if only individual bytes are
+     available at any one time.  It is intended to be called in a
+     waitable procedure invoked by a-sync.  This procedure is
+     implemented using a-sync-read-watch!.
+
+     If an exceptional condition ('excpt) is encountered, a pair
+     comprising (#f .  'f) will be returned.  As mentioned above, if an
+     end-of-file object is encountered after receipt of some but not
+     'size' bytes, then a bytevector of length 'size' will be returned
+     as car and the actual (lesser) number of bytes inserted in it as
+     cdr.  If an end-of-file object is encountered without any bytes of
+     data, a pair with eof-object as car and #f as cdr will be returned.
+
+     The 'loop' argument is optional: this procedure operates on the
+     event loop passed in as an argument, or if none is passed (or #f is
+     passed), on the default event loop.
+
+     This procedure must (like the a-sync procedure) be called in the
+     same thread as that in which the event loop runs.
+
+     Exceptions may propagate out of this procedure if they arise while
+     setting up (that is, before the first call to 'await' is made),
+     which shouldn't happen unless memory is exhausted.  Subsequent
+     exceptions (say, because of port errors) will propagate out of
+     event-loop-run!.
+
+     This procedure is first available in version 0.8 of this library.
+
+ -- Scheme Procedure: await-geteveryblock! await resume [loop] port proc
+          size
+     This is a convenience procedure for use with an event loop, which
+     will start a read watch on 'port' for blocks of data, such as
+     binary records, of size 'size'.  It calls 'await' while waiting for
+     input and will apply 'proc' to any block of data received.  'proc'
+     should be a procedure taking two arguments, first a bytevector of
+     length 'size' containing the block of data read and second the size
+     of the block of data placed in the bytevector.  The value passed as
+     the size of the block of data placed in the bytevector will always
+     be the same as 'size' unless end-of-file has been encountered after
+     receiving only a partial block of data.  'port' should be a binary
+     port and should be non-blocking.
+
+     Provided 'port' is a non-blocking port, the event loop will not be
+     blocked by this procedure even if only individual bytes are
+     available at any one time.  It is intended to be called in a
+     waitable procedure invoked by a-sync.  This procedure is
+     implemented using a-sync-read-watch!.  Unlike the await-getblock!
+     procedure, the watch will continue after a complete block of data
+     has been received in order to receive further blocks.  The watch
+     will not end until end-of-file or an exceptional condition ('excpt)
+     is reached.  In the event of that happening, this procedure will
+     end and return an end-of-file object or #f respectively.
+
+     The 'loop' argument is optional: this procedure operates on the
+     event loop passed in as an argument, or if none is passed (or #f is
+     passed), on the default event loop.
+
+     This procedure must (like the a-sync procedure) be called in the
+     same thread as that in which the event loop runs.
+
+     Exceptions may propagate out of this procedure if they arise while
+     setting up (that is, before the first call to 'await' is made),
+     which shouldn't happen unless memory is exhausted.  Subsequent
+     exceptions (say, because of port errors) will propagate out of
+     event-loop-run!.  Exceptions raised by 'proc', if not caught
+     locally, will also propagate out of event-loop-run!.
+
+     If a continuable exception propagates out of this procedure, it
+     will be converted into a non-continuable one (continuable
+     exceptions are incompatible with asynchronous event handling using
+     this procedure and may break resource management which uses
+     rethrows or dynamic winds).
+
+     This procedure is first available in version 0.8 of this library.
+
+ -- Scheme Procedure: await-getsomeblocks! await resume [loop] port proc
+          size
+     This is a convenience procedure for use with an event loop, which
+     does the same as await-geteveryblock!, except that it provides a
+     third argument to 'proc', namely an escape continuation which can
+     be invoked by 'proc' to cause the procedure to return before
+     end-of-file is reached.  Behavior is identical to
+     await-geteveryblock!  if the continuation is not invoked.
+
+     This procedure will start a read watch on 'port' for blocks of
+     data, such as binary records, of size 'size'.  It calls 'await'
+     while waiting for input and will apply 'proc' to any block of data
+     received.  'proc' should be a procedure taking three arguments,
+     first a bytevector of length 'size' containing the block of data
+     read, second the size of the block of data placed in the bytevector
+     and third an escape continuation.  The value passed as the size of
+     the block of data placed in the bytevector will always be the same
+     as 'size' unless end-of-file has been encountered after receiving
+     only a partial block of data.  'port' should be a binary port and
+     should be non-blocking.
+
+     Provided 'port' is a non-blocking port, the event loop will not be
+     blocked by this procedure even if only individual bytes are
+     available at any one time.  It is intended to be called in a
+     waitable procedure invoked by a-sync.  This procedure is
+     implemented using a-sync-read-watch!.  The watch will not end until
+     end-of-file or an exceptional condition ('excpt) is reached, which
+     would cause this procedure to end and return an end-of-file object
+     or #f respectively, or until the escape continuation is invoked, in
+     which case the value passed to the escape continuation will be
+     returned.
+
+     The 'loop' argument is optional: this procedure operates on the
+     event loop passed in as an argument, or if none is passed (or #f is
+     passed), on the default event loop.
+
+     This procedure must (like the a-sync procedure) be called in the
+     same thread as that in which the event loop runs.
+
+     Exceptions may propagate out of this procedure if they arise while
+     setting up (that is, before the first call to 'await' is made),
+     which shouldn't happen unless memory is exhausted.  Subsequent
+     exceptions (say, because of port errors) will propagate out of
+     event-loop-run!.  Exceptions raised by 'proc', if not caught
+     locally, will also propagate out of event-loop-run!.
+
+     If a continuable exception propagates out of this procedure, it
+     will be converted into a non-continuable one (continuable
+     exceptions are incompatible with asynchronous event handling using
+     this procedure and may break resource management which uses
+     rethrows or dynamic winds).
+
+     This procedure is first available in version 0.8 of this library.
 
  -- Scheme Procedure: a-sync-write-watch! resume file proc [loop]
      This is a convenience procedure for use with an event loop, which
@@ -1461,17 +1605,17 @@ the worker thread should post the closing as an event using event-post!.
      the set-binary-port-output-size!  or set-textual-port-output-size!
      procedure to the port with a value of 0).  Having buffering on for
      input ports is generally desirable, but this leads to a
-     complication with input-output ports (say for sockets) constructed
-     with 'open-fd-input/output-port' with input buffering on, because
-     if a read on the port were to be followed by a write (which
-     includes a flush), an exception will occur when attempting a seek
-     when moving from reading to writing.  (Seeking when moving from
-     reading to writing is necessary for buffered input-output ports for
-     seekable files, but not for ports for files, such as sockets, which
-     have no file position pointer and so are not seekable.)  In
-     addition chez scheme does not in fact fully implement no buffering
-     on textual ports, probably in order to support multi-byte
-     encodings.
+     complication with input-output ports for non-seekable devices (say
+     for sockets) constructed with 'open-fd-input/output-port' with
+     input buffering on, because if a read on the port were to be
+     followed by a write (which includes a flush), an exception will
+     occur when attempting a seek when moving from reading to writing.
+     (Seeking when moving from reading to writing is necessary for
+     buffered input-output ports for seekable files, but not for ports
+     for files, such as sockets, which have no file position pointer and
+     so are not seekable.)  In addition chez scheme does not in fact
+     fully implement no buffering on textual ports, probably in order to
+     support multi-byte encodings.
 
      To deal with this, this procedure by-passes the port's output
      buffer and sends the output to the underlying file descriptor
@@ -1484,14 +1628,13 @@ the worker thread should post the closing as an event using event-post!.
      drained of input and any bytes drained dealt with appropriately,
      (ii) the 'clear-input-port' procedure should be applied to the port
      to reset input buffer pointers, and (iii) anything in the output
-     buffer should then be flushed.  Thereafter the await-get*line,
-     c-write and await-put* procedures may be used for the port.  If
-     using a binary port constructed by 'open-fd-output-port' with
-     buffering on or a textual port constructed by that procedure with
-     or without buffering, and the port has previously been used for
-     output by a procedure other than c-write or an await-put*
-     procedure, then it should be flushed before this procedure is
-     called.
+     buffer should then be flushed.  Thereafter the await-get*, c-write
+     and await-put* procedures may be used for the port.  If using a
+     binary port constructed by 'open-fd-output-port' with buffering on
+     or a textual port constructed by that procedure with or without
+     buffering, and the port has previously been used for output by a
+     procedure other than c-write or an await-put* procedure, then it
+     should be flushed before this procedure is called.
 
      This procedure will raise a &serious exception if passed a regular
      file with a file position pointer: there should be no need to use
@@ -1536,12 +1679,12 @@ the worker thread should post the closing as an event using event-post!.
      support multi-byte encodings.  As explained in relation to
      await-put-bytevector!, this means that if a read were to be
      followed by a write (which includes a flush) on a textual port
-     constructed by 'open-fd-input/output-port', an exception will occur
-     when attempting a seek when moving from reading to writing.
-     (Seeking when moving from reading to writing is necessary for
-     buffered input-output ports for seekable files, but not for ports
-     for files, such as sockets, which have no file position pointer and
-     so are not seekable.)
+     constructed by 'open-fd-input/output-port' for a non-seekable
+     device, an exception will occur when attempting a seek when moving
+     from reading to writing.  (Seeking when moving from reading to
+     writing is necessary for buffered input-output ports for seekable
+     files, but not for ports for files, such as sockets, which have no
+     file position pointer and so are not seekable.)
 
      To deal with this, this procedure by-passes the port's output
      buffer and sends the output to the underlying file descriptor
@@ -1553,8 +1696,8 @@ the worker thread should post the closing as an event using event-post!.
      appropriately, (ii) the 'clear-input-port' procedure should be
      applied to the port to reset input buffer pointers, and (iii)
      anything in the output buffer should then be flushed.  Thereafter
-     the await-get*line, c-write and await-put* procedures may be used
-     for the port.  If using a port constructed by 'open-fd-output-port'
+     the await-get*, c-write and await-put* procedures may be used for
+     the port.  If using a port constructed by 'open-fd-output-port'
      which has previously been used for output by a procedure other than
      c-write or an await-put* procedure, then it should be flushed
      before this procedure is called.
@@ -1814,7 +1957,7 @@ Node: Top83
 Node: overview1010
 Node: coroutines3960
 Node: event loop22191
-Node: compose84878
-Node: try90486
+Node: compose92824
+Node: try98432
 
 End Tag Table
