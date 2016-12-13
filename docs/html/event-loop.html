@@ -1063,7 +1063,7 @@ shouldn&rsquo;t happen unless memory is exhausted.  Subsequent exceptions
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-await_002dgeteveryblock_0021"></a>Scheme Procedure: <strong>await-geteveryblock!</strong> <em>await resume [loop] port proc size</em></dt>
+<dt><a name="index-await_002dgeteveryblock_0021"></a>Scheme Procedure: <strong>await-geteveryblock!</strong> <em>await resume [loop] port size proc</em></dt>
 <dd><p>This is a convenience procedure for use with an event loop, which will
 start a read watch on &rsquo;port&rsquo; for blocks of data, such as binary
 records, of size &rsquo;size&rsquo;.  It calls &rsquo;await&rsquo; while waiting for input and
@@ -1110,7 +1110,7 @@ may break resource management which uses rethrows or dynamic winds).
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-await_002dgetsomeblocks_0021"></a>Scheme Procedure: <strong>await-getsomeblocks!</strong> <em>await resume [loop] port proc size</em></dt>
+<dt><a name="index-await_002dgetsomeblocks_0021"></a>Scheme Procedure: <strong>await-getsomeblocks!</strong> <em>await resume [loop] port size proc</em></dt>
 <dd><p>This is a convenience procedure for use with an event loop, which does
 the same as await-geteveryblock!, except that it provides a third
 argument to &rsquo;proc&rsquo;, namely an escape continuation which can be invoked

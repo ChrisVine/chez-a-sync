@@ -981,7 +981,7 @@ shouldn't happen unless memory is exhausted.  Subsequent exceptions
 This procedure is first available in version 0.8 of this library.
 @end deffn
 
-@deffn {Scheme Procedure} await-geteveryblock! await resume [loop] port proc size
+@deffn {Scheme Procedure} await-geteveryblock! await resume [loop] port size proc
 This is a convenience procedure for use with an event loop, which will
 start a read watch on 'port' for blocks of data, such as binary
 records, of size 'size'.  It calls 'await' while waiting for input and
@@ -1027,7 +1027,7 @@ may break resource management which uses rethrows or dynamic winds).
 This procedure is first available in version 0.8 of this library.
 @end deffn
 
-@deffn {Scheme Procedure} await-getsomeblocks! await resume [loop] port proc size
+@deffn {Scheme Procedure} await-getsomeblocks! await resume [loop] port size proc
 This is a convenience procedure for use with an event loop, which does
 the same as await-geteveryblock!, except that it provides a third
 argument to 'proc', namely an escape continuation which can be invoked

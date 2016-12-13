@@ -1430,8 +1430,8 @@ the worker thread should post the closing as an event using event-post!.
 
      This procedure is first available in version 0.8 of this library.
 
- -- Scheme Procedure: await-geteveryblock! await resume [loop] port proc
-          size
+ -- Scheme Procedure: await-geteveryblock! await resume [loop] port size
+          proc
      This is a convenience procedure for use with an event loop, which
      will start a read watch on 'port' for blocks of data, such as
      binary records, of size 'size'.  It calls 'await' while waiting for
@@ -1477,8 +1477,8 @@ the worker thread should post the closing as an event using event-post!.
 
      This procedure is first available in version 0.8 of this library.
 
- -- Scheme Procedure: await-getsomeblocks! await resume [loop] port proc
-          size
+ -- Scheme Procedure: await-getsomeblocks! await resume [loop] port size
+          proc
      This is a convenience procedure for use with an event loop, which
      does the same as await-geteveryblock!, except that it provides a
      third argument to 'proc', namely an escape continuation which can

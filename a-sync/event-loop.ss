@@ -1780,7 +1780,7 @@
 
 ;; This is a convenience procedure whose signature is:
 ;;
-;;   (await-geteveryblock! await resume [loop] port proc size)
+;;   (await-geteveryblock! await resume [loop] port size proc)
 ;;
 ;; This procedure will start a read watch on 'port' for blocks of
 ;; data, such as binary records, of size 'size'.  It calls 'await'
@@ -1827,8 +1827,8 @@
 ;; This procedure is first available in version 0.8 of this library.
 (define await-geteveryblock!
   (case-lambda
-    [(await resume port proc size) (await-geteveryblock! await resume #f port proc size)]
-    [(await resume loop port proc size)
+    [(await resume port size proc) (await-geteveryblock! await resume #f port size proc)]
+    [(await resume loop port size proc)
      (let ()
        (define bv (make-bytevector size))
        (define index 0)
@@ -1882,7 +1882,7 @@
 
 ;; This is a convenience procedure whose signature is:
 ;;
-;;   (await-getsomeblocks! await resume [loop] port proc size)
+;;   (await-getsomeblocks! await resume [loop] port size proc)
 ;;
 ;; This procedure does the same as await-geteveryblock!, except that
 ;; it provides a third argument to 'proc', namely an escape
@@ -1936,8 +1936,8 @@
 ;; This procedure is first available in version 0.8 of this library.
 (define await-getsomeblocks!
   (case-lambda
-    [(await resume port proc size) (await-getsomeblocks! await resume #f port proc size)]
-    [(await resume loop port proc size)
+    [(await resume port size proc) (await-getsomeblocks! await resume #f port size proc)]
+    [(await resume loop port size proc)
      (let ()
        (define bv (make-bytevector size))
        (define index 0)
