@@ -32,6 +32,20 @@
        (format #t "~a: Test ~a OK\n" "test-helpers-await.ss" count)
        (set! count (1+ count))))))
 
+;; bv1 must be smaller than or equal to bv2 to obtain a #t result
+(define (test-bytevector bv1 bv2)
+  (if (> (bytevector-length bv1) (bytevector-length bv2))
+      #f
+      (let ([sz (bytevector-length bv1)])
+	(call/cc (lambda (k)
+		   (let loop ([index 0])
+		     (cond
+		      [(= index sz)
+		       #t]
+		      [(= (bytevector-s8-ref bv1 index)
+			  (bytevector-s8-ref bv2 index))
+		       (loop (+ index 1))]
+		      [(k #f)])))))))
 ;; Test 1: await-task!
 
 (define main-loop (make-event-loop))
@@ -364,7 +378,123 @@
   (test-result 2 count)
   (print-result))
 
-;; Test 15: await-put-string! (also tests a-sync-write-watch!)
+;; Test 15: await-getblock! (also tests a-sync-read-watch!)
+
+(let-values ([(in out) (make-pipe (buffer-mode block)
+				  (buffer-mode block))])
+  (define bv (make-bytevector 10 20))
+  (a-sync (lambda (await resume)
+	    (let ([res (await-getblock! await resume
+					main-loop
+					in
+					10)])
+	      (test-result 10 (cdr res))
+	      (assert (test-bytevector bv (car res))))
+	    (close-port out)
+	    (let ([res (await-getblock! await resume
+					main-loop
+					in
+					20)])
+	      (test-result 10 (cdr res))
+	      (test-result 20 (bytevector-length (car res)))
+	      (assert (test-bytevector bv (car res))))
+	    (let ([res (await-getblock! await resume
+					main-loop
+					in
+					10)])
+	      (assert (eof-object? (car res)))
+	      (test-result #f (cdr res)))
+	    (print-result)))
+  (put-bytevector out bv)
+  (put-bytevector out bv)
+  (flush-output-port out)
+  (event-loop-run! main-loop)
+  (close-port in))
+
+;; Test 16: await-geteveryblock! (also tests a-sync-read-watch!)
+
+(let-values ([(in out) (make-pipe (buffer-mode block)
+				  (buffer-mode block))])
+  (define bv (make-bytevector 10 20))
+  (define count 0)
+  (a-sync (lambda (await resume)
+	    (let ([res (await-geteveryblock! await resume
+					     main-loop
+					     in
+					     20
+					     (lambda (bv-in len)
+					       (set! count (1+ count))
+					       (when (= count 1)
+						     (test-result 20 len)
+						     (assert (test-bytevector bv bv-in))
+						     (close-port out))
+					       (when (= count 2)
+						     (test-result 10 len)
+						     (assert (test-bytevector bv bv-in)))))])
+	      (assert (eof-object? res)))
+	    (let ([res (await-geteveryblock! await resume
+					     main-loop
+					     in
+					     10
+					     (lambda (bv-in len)
+					       (assert #f)))]) ;; we should never reach here
+	      (assert (eof-object? res)))
+	    (print-result)))
+  (put-bytevector out bv)
+  (put-bytevector out bv)
+  (put-bytevector out bv)
+  (flush-output-port out)
+  (event-loop-run! main-loop)
+  (test-result 2 count)
+  (close-port in))
+
+;; Test 17: await-getsomeblocks! (also tests a-sync-read-watch!)
+
+(let-values ([(in out) (make-pipe (buffer-mode block)
+				  (buffer-mode block))])
+  (define bv (make-bytevector 10 20))
+  (define count 0)
+  (a-sync (lambda (await resume)
+	    (let ([res (await-getsomeblocks! await resume
+					     main-loop
+					     in
+					     10
+					     (lambda (bv-in len k)
+					       (set! count (1+ count))
+					       (when (= count 1)
+						     (test-result 10 len)
+						     (assert (test-bytevector bv bv-in)))
+					       (when (= count 2)
+						     (test-result 10 len)
+						     (assert (test-bytevector bv bv-in))
+						     (k 'test))))])
+	      (test-result 'test res))
+	    (close-port out)
+	    (let ([res (await-getsomeblocks! await resume
+	    				     main-loop
+	    				     in
+					     20
+	    				     (lambda (bv-in len k)
+					       (test-result 10 len)
+					       (assert (test-bytevector bv bv-in))))])
+	      (assert (eof-object? res)))
+	    (let ([res (await-getsomeblocks! await resume
+	    				     main-loop
+	    				     in
+					     10
+	    				     (lambda (bv-in len k)
+	    				       (assert #f)))]) ;; we should never reach here
+	      (assert (eof-object? res)))
+	    (print-result)))
+  (put-bytevector out bv)
+  (put-bytevector out bv)
+  (put-bytevector out bv)
+  (flush-output-port out)
+  (event-loop-run! main-loop)
+  (test-result 2 count)
+  (close-port in))
+
+;; Test 18: await-put-string! (also tests a-sync-write-watch! and await-put-bytevector!)
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode none)
@@ -388,7 +518,7 @@
   (close-port in)
   (print-result))
 
-;; Test 16: compose-a-sync and no-await
+;; Test 19: compose-a-sync and no-await
 
 (compose-a-sync main-loop ((res (await-task-in-thread! (lambda ()
 							 (+ 5 10)))))
@@ -403,7 +533,7 @@
 (event-loop-block! #f main-loop)
 (set-default-event-loop! main-loop)
 
-;; Test 17: await-task!
+;; Test 20: await-task!
 
 (a-sync (lambda (await resume)
 	  (let ((res
@@ -414,7 +544,7 @@
 	    (print-result))))
 (event-loop-run!)
 
-;; Test 18: await-task-in-thread! without handler
+;; Test 21: await-task-in-thread! without handler
 
 ;; set a new default event loop
 (set-default-event-loop!)
@@ -431,7 +561,7 @@
 (event-loop-run!)
 (event-loop-block! #f)
   
-;; Test 19: await-task-in-thread! without handler (explicit loop argument)
+;; Test 22: await-task-in-thread! without handler (explicit loop argument)
 
 (a-sync (lambda (await resume)
 	  (let ((res
@@ -445,7 +575,7 @@
 (event-loop-run!)
 (event-loop-block! #f)
   
-;; Test 20: await-task-in-thread! with handler
+;; Test 23: await-task-in-thread! with handler
 
 (a-sync (lambda (await resume)
 	  (let ((res
@@ -462,7 +592,7 @@
 (event-loop-run!)
 (event-loop-block! #f)
 
-;; Test 21: await-task-in-event-loop!
+;; Test 24: await-task-in-event-loop!
 
 (let ()
   (define worker (make-event-loop 10 100000))
@@ -485,7 +615,7 @@
 	      (event-loop-block! #f worker))))
   (event-loop-run!))
 
-;; Test 22: await-generator!
+;; Test 25: await-generator!
 
 (let ()
   (define lst '())
@@ -503,7 +633,7 @@
 	    (print-result)))
   (event-loop-run!))
 
-;; Test 23: await-generator-in-thread! without handler
+;; Test 26: await-generator-in-thread! without handler
 
 (let ()
   (define lst '())
@@ -525,7 +655,7 @@
   (event-loop-block! #t)
   (event-loop-run!))
 
-;; Test 24: await-generator-in-thread! without handler (explicit loop argument)
+;; Test 27: await-generator-in-thread! without handler (explicit loop argument)
 
 (let ()
   (define lst '())
@@ -547,7 +677,7 @@
   (event-loop-block! #t)
   (event-loop-run!))
 
-;; Test 25: await-generator-in-thread! with handler
+;; Test 28: await-generator-in-thread! with handler
 
 (let ()
   (define lst '())
@@ -580,7 +710,7 @@
   (event-loop-block! #t)
   (event-loop-run!))
 
-;; Test 26: await-generator-in-event-loop!
+;; Test 29: await-generator-in-event-loop!
 
 (let ()
   (define lst '())
@@ -609,7 +739,7 @@
   (event-loop-block! #t)
   (event-loop-run!))
 
-;; Test 27: await-timeout!
+;; Test 30: await-timeout!
 
 (a-sync (lambda (await resume)
 	  (let ((res
@@ -620,7 +750,7 @@
 	    (print-result))))
 (event-loop-run!)
   
-;; Test 28: await-getline! (also tests a-sync-read-watch!)
+;; Test 31: await-getline! (also tests a-sync-read-watch!)
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -637,7 +767,7 @@
   (close-port out)
   (close-port in))
 
-;; Test 29: await-geteveryline! (also tests a-sync-read-watch!)
+;; Test 32: await-geteveryline! (also tests a-sync-read-watch!)
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -664,7 +794,7 @@
   (event-loop-run!)
   (close-port in))
 
-;; Test 30: await-getsomelines! (also tests a-sync-read-watch!)
+;; Test 33: await-getsomelines! (also tests a-sync-read-watch!)
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -696,7 +826,7 @@
   (close-port out)
   (close-port in))
 
-;; Test 31: await-getsomelines! exception handling (also tests strategy for await-geteveryline!)
+;; Test 34: await-getsomelines! exception handling (also tests strategy for await-geteveryline!)
 ;; exception propagates out of event-loop-run!
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -732,7 +862,7 @@
   (test-result 2 count)
   (print-result))
 
-;; Test 32: await-getsomelines! exception handling (also tests 'try' and strategy for await-geteveryline!)
+;; Test 35: await-getsomelines! exception handling (also tests 'try' and strategy for await-geteveryline!)
 ;; exception caught within a-sync block
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block)
@@ -767,7 +897,115 @@
   (test-result 2 count)
   (print-result))
 
-;; Test 33: await-put-string! (also tests a-sync-write-watch!)
+;; Test 36: await-getblock! (also tests a-sync-read-watch!)
+
+(let-values ([(in out) (make-pipe (buffer-mode block)
+				  (buffer-mode block))])
+  (define bv (make-bytevector 10 20))
+  (a-sync (lambda (await resume)
+	    (let ([res (await-getblock! await resume
+					in
+					10)])
+	      (test-result 10 (cdr res))
+	      (assert (test-bytevector bv (car res))))
+	    (close-port out)
+	    (let ([res (await-getblock! await resume
+					in
+					20)])
+	      (test-result 10 (cdr res))
+	      (test-result 20 (bytevector-length (car res)))
+	      (assert (test-bytevector bv (car res))))
+	    (let ([res (await-getblock! await resume
+					in
+					10)])
+	      (assert (eof-object? (car res)))
+	      (test-result #f (cdr res)))
+	    (print-result)))
+  (put-bytevector out bv)
+  (put-bytevector out bv)
+  (flush-output-port out)
+  (event-loop-run!)
+  (close-port in))
+
+;; Test 37: await-geteveryblock! (also tests a-sync-read-watch!)
+
+(let-values ([(in out) (make-pipe (buffer-mode block)
+				  (buffer-mode block))])
+  (define bv (make-bytevector 10 20))
+  (define count 0)
+  (a-sync (lambda (await resume)
+	    (let ([res (await-geteveryblock! await resume
+					     in
+					     20
+					     (lambda (bv-in len)
+					       (set! count (1+ count))
+					       (when (= count 1)
+						     (test-result 20 len)
+						     (assert (test-bytevector bv bv-in))
+						     (close-port out))
+					       (when (= count 2)
+						     (test-result 10 len)
+						     (assert (test-bytevector bv bv-in)))))])
+	      (assert (eof-object? res)))
+	    (let ([res (await-geteveryblock! await resume
+					     in
+					     10
+					     (lambda (bv-in len)
+					       (assert #f)))]) ;; we should never reach here
+	      (assert (eof-object? res)))
+	    (print-result)))
+  (put-bytevector out bv)
+  (put-bytevector out bv)
+  (put-bytevector out bv)
+  (flush-output-port out)
+  (event-loop-run!)
+  (test-result 2 count)
+  (close-port in))
+
+;; Test 38: await-getsomeblocks! (also tests a-sync-read-watch!)
+
+(let-values ([(in out) (make-pipe (buffer-mode block)
+				  (buffer-mode block))])
+  (define bv (make-bytevector 10 20))
+  (define count 0)
+  (a-sync (lambda (await resume)
+	    (let ([res (await-getsomeblocks! await resume
+					     in
+					     10
+					     (lambda (bv-in len k)
+					       (set! count (1+ count))
+					       (when (= count 1)
+						     (test-result 10 len)
+						     (assert (test-bytevector bv bv-in)))
+					       (when (= count 2)
+						     (test-result 10 len)
+						     (assert (test-bytevector bv bv-in))
+						     (k 'test))))])
+	      (test-result 'test res))
+	    (close-port out)
+	    (let ([res (await-getsomeblocks! await resume
+	    				     in
+					     20
+	    				     (lambda (bv-in len k)
+					       (test-result 10 len)
+					       (assert (test-bytevector bv bv-in))))])
+	      (assert (eof-object? res)))
+	    (let ([res (await-getsomeblocks! await resume
+	    				     in
+					     10
+	    				     (lambda (bv-in len k)
+	    				       (assert #f)))]) ;; we should never reach here
+	      (assert (eof-object? res)))
+	    (print-result)))
+  (put-bytevector out bv)
+  (put-bytevector out bv)
+  (put-bytevector out bv)
+  (flush-output-port out)
+  (event-loop-run!)
+  (test-result 2 count)
+  (close-port in))
+
+;; Test 39: await-put-string! (also tests a-sync-write-watch! and await-put-bytevector!)
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode none)
@@ -791,7 +1029,7 @@
   (close-port in)
   (print-result))
 
-;; Test 34: compose-a-sync and no-await
+;; Test 40: compose-a-sync and no-await
 
 (compose-a-sync ((res (await-task-in-thread! (lambda ()
 					       (+ 5 10)))))
