@@ -382,14 +382,15 @@
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block))])
-  (define bv (make-bytevector 10 20))
+  (define bv1 (make-bytevector 10 20))
+  (define bv2 (make-bytevector 10 21))
   (a-sync (lambda (await resume)
 	    (let ([res (await-getblock! await resume
 					main-loop
 					in
 					10)])
 	      (test-result 10 (cdr res))
-	      (assert (test-bytevector bv (car res))))
+	      (assert (test-bytevector bv1 (car res))))
 	    (close-port out)
 	    (let ([res (await-getblock! await resume
 					main-loop
@@ -397,7 +398,7 @@
 					20)])
 	      (test-result 10 (cdr res))
 	      (test-result 20 (bytevector-length (car res)))
-	      (assert (test-bytevector bv (car res))))
+	      (assert (test-bytevector bv2 (car res))))
 	    (let ([res (await-getblock! await resume
 					main-loop
 					in
@@ -405,8 +406,8 @@
 	      (assert (eof-object? (car res)))
 	      (test-result #f (cdr res)))
 	    (print-result)))
-  (put-bytevector out bv)
-  (put-bytevector out bv)
+  (put-bytevector out bv1)
+  (put-bytevector out bv2)
   (flush-output-port out)
   (event-loop-run! main-loop)
   (close-port in))
@@ -415,7 +416,9 @@
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block))])
-  (define bv (make-bytevector 10 20))
+  (define bv1 (make-bytevector 10 20))
+  (define bv2 (make-bytevector 10 21))
+  (define bv3 (make-bytevector 10 22))
   (define count 0)
   (a-sync (lambda (await resume)
 	    (let ([res (await-geteveryblock! await resume
@@ -426,11 +429,11 @@
 					       (set! count (1+ count))
 					       (when (= count 1)
 						     (test-result 20 len)
-						     (assert (test-bytevector bv bv-in))
+						     (assert (test-bytevector bv1 bv-in))
 						     (close-port out))
 					       (when (= count 2)
 						     (test-result 10 len)
-						     (assert (test-bytevector bv bv-in)))))])
+						     (assert (test-bytevector bv3 bv-in)))))])
 	      (assert (eof-object? res)))
 	    (let ([res (await-geteveryblock! await resume
 					     main-loop
@@ -440,9 +443,9 @@
 					       (assert #f)))]) ;; we should never reach here
 	      (assert (eof-object? res)))
 	    (print-result)))
-  (put-bytevector out bv)
-  (put-bytevector out bv)
-  (put-bytevector out bv)
+  (put-bytevector out bv1)
+  (put-bytevector out bv2)
+  (put-bytevector out bv3)
   (flush-output-port out)
   (event-loop-run! main-loop)
   (test-result 2 count)
@@ -452,7 +455,9 @@
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block))])
-  (define bv (make-bytevector 10 20))
+  (define bv1 (make-bytevector 10 20))
+  (define bv2 (make-bytevector 10 21))
+  (define bv3 (make-bytevector 10 22))
   (define count 0)
   (a-sync (lambda (await resume)
 	    (let ([res (await-getsomeblocks! await resume
@@ -463,10 +468,10 @@
 					       (set! count (1+ count))
 					       (when (= count 1)
 						     (test-result 10 len)
-						     (assert (test-bytevector bv bv-in)))
+						     (assert (test-bytevector bv1 bv-in)))
 					       (when (= count 2)
 						     (test-result 10 len)
-						     (assert (test-bytevector bv bv-in))
+						     (assert (test-bytevector bv2 bv-in))
 						     (k 'test))))])
 	      (test-result 'test res))
 	    (close-port out)
@@ -476,7 +481,7 @@
 					     20
 	    				     (lambda (bv-in len k)
 					       (test-result 10 len)
-					       (assert (test-bytevector bv bv-in))))])
+					       (assert (test-bytevector bv3 bv-in))))])
 	      (assert (eof-object? res)))
 	    (let ([res (await-getsomeblocks! await resume
 	    				     main-loop
@@ -486,9 +491,9 @@
 	    				       (assert #f)))]) ;; we should never reach here
 	      (assert (eof-object? res)))
 	    (print-result)))
-  (put-bytevector out bv)
-  (put-bytevector out bv)
-  (put-bytevector out bv)
+  (put-bytevector out bv1)
+  (put-bytevector out bv2)
+  (put-bytevector out bv3)
   (flush-output-port out)
   (event-loop-run! main-loop)
   (test-result 2 count)
@@ -901,28 +906,29 @@
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block))])
-  (define bv (make-bytevector 10 20))
+  (define bv1 (make-bytevector 10 20))
+  (define bv2 (make-bytevector 10 21))
   (a-sync (lambda (await resume)
 	    (let ([res (await-getblock! await resume
 					in
 					10)])
 	      (test-result 10 (cdr res))
-	      (assert (test-bytevector bv (car res))))
+	      (assert (test-bytevector bv1 (car res))))
 	    (close-port out)
 	    (let ([res (await-getblock! await resume
 					in
 					20)])
 	      (test-result 10 (cdr res))
 	      (test-result 20 (bytevector-length (car res)))
-	      (assert (test-bytevector bv (car res))))
+	      (assert (test-bytevector bv2 (car res))))
 	    (let ([res (await-getblock! await resume
 					in
 					10)])
 	      (assert (eof-object? (car res)))
 	      (test-result #f (cdr res)))
 	    (print-result)))
-  (put-bytevector out bv)
-  (put-bytevector out bv)
+  (put-bytevector out bv1)
+  (put-bytevector out bv2)
   (flush-output-port out)
   (event-loop-run!)
   (close-port in))
@@ -931,7 +937,9 @@
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block))])
-  (define bv (make-bytevector 10 20))
+  (define bv1 (make-bytevector 10 20))
+  (define bv2 (make-bytevector 10 21))
+  (define bv3 (make-bytevector 10 22))
   (define count 0)
   (a-sync (lambda (await resume)
 	    (let ([res (await-geteveryblock! await resume
@@ -941,11 +949,11 @@
 					       (set! count (1+ count))
 					       (when (= count 1)
 						     (test-result 20 len)
-						     (assert (test-bytevector bv bv-in))
+						     (assert (test-bytevector bv1 bv-in))
 						     (close-port out))
 					       (when (= count 2)
 						     (test-result 10 len)
-						     (assert (test-bytevector bv bv-in)))))])
+						     (assert (test-bytevector bv3 bv-in)))))])
 	      (assert (eof-object? res)))
 	    (let ([res (await-geteveryblock! await resume
 					     in
@@ -954,9 +962,9 @@
 					       (assert #f)))]) ;; we should never reach here
 	      (assert (eof-object? res)))
 	    (print-result)))
-  (put-bytevector out bv)
-  (put-bytevector out bv)
-  (put-bytevector out bv)
+  (put-bytevector out bv1)
+  (put-bytevector out bv2)
+  (put-bytevector out bv3)
   (flush-output-port out)
   (event-loop-run!)
   (test-result 2 count)
@@ -966,7 +974,9 @@
 
 (let-values ([(in out) (make-pipe (buffer-mode block)
 				  (buffer-mode block))])
-  (define bv (make-bytevector 10 20))
+  (define bv1 (make-bytevector 10 20))
+  (define bv2 (make-bytevector 10 21))
+  (define bv3 (make-bytevector 10 22))
   (define count 0)
   (a-sync (lambda (await resume)
 	    (let ([res (await-getsomeblocks! await resume
@@ -976,10 +986,10 @@
 					       (set! count (1+ count))
 					       (when (= count 1)
 						     (test-result 10 len)
-						     (assert (test-bytevector bv bv-in)))
+						     (assert (test-bytevector bv1 bv-in)))
 					       (when (= count 2)
 						     (test-result 10 len)
-						     (assert (test-bytevector bv bv-in))
+						     (assert (test-bytevector bv2 bv-in))
 						     (k 'test))))])
 	      (test-result 'test res))
 	    (close-port out)
@@ -988,7 +998,7 @@
 					     20
 	    				     (lambda (bv-in len k)
 					       (test-result 10 len)
-					       (assert (test-bytevector bv bv-in))))])
+					       (assert (test-bytevector bv3 bv-in))))])
 	      (assert (eof-object? res)))
 	    (let ([res (await-getsomeblocks! await resume
 	    				     in
@@ -997,9 +1007,9 @@
 	    				       (assert #f)))]) ;; we should never reach here
 	      (assert (eof-object? res)))
 	    (print-result)))
-  (put-bytevector out bv)
-  (put-bytevector out bv)
-  (put-bytevector out bv)
+  (put-bytevector out bv1)
+  (put-bytevector out bv2)
+  (put-bytevector out bv3)
   (flush-output-port out)
   (event-loop-run!)
   (test-result 2 count)
