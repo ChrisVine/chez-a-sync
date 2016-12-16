@@ -79,7 +79,7 @@
     [(0) #f]
     [(1) (raise (condition (make-serious-condition)
 			   (make-who-condition "raise-condition-if-regular-file")
-			   (make-message-condition "await-put-string! procedure cannot be used with regular files")))]
+			   (make-message-condition "await-put-bytevector! procedure cannot be used with regular files")))]
     [(-1) (raise (condition (make-serious-condition)
 			    (make-who-condition "raise-condition-if-regular-file")
 			    (make-message-condition "C fstat() function returned an error")
