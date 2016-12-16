@@ -230,15 +230,17 @@ The (a-sync coroutines) library file provides the following procedures:
      await-task-in-thread!, await-task-in-event-loop!, await-generator!,
      await-generator-in-thread!, await-generator-in-event-loop!,
      await-timeout!, a-sync-read-watch!, await-getline!,
-     await-geteveryline!, await-getsomelines!, a-sync-write-watch!  and
-     await-put-string!  convenience procedures which will correctly set
-     this up for you automatically, and the *note compose: compose.
-     library file provides a compose-a-sync macro for composition.  If
-     those convenience procedures are used, exceptions should always be
-     handled locally in the waitable procedure (and if the callback
-     might throw, in the callback also) if it is undesirable that
-     uncaught exceptions propagate out of event-loop-run!.  In the case
-     of await-task-in-thread!, that procedure also takes an optional
+     await-geteveryline!, await-getsomelines!, await-getblock!,
+     await-geteveryblock!, await-getsomeblocks!, a-sync-write-watch!,
+     await-put-bytevector!  and await-put-string!  convenience
+     procedures which will correctly set this up for you automatically,
+     and the *note compose: compose. library file provides a
+     compose-a-sync macro for composition.  If those convenience
+     procedures are used, exceptions should always be handled locally in
+     the waitable procedure (and if the callback might throw, in the
+     callback also) if it is undesirable that uncaught exceptions
+     propagate out of event-loop-run!.  In the case of
+     await-task-in-thread!, that procedure also takes an optional
      handler argument which will handle any exceptions thrown by the
      task: otherwise the task thread throwing would terminate the
      program if not caught within the task.
@@ -1827,13 +1829,14 @@ coroutines): coroutines. library file.
      await-task-in-thread!, await-task-in-event-loop!, await-generator!,
      await-generator-in-thread!, await-generator-in-event-loop!,
      await-timeout!, await-getline!, await-geteveryline!,
-     await-getsomelines!  and await-put-string!  procedures provided by
-     the *note (a-sync event-loop): event loop. library file are
-     'compose-a-sync'-capable.  In addition, to make an ordinary body of
-     code which does not block (and which does not need to invoke
-     a-sync's await procedure) usable by compose-a-sync, the no-await
-     macro can be used to generate a 'compose-a-sync'-capable procedure
-     for it (see below).
+     await-getsomelines!, await-getblock!, await-geteveryblock!,
+     await-getsomeblocks!, await-put-bytevector!  and await-put-string!
+     procedures provided by the *note (a-sync event-loop): event loop.
+     library file are 'compose-a-sync'-capable.  In addition, to make an
+     ordinary body of code which does not block (and which does not need
+     to invoke a-sync's await procedure) usable by compose-a-sync, the
+     no-await macro can be used to generate a 'compose-a-sync'-capable
+     procedure for it (see below).
 
      Each binding is initialized as if sequentially (although it is done
      asynchronously on the relevant event loop).  An initialization does
@@ -1956,8 +1959,8 @@ Tag Table:
 Node: Top83
 Node: overview1010
 Node: coroutines3960
-Node: event loop22191
-Node: compose92824
-Node: try98432
+Node: event loop22285
+Node: compose92918
+Node: try98614
 
 End Tag Table
