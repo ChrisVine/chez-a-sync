@@ -1727,7 +1727,7 @@
 ;; implemented using a-sync-read-watch!.
 ;;
 ;; If an exceptional condition ('excpt) is encountered, a pair
-;; comprising (#f . 'f) will be returned.  As mentioned above, if an
+;; comprising (#f . #f) will be returned.  As mentioned above, if an
 ;; end-of-file object is encountered after receipt of some but not
 ;; 'size' bytes, then a bytevector of length 'size' will be returned
 ;; as car and the actual (lesser) number of bytes inserted in it as

@@ -1040,7 +1040,7 @@ invoked by a-sync.  This procedure is implemented using
 a-sync-read-watch!.
 </p>
 <p>If an exceptional condition (&rsquo;excpt) is encountered, a pair comprising
-(#f . &rsquo;f) will be returned.  As mentioned above, if an end-of-file
+(#f . #f) will be returned.  As mentioned above, if an end-of-file
 object is encountered after receipt of some but not &rsquo;size&rsquo; bytes, then
 a bytevector of length &rsquo;size&rsquo; will be returned as car and the actual
 (lesser) number of bytes inserted in it as cdr.  If an end-of-file
