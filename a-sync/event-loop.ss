@@ -1804,6 +1804,12 @@
 ;; is reached.  In the event of that happening, this procedure will
 ;; end and return an end-of-file object or #f respectively.
 ;;
+;; For efficiency reasons, this procedure passes its internal
+;; bytevector buffer to 'proc' as proc's first argument and, when
+;; 'proc' returns, re-uses it.  Therefore, if 'proc' stores its first
+;; argument for use after 'proc' has returned, it should store it by
+;; copying it.
+;;
 ;; The 'loop' argument is optional: this procedure operates on the
 ;; event loop passed in as an argument, or if none is passed (or #f is
 ;; passed), on the default event loop.
@@ -1912,6 +1918,12 @@
 ;; or #f respectively, or until the escape continuation is invoked, in
 ;; which case the value passed to the escape continuation will be
 ;; returned.
+;;
+;; For efficiency reasons, this procedure passes its internal
+;; bytevector buffer to 'proc' as proc's first argument and, when
+;; 'proc' returns, re-uses it.  Therefore, if 'proc' stores its first
+;; argument for use after 'proc' has returned, it should store it by
+;; copying it.
 ;;
 ;; The 'loop' argument is optional: this procedure operates on the
 ;; event loop passed in as an argument, or if none is passed (or #f is
