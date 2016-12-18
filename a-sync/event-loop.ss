@@ -1412,6 +1412,13 @@
 ;; argument, or if none is passed (or #f is passed), on the default
 ;; event loop.
 ;;
+;; If this procedure is used with a port constructed by
+;; 'open-fd-input/output-port' for a non-seekable device such as a
+;; socket which has input buffering enabled, the 'clear-input-port'
+;; procedure should be applied to the port before 'close-port',
+;; 'close-output-port' or 'close-input-port' is applied to it, to
+;; avoid an illegal seek exception.
+;;
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.
 ;;
@@ -1495,6 +1502,13 @@
 ;; The 'loop' argument is optional: this procedure operates on the
 ;; event loop passed in as an argument, or if none is passed (or #f is
 ;; passed), on the default event loop.
+;;
+;; If this procedure is used with a port constructed by
+;; 'open-fd-input/output-port' for a non-seekable device such as a
+;; socket which has input buffering enabled, the 'clear-input-port'
+;; procedure should be applied to the port before 'close-port',
+;; 'close-output-port' or 'close-input-port' is applied to it, to
+;; avoid an illegal seek exception.
 ;;
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.
@@ -1615,6 +1629,13 @@
 ;; The 'loop' argument is optional: this procedure operates on the
 ;; event loop passed in as an argument, or if none is passed (or #f is
 ;; passed), on the default event loop.
+;;
+;; If this procedure is used with a port constructed by
+;; 'open-fd-input/output-port' for a non-seekable device such as a
+;; socket which has input buffering enabled, the 'clear-input-port'
+;; procedure should be applied to the port before 'close-port',
+;; 'close-output-port' or 'close-input-port' is applied to it, to
+;; avoid an illegal seek exception.
 ;;
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.
@@ -1738,6 +1759,13 @@
 ;; event loop passed in as an argument, or if none is passed (or #f is
 ;; passed), on the default event loop.
 ;;
+;; If this procedure is used with a port constructed by
+;; 'open-fd-input/output-port' for a non-seekable device such as a
+;; socket which has input buffering enabled, the 'clear-input-port'
+;; procedure should be applied to the port before 'close-port',
+;; 'close-output-port' or 'close-input-port' is applied to it, to
+;; avoid an illegal seek exception.
+;;
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.
 ;;
@@ -1813,6 +1841,13 @@
 ;; The 'loop' argument is optional: this procedure operates on the
 ;; event loop passed in as an argument, or if none is passed (or #f is
 ;; passed), on the default event loop.
+;;
+;; If this procedure is used with a port constructed by
+;; 'open-fd-input/output-port' for a non-seekable device such as a
+;; socket which has input buffering enabled, the 'clear-input-port'
+;; procedure should be applied to the port before 'close-port',
+;; 'close-output-port' or 'close-input-port' is applied to it, to
+;; avoid an illegal seek exception.
 ;;
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.
@@ -1928,6 +1963,13 @@
 ;; The 'loop' argument is optional: this procedure operates on the
 ;; event loop passed in as an argument, or if none is passed (or #f is
 ;; passed), on the default event loop.
+;;
+;; If this procedure is used with a port constructed by
+;; 'open-fd-input/output-port' for a non-seekable device such as a
+;; socket which has input buffering enabled, the 'clear-input-port'
+;; procedure should be applied to the port before 'close-port',
+;; 'close-output-port' or 'close-input-port' is applied to it, to
+;; avoid an illegal seek exception.
 ;;
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.
