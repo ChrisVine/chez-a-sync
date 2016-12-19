@@ -1255,8 +1255,8 @@ or conversion errors) will propagate out of event-loop-run!.
 This procedure is first available in version 0.8 of this library.
 
 An example of the use of await-put-string!, which is implemented using
-this procedure, can be found in the example-socket.ss file in the docs
-directory.
+this procedure, can be found in the example-client.ss and
+example-server.ss files in the docs directory.
 @end deffn
 
 @deffn {Scheme Procedure} await-put-string! await resume [loop] port text
@@ -1319,7 +1319,7 @@ or conversion errors) will propagate out of event-loop-run!.
 This procedure is first available in version 0.7 of this library.
 
 An example of the use of this procedure can be found in the
-example-socket.ss file in the docs directory.
+example-client.ss and example-server.ss files in the docs directory.
 @end deffn
 
 @deffn {Scheme Procedure} c-write fd bv begin count
@@ -1374,3 +1374,12 @@ change this if wanted.
 
 Setting a buffer mode of 'none' is ineffective for textual ports.
 @end deffn
+
+Additional @strong{await-connect-to-ipv4-host!},
+@strong{await-connect-to-ipv6-host!},
+@strong{await-accept-ipv4-connection!} and
+@strong{await-accept-ipv6-connection!}  procedures are provided by the
+chez-simple-sockets package at
+@uref{https://github.com/ChrisVine/chez-simple-sockets}.  Examples of
+their use are in the example-client.ss and example-server.ss files in
+the docs directory.

@@ -1,4 +1,4 @@
-#!/usr/bin/scheme --script
+#!/usr/bin/env scheme-script
 
 ;; Copyright (C) 2016 Chris Vine
 ;; 
@@ -23,20 +23,21 @@
 ;; operations.  However in a program using an event loop, you would
 ;; need to do it asynchronously.  This does so.
 ;;
-;; This file uses the chez-sockets implementation from
-;; https://github.com/arcfide/chez-sockets
+;; This file uses the chez-simple-sockets library from
+;; https://github.com/ChrisVine/chez-simple-sockets
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-(import (arcfide sockets)
-	(a-sync coroutines)
+(import (a-sync coroutines)
 	(a-sync event-loop)
+	(simple-sockets basic)
+	(simple-sockets a-sync)
 	(chezscheme))
 
 (define check-ip "myip.dnsdynamic.org")
 
-(define (read-response-async await resume sockport)
+(define (await-read-response await resume sockport)
   (define header "")
   (define body "")
   (await-geteveryline! await resume sockport
@@ -54,42 +55,38 @@
   (set! body (substring body 2 (string-length body)))
   (values header body))
 
-(define (send-get-request-async await resume host path sockport)
+(define (await-send-get-request await resume host path sockport)
   (await-put-string! await resume sockport
 		     (string-append "GET " path " HTTP/1.1\nHost: "host"\n\n")))
 
 (define (make-sockport codec socket)
-  (let ([sockport (open-fd-input/output-port (socket-fd socket) 
+  (let ([sockport (open-fd-input/output-port socket
 					     (buffer-mode block)
 					     (make-transcoder codec 'crlf))])
     ;; make the output port unbuffered
     (set-textual-port-output-size! sockport 0)
+    ;; and make the socket non-blocking
+    (set-port-nonblocking! sockport #t)
     sockport))
 
 (set-default-event-loop!)
 
 (a-sync
  (lambda (await resume)
-   (let ([socket (create-socket socket-domain/internet
-				socket-type/stream
-				socket-protocol/auto)]
-	 ;; getaddrinfo in particular can block, so call it up with
-	 ;; either await-task-in-thread! or await-task-in-event-loop!
-	 [addr (await-task-in-thread! await resume
-				      (lambda ()
-					(let-values([(a b) (get-address-info check-ip "http")])
-					  (address-info-address (car a)))))])
-     ;; chez-sockets' sockets are non-blocking by default, but let's
-     ;; make sure
-     (set-socket-nonblocking! socket #t)
-     (let ([sockport (make-sockport (utf-8-codec) socket)])
-       ;; connect-socket doesn't block on non-blocking port
-       (connect-socket socket addr)
-       (send-get-request-async await resume check-ip "/" sockport)
-       (let-values ([(header body) (read-response-async await resume sockport)])
-	 (display body)
-	 (newline))
-       (event-loop-block! #f)))))
+   ;; getaddrinfo can block, so call it up with either
+   ;; await-task-in-thread! or await-task-in-event-loop!
+   (let* ([socket (await-task-in-thread! await resume
+					(lambda ()
+					  (connect-to-ipv4-host check-ip "http" 0)))]
+	  [sockport (make-sockport (utf-8-codec) socket)])
+     (await-send-get-request await resume check-ip "/" sockport)
+     (let-values ([(header body) (await-read-response await resume sockport)])
+       (display body)
+       (newline))
+     (event-loop-block! #f)
+     ;; we must call clear-input-port before applying close-port
+     (clear-input-port)
+     (close-port sockport))))
 
 (event-loop-block! #t)
 (event-loop-run!)

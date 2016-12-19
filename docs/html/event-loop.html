@@ -1340,8 +1340,8 @@ or conversion errors) will propagate out of event-loop-run!.
 <p>This procedure is first available in version 0.8 of this library.
 </p>
 <p>An example of the use of await-put-string!, which is implemented using
-this procedure, can be found in the example-socket.ss file in the docs
-directory.
+this procedure, can be found in the example-client.ss and
+example-server.ss files in the docs directory.
 </p></dd></dl>
 
 <dl>
@@ -1405,7 +1405,7 @@ or conversion errors) will propagate out of event-loop-run!.
 <p>This procedure is first available in version 0.7 of this library.
 </p>
 <p>An example of the use of this procedure can be found in the
-example-socket.ss file in the docs directory.
+example-client.ss and example-server.ss files in the docs directory.
 </p></dd></dl>
 
 <dl>
@@ -1462,7 +1462,16 @@ change this if wanted.
 </p>
 <p>Setting a buffer mode of &rsquo;none&rsquo; is ineffective for textual ports.
 </p></dd></dl>
-<hr>
+
+<p>Additional <strong>await-connect-to-ipv4-host!</strong>,
+<strong>await-connect-to-ipv6-host!</strong>,
+<strong>await-accept-ipv4-connection!</strong> and
+<strong>await-accept-ipv6-connection!</strong>  procedures are provided by the
+chez-simple-sockets package at
+<a href="https://github.com/ChrisVine/chez-simple-sockets">https://github.com/ChrisVine/chez-simple-sockets</a>.  Examples of
+their use are in the example-client.ss and example-server.ss files in
+the docs directory.
+</p><hr>
 <div class="header">
 <p>
 Next: <a href="compose.html#compose" accesskey="n" rel="next">compose</a>, Previous: <a href="overview.html#overview" accesskey="p" rel="prev">overview</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>

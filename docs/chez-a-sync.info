@@ -1711,8 +1711,8 @@ the worker thread should post the closing as an event using event-post!.
      This procedure is first available in version 0.8 of this library.
 
      An example of the use of await-put-string!, which is implemented
-     using this procedure, can be found in the example-socket.ss file in
-     the docs directory.
+     using this procedure, can be found in the example-client.ss and
+     example-server.ss files in the docs directory.
 
  -- Scheme Procedure: await-put-string! await resume [loop] port text
      This is a convenience procedure for use in an event loop, which
@@ -1777,7 +1777,8 @@ the worker thread should post the closing as an event using event-post!.
      This procedure is first available in version 0.7 of this library.
 
      An example of the use of this procedure can be found in the
-     example-socket.ss file in the docs directory.
+     example-client.ss and example-server.ss files in the docs
+     directory.
 
  -- Scheme Procedure: c-write fd bv begin count
      This procedure is used by await-put-bytevector!  (and so by
@@ -1832,6 +1833,14 @@ the worker thread should post the closing as an event using event-post!.
      set-blocking-mode!  to change this if wanted.
 
      Setting a buffer mode of 'none' is ineffective for textual ports.
+
+   Additional *await-connect-to-ipv4-host!*,
+*await-connect-to-ipv6-host!*, *await-accept-ipv4-connection!*  and
+*await-accept-ipv6-connection!*  procedures are provided by the
+chez-simple-sockets package at
+<https://github.com/ChrisVine/chez-simple-sockets>.  Examples of their
+use are in the example-client.ss and example-server.ss files in the docs
+directory.
 
 
 File: chez-a-sync.info,  Node: compose,  Next: try,  Prev: event loop,  Up: Top
@@ -2015,7 +2024,7 @@ Node: Top83
 Node: overview1010
 Node: coroutines3960
 Node: event loop22285
-Node: compose95807
-Node: try101503
+Node: compose96222
+Node: try101918
 
 End Tag Table
