@@ -7,7 +7,7 @@ docs:
 	rm -rf html
 	mv chez-a-sync html
 
-doc_DATA = example.ss example-socket.ss
+doc_DATA = example.ss example-client.ss example-server.ss
 
 infofiledir = $(infodir)
 infofile_DATA = chez-a-sync.info
