@@ -868,19 +868,19 @@ implementation of await-getline!:
 start a read watch on &rsquo;port&rsquo; for a line of input.  It calls &rsquo;await&rsquo;
 while waiting for input and will return the line of text received
 (without the terminating &rsquo;\n&rsquo; character).  &rsquo;port&rsquo; should be a textual
-port and should be non-blocking.  Provided &rsquo;port&rsquo; is a non-blocking
-port, the event loop will not be blocked by this procedure even if
-only individual characters are available at any one time.  It is
-intended to be called in a waitable procedure invoked by a-sync, and
-this procedure is implemented using a-sync-read-watch!.  If an
-exceptional condition (&rsquo;excpt) is encountered, #f will be returned.
-If an end-of-file object is encountered which terminates a line of
-text, a string containing the line of text will be returned (and if an
-end-of-file object is encountered without any text, the end-of-file
-object is returned rather than an empty string).  The &rsquo;loop&rsquo; argument
-is optional: this procedure operates on the event loop passed in as an
-argument, or if none is passed (or #f is passed), on the default event
-loop.
+portg.  The event loop will not be blocked by this procedure even if
+only individual characters are available at any one time (although if
+&rsquo;port&rsquo; references a socket, it should be non-blocking for this to be
+guaranteed).  It is intended to be called in a waitable procedure
+invoked by a-sync, and this procedure is implemented using
+a-sync-read-watch!.  If an exceptional condition (&rsquo;excpt) is
+encountered, #f will be returned.  If an end-of-file object is
+encountered which terminates a line of text, a string containing the
+line of text will be returned (and if an end-of-file object is
+encountered without any text, the end-of-file object is returned
+rather than an empty string).  The &rsquo;loop&rsquo; argument is optional: this
+procedure operates on the event loop passed in as an argument, or if
+none is passed (or #f is passed), on the default event loop.
 </p>
 <p>If this procedure is used with a port constructed by
 &rsquo;open-fd-input/output-port&rsquo; for a non-seekable device such as a socket
@@ -917,12 +917,13 @@ start a read watch on &rsquo;port&rsquo; for lines of input.  It calls &rsquo;aw
 while waiting for input and will apply &rsquo;proc&rsquo; to every complete line
 of text received (without the terminating &rsquo;\n&rsquo; character).  &rsquo;proc&rsquo;
 should be a procedure taking a string as its only argument.  &rsquo;port&rsquo;
-should be a textual port and should be non-blocking.
+should be a textual port.
 </p>
-<p>Provided &rsquo;port&rsquo; is a non-blocking port, the event loop will not be
-blocked by this procedure even if only individual characters are
-available at any one time.  It is intended to be called in a waitable
-procedure invoked by a-sync, and this procedure is implemented using
+<p>The event loop will not be blocked by this procedure even if only
+individual characters are available at any one time (although if
+&rsquo;port&rsquo; references a socket, it should be non-blocking for this to be
+guaranteed).  It is intended to be called in a waitable procedure
+invoked by a-sync, and this procedure is implemented using
 a-sync-read-watch!.  Unlike the await-getline! procedure, the watch
 will continue after a line of text has been received in order to
 receive further lines.  The watch will not end until end-of-file or an
@@ -987,13 +988,13 @@ It calls &rsquo;await&rsquo; while waiting for input and will apply &rsquo;proc&
 complete line of text received (without the terminating &rsquo;\n&rsquo;
 character).  &rsquo;proc&rsquo; should be a procedure taking two arguments, a
 string as the first argument containing the line of text read, and an
-escape continuation as its second.  &rsquo;port&rsquo; should be a textual port
-and should be non-blocking.
+escape continuation as its second.  &rsquo;port&rsquo; should be a textual port.
 </p>
-<p>Provided &rsquo;port&rsquo; is a non-blocking port, the event loop will not be
-blocked by this procedure even if only individual characters are
-available at any one time.  It is intended to be called in a waitable
-procedure invoked by a-sync.  This procedure is implemented using
+<p>The event loop will not be blocked by this procedure even if only
+individual characters are available at any one time (although if
+&rsquo;port&rsquo; references a socket, it should be non-blocking for this to be
+guaranteed).  It is intended to be called in a waitable procedure
+invoked by a-sync.  This procedure is implemented using
 a-sync-read-watch!.  The watch will not end until end-of-file or an
 exceptional condition (&rsquo;excpt) is reached, which would cause this
 procedure to end and return an end-of-file object or #f respectively,
@@ -1053,11 +1054,12 @@ will return a pair, normally comprising as its car a bytevector of
 length &rsquo;size&rsquo; containing the data, and as its cdr the number of bytes
 received (which will be the same as &rsquo;size&rsquo; unless an end-of-file
 object was encountered part way through receiving the data).  &rsquo;port&rsquo;
-should be a binary port and should be non-blocking.
+should be a binary port.
 </p>
-<p>Provided &rsquo;port&rsquo; is a non-blocking port, the event loop will not be
-blocked by this procedure even if only individual bytes are available
-at any one time.  It is intended to be called in a waitable procedure
+<p>The event loop will not be blocked by this procedure even if only
+individual bytes are available at any one time (although if &rsquo;port&rsquo;
+references a socket, it should be non-blocking for this to be
+guaranteed).  It is intended to be called in a waitable procedure
 invoked by a-sync.  This procedure is implemented using
 a-sync-read-watch!.
 </p>
@@ -1102,12 +1104,12 @@ containing the block of data read and second the size of the block of
 data placed in the bytevector.  The value passed as the size of the
 block of data placed in the bytevector will always be the same as
 &rsquo;size&rsquo; unless end-of-file has been encountered after receiving only a
-partial block of data.  &rsquo;port&rsquo; should be a binary port and should be
-non-blocking.
+partial block of data.  &rsquo;port&rsquo; should be a binary port.
 </p>
-<p>Provided &rsquo;port&rsquo; is a non-blocking port, the event loop will not be
-blocked by this procedure even if only individual bytes are available
-at any one time.  It is intended to be called in a waitable procedure
+<p>The event loop will not be blocked by this procedure even if only
+individual bytes are available at any one time (although if &rsquo;port&rsquo;
+references a socket, it should be non-blocking for this to be
+guaranteed).  It is intended to be called in a waitable procedure
 invoked by a-sync.  This procedure is implemented using
 a-sync-read-watch!.  Unlike the await-getblock!  procedure, the watch
 will continue after a complete block of data has been received in
@@ -1168,11 +1170,12 @@ the size of the block of data placed in the bytevector and third an
 escape continuation.  The value passed as the size of the block of
 data placed in the bytevector will always be the same as &rsquo;size&rsquo; unless
 end-of-file has been encountered after receiving only a partial block
-of data.  &rsquo;port&rsquo; should be a binary port and should be non-blocking.
+of data.  &rsquo;port&rsquo; should be a binary port.
 </p>
-<p>Provided &rsquo;port&rsquo; is a non-blocking port, the event loop will not be
-blocked by this procedure even if only individual bytes are available
-at any one time.  It is intended to be called in a waitable procedure
+<p>The event loop will not be blocked by this procedure even if only
+individual bytes are available at any one time (although if &rsquo;port&rsquo;
+references a socket, it should be non-blocking for this to be
+guaranteed).  It is intended to be called in a waitable procedure
 invoked by a-sync.  This procedure is implemented using
 a-sync-read-watch!.  The watch will not end until end-of-file or an
 exceptional condition (&rsquo;excpt) is reached, which would cause this

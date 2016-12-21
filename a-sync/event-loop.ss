@@ -1397,20 +1397,20 @@
 ;; This procedure will start a read watch on 'port' for a line of
 ;; input.  It calls 'await' while waiting for input and will return
 ;; the line of text received (without the terminating '\n' character).
-;; 'port' should be a textual port and should be non-blocking.
-;; Provided 'port' is a non-blocking port, the event loop will not be
+;; 'port' should be a textual port.  The event loop will not be
 ;; blocked by this procedure even if only individual characters are
-;; available at any one time.  It is intended to be called in a
-;; waitable procedure invoked by a-sync, and this procedure is
-;; implemented using a-sync-read-watch!.  If an exceptional condition
-;; ('excpt) is encountered, #f will be returned.  If an end-of-file
-;; object is encountered which terminates a line of text, a string
-;; containing the line of text will be returned (and if an end-of-file
-;; object is encountered without any text, the end-of-file object is
-;; returned rather than an empty string).  The 'loop' argument is
-;; optional: this procedure operates on the event loop passed in as an
-;; argument, or if none is passed (or #f is passed), on the default
-;; event loop.
+;; available at any one time (although if 'port' references a socket,
+;; it should be non-blocking for this to be guaranteed).  It is
+;; intended to be called in a waitable procedure invoked by a-sync,
+;; and this procedure is implemented using a-sync-read-watch!.  If an
+;; exceptional condition ('excpt) is encountered, #f will be returned.
+;; If an end-of-file object is encountered which terminates a line of
+;; text, a string containing the line of text will be returned (and if
+;; an end-of-file object is encountered without any text, the
+;; end-of-file object is returned rather than an empty string).  The
+;; 'loop' argument is optional: this procedure operates on the event
+;; loop passed in as an argument, or if none is passed (or #f is
+;; passed), on the default event loop.
 ;;
 ;; If this procedure is used with a port constructed by
 ;; 'open-fd-input/output-port' for a non-seekable device such as a
@@ -1485,19 +1485,19 @@
 ;; input.  It calls 'await' while waiting for input and will apply
 ;; 'proc' to every complete line of text received (without the
 ;; terminating '\n' character).  'proc' should be a procedure taking a
-;; string as its only argument.  'port' should be a textual port and
-;; should be non-blocking.
+;; string as its only argument.  'port' should be a textual port.
 ;;
-;; Provided 'port' is a non-blocking port, the event loop will not be
-;; blocked by this procedure even if only individual characters are
-;; available at any one time.  It is intended to be called in a
-;; waitable procedure invoked by a-sync.  This procedure is
-;; implemented using a-sync-read-watch!.  Unlike the await-getline!
-;; procedure, the watch will continue after a line of text has been
-;; received in order to receive further lines.  The watch will not end
-;; until end-of-file or an exceptional condition ('excpt) is reached.
-;; In the event of that happening, this procedure will end and return
-;; an end-of-file object or #f respectively.
+;; The event loop will not be blocked by this procedure even if only
+;; individual characters are available at any one time (although if
+;; 'port' references a socket, it should be non-blocking for this to
+;; be guaranteed).  It is intended to be called in a waitable
+;; procedure invoked by a-sync.  This procedure is implemented using
+;; a-sync-read-watch!.  Unlike the await-getline!  procedure, the
+;; watch will continue after a line of text has been received in order
+;; to receive further lines.  The watch will not end until end-of-file
+;; or an exceptional condition ('excpt) is reached.  In the event of
+;; that happening, this procedure will end and return an end-of-file
+;; object or #f respectively.
 ;;
 ;; The 'loop' argument is optional: this procedure operates on the
 ;; event loop passed in as an argument, or if none is passed (or #f is
@@ -1613,18 +1613,18 @@
 ;; terminating '\n' character).  'proc' should be a procedure taking
 ;; two arguments, a string as the first argument containing the line
 ;; of text read, and an escape continuation as its second.  'port'
-;; should be a textual port and should be non-blocking.
+;; should be a textual port.
 ;;
-;; Provided 'port' is a non-blocking port, the event loop will not be
-;; blocked by this procedure even if only individual characters are
-;; available at any one time.  It is intended to be called in a
-;; waitable procedure invoked by a-sync.  This procedure is
-;; implemented using a-sync-read-watch!.  The watch will not end until
-;; end-of-file or an exceptional condition ('excpt) is reached, which
-;; would cause this procedure to end and return an end-of-file object
-;; or #f respectively, or until the escape continuation is invoked, in
-;; which case the value passed to the escape continuation will be
-;; returned.
+;; The event loop will not be blocked by this procedure even if only
+;; individual characters are available at any one time (although if
+;; 'port' references a socket, it should be non-blocking for this to
+;; be guaranteed).  It is intended to be called in a waitable
+;; procedure invoked by a-sync.  This procedure is implemented using
+;; a-sync-read-watch!.  The watch will not end until end-of-file or an
+;; exceptional condition ('excpt) is reached, which would cause this
+;; procedure to end and return an end-of-file object or #f
+;; respectively, or until the escape continuation is invoked, in which
+;; case the value passed to the escape continuation will be returned.
 ;;
 ;; The 'loop' argument is optional: this procedure operates on the
 ;; event loop passed in as an argument, or if none is passed (or #f is
@@ -1738,14 +1738,14 @@
 ;; as its car a bytevector of length 'size' containing the data, and
 ;; as its cdr the number of bytes received (which will be the same as
 ;; 'size' unless an end-of-file object was encountered part way
-;; through receiving the data).  'port' should be a binary port and
-;; should be non-blocking.
+;; through receiving the data).  'port' should be a binary port.
 ;;
-;; Provided 'port' is a non-blocking port, the event loop will not be
-;; blocked by this procedure even if only individual bytes are
-;; available at any one time.  It is intended to be called in a
-;; waitable procedure invoked by a-sync.  This procedure is
-;; implemented using a-sync-read-watch!.
+;; The event loop will not be blocked by this procedure even if only
+;; individual bytes are available at any one time (although if 'port'
+;; references a socket, it should be non-blocking for this to be
+;; guaranteed).  It is intended to be called in a waitable procedure
+;; invoked by a-sync.  This procedure is implemented using
+;; a-sync-read-watch!.
 ;;
 ;; If an exceptional condition ('excpt) is encountered, a pair
 ;; comprising (#f . #f) will be returned.  As mentioned above, if an
@@ -1819,18 +1819,19 @@
 ;; value passed as the size of the block of data placed in the
 ;; bytevector will always be the same as 'size' unless end-of-file has
 ;; been encountered after receiving only a partial block of data.
-;; 'port' should be a binary port and should be non-blocking.
+;; 'port' should be a binary port.
 ;;
-;; Provided 'port' is a non-blocking port, the event loop will not be
-;; blocked by this procedure even if only individual bytes are
-;; available at any one time.  It is intended to be called in a
-;; waitable procedure invoked by a-sync.  This procedure is
-;; implemented using a-sync-read-watch!.  Unlike the await-getblock!
-;; procedure, the watch will continue after a complete block of data
-;; has been received in order to receive further blocks.  The watch
-;; will not end until end-of-file or an exceptional condition ('excpt)
-;; is reached.  In the event of that happening, this procedure will
-;; end and return an end-of-file object or #f respectively.
+;; The event loop will not be blocked by this procedure even if only
+;; individual bytes are available at any one time (although if 'port'
+;; references a socket, it should be non-blocking for this to be
+;; guaranteed).  It is intended to be called in a waitable procedure
+;; invoked by a-sync.  This procedure is implemented using
+;; a-sync-read-watch!.  Unlike the await-getblock!  procedure, the
+;; watch will continue after a complete block of data has been
+;; received in order to receive further blocks.  The watch will not
+;; end until end-of-file or an exceptional condition ('excpt) is
+;; reached.  In the event of that happening, this procedure will end
+;; and return an end-of-file object or #f respectively.
 ;;
 ;; For efficiency reasons, this procedure passes its internal
 ;; bytevector buffer to 'proc' as proc's first argument and, when
@@ -1940,19 +1941,18 @@
 ;; and third an escape continuation.  The value passed as the size of
 ;; the block of data placed in the bytevector will always be the same
 ;; as 'size' unless end-of-file has been encountered after receiving
-;; only a partial block of data.  'port' should be a binary port and
-;; should be non-blocking.
+;; only a partial block of data.  'port' should be a binary port.
 ;;
-;; Provided 'port' is a non-blocking port, the event loop will not be
-;; blocked by this procedure even if only individual bytes are
-;; available at any one time.  It is intended to be called in a
-;; waitable procedure invoked by a-sync.  This procedure is
-;; implemented using a-sync-read-watch!.  The watch will not end until
-;; end-of-file or an exceptional condition ('excpt) is reached, which
-;; would cause this procedure to end and return an end-of-file object
-;; or #f respectively, or until the escape continuation is invoked, in
-;; which case the value passed to the escape continuation will be
-;; returned.
+;; The event loop will not be blocked by this procedure even if only
+;; individual bytes are available at any one time (although if 'port'
+;; references a socket, it should be non-blocking for this to be
+;; guaranteed).  It is intended to be called in a waitable procedure
+;; invoked by a-sync.  This procedure is implemented using
+;; a-sync-read-watch!.  The watch will not end until end-of-file or an
+;; exceptional condition ('excpt) is reached, which would cause this
+;; procedure to end and return an end-of-file object or #f
+;; respectively, or until the escape continuation is invoked, in which
+;; case the value passed to the escape continuation will be returned.
 ;;
 ;; For efficiency reasons, this procedure passes its internal
 ;; bytevector buffer to 'proc' as proc's first argument and, when
