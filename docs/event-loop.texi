@@ -495,7 +495,7 @@ unless memory is exhausted.  Exceptions arising in code appearing
 after the call to this procedure in the a-sync or compose-a-sync block
 will propagate out of event-loop-run!.
 
-This procedure is first available in version 0.12 of this library.
+This procedure is first available in version 0.9 of this library.
 
 Here is an example of the use of await-yield!:
 @example

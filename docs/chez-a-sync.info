@@ -956,7 +956,7 @@ the worker thread should post the closing as an event using event-post!.
      appearing after the call to this procedure in the a-sync or
      compose-a-sync block will propagate out of event-loop-run!.
 
-     This procedure is first available in version 0.12 of this library.
+     This procedure is first available in version 0.9 of this library.
 
      Here is an example of the use of await-yield!:
           (set-default-event-loop!) ;; if none has yet been set
@@ -2084,7 +2084,7 @@ Node: Top83
 Node: overview1010
 Node: coroutines3960
 Node: event loop22298
-Node: compose99720
-Node: try105429
+Node: compose99719
+Node: try105428
 
 End Tag Table
