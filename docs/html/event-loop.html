@@ -383,9 +383,10 @@ specified by the &rsquo;loop&rsquo; argument when &rsquo;thunk&rsquo; has finish
 default event loop if no &rsquo;loop&rsquo; argument is provided or if #f is
 provided as the &rsquo;loop&rsquo; argument (pattern matching is used to detect
 the type of the third argument).  This procedure calls &rsquo;await&rsquo; and
-will return the thunk&rsquo;s return value.  It is intended to be called in
-a waitable procedure invoked by a-sync.  It will normally be necessary
-to call event-loop-block! before invoking this procedure.  If the
+will return the thunk&rsquo;s return value.  It is intended to be called
+within a waitable procedure invoked by a-sync (which supplies the
+&rsquo;await&rsquo; and &rsquo;resume&rsquo; arguments).  It will normally be necessary to
+call event-loop-block! before invoking this procedure.  If the
 optional &rsquo;handler&rsquo; argument is provided, then that handler will be run
 in the event loop thread if &rsquo;thunk&rsquo; throws and the return value of the
 handler would become the return value of this procedure; otherwise the
@@ -433,8 +434,9 @@ will then be posted to the event loop specified by the &rsquo;waiter&rsquo;
 argument, or to the default event loop if no &rsquo;waiter&rsquo; argument is
 provided or if #f is provided as the &rsquo;waiter&rsquo; argument, and will
 comprise this procedure&rsquo;s return value.  This procedure is intended to
-be called in a waitable procedure invoked by a-sync.  It will normally
-be necessary to call event-loop-block! on &rsquo;waiter&rsquo; (or on the default
+be called within a waitable procedure invoked by a-sync (which
+supplies the &rsquo;await&rsquo; and &rsquo;resume&rsquo; arguments).  It will normally be
+necessary to call event-loop-block! on &rsquo;waiter&rsquo; (or on the default
 event loop) before invoking this procedure.
 </p>
 <p>This procedure calls &rsquo;await&rsquo; and must (like the a-sync procedure) be
@@ -494,14 +496,16 @@ use with an event loop, which will run &rsquo;thunk&rsquo; in the event loop
 specified by the &rsquo;loop&rsquo; argument, or in the default event loop if no
 &rsquo;loop&rsquo; argument is provided or #f is provided as the &rsquo;loop&rsquo; argument.
 This procedure calls &rsquo;await&rsquo; and will return the thunk&rsquo;s return value.
-It is intended to be called in a waitable procedure invoked by a-sync.
-It is the single-threaded corollary of await-task-in-thread!.  This
-means that (unlike with await-task-in-thread!) while &rsquo;thunk&rsquo; is
-running other events in the event loop will not make progress, so
-blocking calls should not be made in &rsquo;thunk&rsquo;.  This procedure can be
-useful for the purpose of implementing co-operative multi-tasking, say
-by composing tasks with compose-a-sync (see the <a href="compose.html#compose">compose</a>
-library file).
+It is intended to be called within a waitable procedure invoked by
+a-sync (which supplies the &rsquo;await&rsquo; and &rsquo;resume&rsquo; arguments).  It is the
+single-threaded corollary of await-task-in-thread!.  This means that
+(unlike with await-task-in-thread!) while &rsquo;thunk&rsquo; is running other
+events in the event loop will not make progress, so blocking calls
+should not be made in &rsquo;thunk&rsquo;.  This procedure can be useful for the
+purpose of implementing co-operative multi-tasking, say by composing
+tasks with compose-a-sync (see the <a href="compose.html#compose">compose</a> library
+file).  For that purpose however, event-yield! may often be more
+convenient.
 </p>
 <p>This procedure must (like the a-sync procedure) be called in the same
 thread as that in which the event loop runs.
@@ -528,6 +532,51 @@ event-loop-run!.
 		  (await-task! await resume
 			       (lambda ()
 				 (+ 1 1))))))
+(event-loop-run!)
+</pre></div>
+</dd></dl>
+
+<dl>
+<dt><a name="index-await_002dyield_0021"></a>Scheme Procedure: <strong>await-yield!</strong> <em>await resume [loop]</em></dt>
+<dd><p>This is a convenience procedure which will surrender execution to the
+relevant event loop, so that code in other a-sync or compose-a-sync
+blocks can run.  The remainder of the code after the call to
+await-yield! in the current a-sync or compose-a-sync block will
+execute on the next iteration through the loop.  It is intended to be
+called within a waitable procedure invoked by a-sync (which supplies
+the &rsquo;await&rsquo; and &rsquo;resume&rsquo; arguments).  It&rsquo;s effect is similar to
+calling await-task!  with a task comprising the code appearing after
+the yield.
+</p>
+<p>This procedure must (like the a-sync procedure) be called in the same
+thread as that in which the relevant event loop runs: for this purpose
+&quot;the relevant event loop&quot; is the event loop given by the &rsquo;loop&rsquo;
+argument, or if no &rsquo;loop&rsquo; argument is provided or #f is provided as
+the &rsquo;loop&rsquo; argument, then the default event loop.
+</p>
+<p>This procedure calls event-post! in the event loop concerned.  This is
+done in the same thread as that in which the event loop runs so it
+cannot of itself be throttled.  However it may contribute to the
+number of accumulated unexecuted tasks in the event loop and therefore
+contribute to the throttling of other threads by the loop.  See the
+documentation on the make-event-loop procedure for further information
+about that.
+</p>
+<p>Exceptions may propagate out of this procedure if they arise while
+setting up (that is, before the task starts), which shouldn&rsquo;t happen
+unless memory is exhausted.  Exceptions arising in code appearing
+after the call to this procedure in the a-sync or compose-a-sync block
+will propagate out of event-loop-run!.
+</p>
+<p>This procedure is first available in version 0.12 of this library.
+</p>
+<p>Here is an example of the use of await-yield!:
+</p><div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(a-sync (lambda (await resume)
+	  (display &quot;In first iteration through event loop\n&quot;)
+	  (await-yield! await resume)
+	  (display &quot;In next iteration through event loop\n&quot;)))
 (event-loop-run!)
 </pre></div>
 </dd></dl>
@@ -560,9 +609,10 @@ exception and &rsquo;handler&rsquo; is run (the &rsquo;chez-a-sync-thread-error 
 is reserved to the implementation and should not be yielded by the
 generator).
 </p>
-<p>This procedure is intended to be called in a waitable procedure
-invoked by a-sync.  It will normally be necessary to call
-event-loop-block! before invoking this procedure.
+<p>This procedure is intended to be called within a waitable procedure
+invoked by a-sync (which supplies the &rsquo;await&rsquo; and &rsquo;resume&rsquo; arguments).
+It will normally be necessary to call event-loop-block! before
+invoking this procedure.
 </p>
 <p>This procedure must (like the a-sync procedure) be called in the same
 thread as that in which the event loop runs.  As mentioned above, the
@@ -617,10 +667,10 @@ argument is provided or if #f is provided as the &rsquo;waiter&rsquo; argument.
 &rsquo;proc&rsquo; should be a procedure taking a single argument, namely the
 value yielded by the generator.
 </p>
-<p>This procedure is intended to be called in a waitable procedure
-invoked by a-sync.  It will normally be necessary to call
-event-loop-block! on &rsquo;waiter&rsquo; (or on the default event loop) before
-invoking this procedure.
+<p>This procedure is intended to be called within a waitable procedure
+invoked by a-sync (which supplies the &rsquo;await&rsquo; and &rsquo;resume&rsquo; arguments).
+It will normally be necessary to call event-loop-block! on &rsquo;waiter&rsquo;
+(or on the default event loop) before invoking this procedure.
 </p>
 <p>This procedure calls &rsquo;await&rsquo; and will return when the generator has
 finished.  It must (like the a-sync procedure) be called in the same
@@ -698,15 +748,15 @@ multi-plexed with other events.
 <p>This procedure must (like the a-sync procedure) be called in the same
 thread as that in which the event loop runs.
 </p>
-<p>This procedure is intended to be called in a waitable procedure
-invoked by a-sync.  It is the single-threaded corollary of
-await-generator-in-thread!.  This means that (unlike with
-await-generator-in-thread!) while &rsquo;generator&rsquo; is running other
-events in the event loop will not make progress, so blocking calls
-(other than to the yield procedure) should not be made in &rsquo;generator&rsquo;.
-This procedure can be useful for the purpose of implementing
-co-operative multi-tasking, say by composing tasks with
-compose-a-sync (see compose.scm).
+<p>This procedure is intended to be called within a waitable procedure
+invoked by a-sync (which supplies the &rsquo;await&rsquo; and &rsquo;resume&rsquo; arguments).
+It is the single-threaded corollary of await-generator-in-thread!.
+This means that (unlike with await-generator-in-thread!) while
+&rsquo;generator&rsquo; is running other events in the event loop will not make
+progress, so blocking calls (other than to the yield procedure) should
+not be made in &rsquo;generator&rsquo;.  This procedure can be useful for the
+purpose of implementing co-operative multi-tasking, say by composing
+tasks with compose-a-sync (see compose.scm).
 </p>
 <p>This procedure calls event-post! in the event loop concerned.  This is
 done in the same thread as that in which the event loop runs so it
@@ -747,12 +797,13 @@ will propagate out of event-loop-run!.
 <dd><p>This is a convenience procedure for use with an event loop, which will
 run &rsquo;thunk&rsquo; in the event loop thread when the timeout expires.  This
 procedure calls &rsquo;await&rsquo; and will return the thunk&rsquo;s return value.  It
-is intended to be called in a waitable procedure invoked by a-sync.
-The timeout is single shot only - as soon as &rsquo;thunk&rsquo; has run once and
-completed, the timeout will be removed from the event loop.  The
-&rsquo;loop&rsquo; argument is optional: this procedure operates on the event loop
-passed in as an argument, or if none is passed (or #f is passed), on
-the default event loop.
+is intended to be called within a waitable procedure invoked by a-sync
+(which supplies the &rsquo;await&rsquo; and &rsquo;resume&rsquo; arguments).  The timeout is
+single shot only - as soon as &rsquo;thunk&rsquo; has run once and completed, the
+timeout will be removed from the event loop.  The &rsquo;loop&rsquo; argument is
+optional: this procedure operates on the event loop passed in as an
+argument, or if none is passed (or #f is passed), on the default event
+loop.
 </p>
 <p>This procedure must (like the a-sync procedure) be called in the same
 thread as that in which the event loop runs.
@@ -786,14 +837,15 @@ return value of &rsquo;proc&rsquo;.  &rsquo;file&rsquo; can be a port or a file 
 incremented).  &rsquo;proc&rsquo; should take a single argument which will be set
 by the event loop to &rsquo;in or &rsquo;excpt (see the documentation on
 event-loop-add-read-watch! for further details).  It is intended to be
-called in a waitable procedure invoked by a-sync.  The watch is
-multi-shot - it is for the user to bring it to an end at the right
-time by calling event-loop-remove-read-watch! in the waitable
-procedure.  If &rsquo;file&rsquo; is a buffered port, buffering will be taken into
-account in indicating whether a read can be made without blocking (but
-on a buffered port, for efficiency purposes each read operation in
-response to this watch should usually exhaust the buffer by looping on
-char-ready? or input-port-ready?, or by using chez scheme&rsquo;s various
+called within a waitable procedure invoked by a-sync (which supplies
+the &rsquo;resume&rsquo; argument).  The watch is multi-shot - it is for the user
+to bring it to an end at the right time by calling
+event-loop-remove-read-watch! in the waitable procedure.  If &rsquo;file&rsquo; is
+a buffered port, buffering will be taken into account in indicating
+whether a read can be made without blocking (but on a buffered port,
+for efficiency purposes each read operation in response to this watch
+should usually exhaust the buffer by looping on char-ready? or
+input-port-ready?, or by using chez scheme&rsquo;s various
 multi-byte/character reading procedures on non-blocking ports).
 </p>
 <p>This procedure is mainly intended as something from which higher-level
@@ -871,16 +923,17 @@ while waiting for input and will return the line of text received
 portg.  The event loop will not be blocked by this procedure even if
 only individual characters are available at any one time (although if
 &rsquo;port&rsquo; references a socket, it should be non-blocking for this to be
-guaranteed).  It is intended to be called in a waitable procedure
-invoked by a-sync, and this procedure is implemented using
-a-sync-read-watch!.  If an exceptional condition (&rsquo;excpt) is
-encountered, #f will be returned.  If an end-of-file object is
-encountered which terminates a line of text, a string containing the
-line of text will be returned (and if an end-of-file object is
-encountered without any text, the end-of-file object is returned
-rather than an empty string).  The &rsquo;loop&rsquo; argument is optional: this
-procedure operates on the event loop passed in as an argument, or if
-none is passed (or #f is passed), on the default event loop.
+guaranteed).  It is intended to be called within a waitable procedure
+invoked by a-sync (which supplies the &rsquo;await&rsquo; and &rsquo;resume&rsquo; arguments),
+and this procedure is implemented using a-sync-read-watch!.  If an
+exceptional condition (&rsquo;excpt) is encountered, #f will be returned.
+If an end-of-file object is encountered which terminates a line of
+text, a string containing the line of text will be returned (and if an
+end-of-file object is encountered without any text, the end-of-file
+object is returned rather than an empty string).  The &rsquo;loop&rsquo; argument
+is optional: this procedure operates on the event loop passed in as an
+argument, or if none is passed (or #f is passed), on the default event
+loop.
 </p>
 <p>If this procedure is used with a port constructed by
 &rsquo;open-fd-input/output-port&rsquo; for a non-seekable device such as a socket
@@ -922,14 +975,14 @@ should be a textual port.
 <p>The event loop will not be blocked by this procedure even if only
 individual characters are available at any one time (although if
 &rsquo;port&rsquo; references a socket, it should be non-blocking for this to be
-guaranteed).  It is intended to be called in a waitable procedure
-invoked by a-sync, and this procedure is implemented using
-a-sync-read-watch!.  Unlike the await-getline! procedure, the watch
-will continue after a line of text has been received in order to
-receive further lines.  The watch will not end until end-of-file or an
-exceptional condition (&rsquo;excpt) is reached.  In the event of that
-happening, this procedure will end and return an end-of-file object or
-#f respectively.
+guaranteed).  It is intended to be called within a waitable procedure
+invoked by a-sync (which supplies the &rsquo;await&rsquo; and &rsquo;resume&rsquo; arguments),
+and this procedure is implemented using a-sync-read-watch!.  Unlike
+the await-getline! procedure, the watch will continue after a line of
+text has been received in order to receive further lines.  The watch
+will not end until end-of-file or an exceptional condition (&rsquo;excpt) is
+reached.  In the event of that happening, this procedure will end and
+return an end-of-file object or #f respectively.
 </p>
 <p>The &rsquo;loop&rsquo; argument is optional: this procedure operates on the event
 loop passed in as an argument, or if none is passed (or #f is passed),
@@ -993,13 +1046,14 @@ escape continuation as its second.  &rsquo;port&rsquo; should be a textual port.
 <p>The event loop will not be blocked by this procedure even if only
 individual characters are available at any one time (although if
 &rsquo;port&rsquo; references a socket, it should be non-blocking for this to be
-guaranteed).  It is intended to be called in a waitable procedure
-invoked by a-sync.  This procedure is implemented using
-a-sync-read-watch!.  The watch will not end until end-of-file or an
-exceptional condition (&rsquo;excpt) is reached, which would cause this
-procedure to end and return an end-of-file object or #f respectively,
-or until the escape continuation is invoked, in which case the value
-passed to the escape continuation will be returned.
+guaranteed).  It is intended to be called within a waitable procedure
+invoked by a-sync (which supplies the &rsquo;await&rsquo; and &rsquo;resume&rsquo; arguments).
+This procedure is implemented using a-sync-read-watch!.  The watch
+will not end until end-of-file or an exceptional condition (&rsquo;excpt) is
+reached, which would cause this procedure to end and return an
+end-of-file object or #f respectively, or until the escape
+continuation is invoked, in which case the value passed to the escape
+continuation will be returned.
 </p>
 <p>The &rsquo;loop&rsquo; argument is optional: this procedure operates on the event
 loop passed in as an argument, or if none is passed (or #f is passed),
@@ -1059,9 +1113,9 @@ should be a binary port.
 <p>The event loop will not be blocked by this procedure even if only
 individual bytes are available at any one time (although if &rsquo;port&rsquo;
 references a socket, it should be non-blocking for this to be
-guaranteed).  It is intended to be called in a waitable procedure
-invoked by a-sync.  This procedure is implemented using
-a-sync-read-watch!.
+guaranteed).  It is intended to be called within a waitable procedure
+invoked by a-sync (which supplies the &rsquo;await&rsquo; and &rsquo;resume&rsquo; arguments).
+This procedure is implemented using a-sync-read-watch!.
 </p>
 <p>If an exceptional condition (&rsquo;excpt) is encountered, a pair comprising
 (#f . #f) will be returned.  As mentioned above, if an end-of-file
@@ -1109,14 +1163,14 @@ partial block of data.  &rsquo;port&rsquo; should be a binary port.
 <p>The event loop will not be blocked by this procedure even if only
 individual bytes are available at any one time (although if &rsquo;port&rsquo;
 references a socket, it should be non-blocking for this to be
-guaranteed).  It is intended to be called in a waitable procedure
-invoked by a-sync.  This procedure is implemented using
-a-sync-read-watch!.  Unlike the await-getblock!  procedure, the watch
-will continue after a complete block of data has been received in
-order to receive further blocks.  The watch will not end until
-end-of-file or an exceptional condition (&rsquo;excpt) is reached.  In the
-event of that happening, this procedure will end and return an
-end-of-file object or #f respectively.
+guaranteed).  It is intended to be called within a waitable procedure
+invoked by a-sync (which supplies the &rsquo;await&rsquo; and &rsquo;resume&rsquo; arguments).
+This procedure is implemented using a-sync-read-watch!.  Unlike the
+await-getblock!  procedure, the watch will continue after a complete
+block of data has been received in order to receive further blocks.
+The watch will not end until end-of-file or an exceptional condition
+(&rsquo;excpt) is reached.  In the event of that happening, this procedure
+will end and return an end-of-file object or #f respectively.
 </p>
 <p>For efficiency reasons, this procedure passes its internal bytevector
 buffer to &rsquo;proc&rsquo; as proc&rsquo;s first argument and, when &rsquo;proc&rsquo; returns,
@@ -1175,13 +1229,14 @@ of data.  &rsquo;port&rsquo; should be a binary port.
 <p>The event loop will not be blocked by this procedure even if only
 individual bytes are available at any one time (although if &rsquo;port&rsquo;
 references a socket, it should be non-blocking for this to be
-guaranteed).  It is intended to be called in a waitable procedure
-invoked by a-sync.  This procedure is implemented using
-a-sync-read-watch!.  The watch will not end until end-of-file or an
-exceptional condition (&rsquo;excpt) is reached, which would cause this
-procedure to end and return an end-of-file object or #f respectively,
-or until the escape continuation is invoked, in which case the value
-passed to the escape continuation will be returned.
+guaranteed).  It is intended to be called within a waitable procedure
+invoked by a-sync (which supplies the &rsquo;await&rsquo; and &rsquo;resume&rsquo; arguments).
+This procedure is implemented using a-sync-read-watch!.  The watch
+will not end until end-of-file or an exceptional condition (&rsquo;excpt) is
+reached, which would cause this procedure to end and return an
+end-of-file object or #f respectively, or until the escape
+continuation is invoked, in which case the value passed to the escape
+continuation will be returned.
 </p>
 <p>For efficiency reasons, this procedure passes its internal bytevector
 buffer to &rsquo;proc&rsquo; as proc&rsquo;s first argument and, when &rsquo;proc&rsquo; returns,
@@ -1225,15 +1280,15 @@ writing, and apply &rsquo;resume&rsquo; (obtained from a call to a-sync) to the
 return value of &rsquo;proc&rsquo;.  &rsquo;file&rsquo; can be a port or a file descriptor.
 &rsquo;proc&rsquo; should take a single argument which will be set by the event
 loop to &rsquo;out (see the documentation on event-loop-add-write-watch! for
-further details).  It is intended to be called in a waitable procedure
-invoked by a-sync.  The watch is multi-shot - it is for the user to
-bring it to an end at the right time by calling
-event-loop-remove-write-watch! in the waitable procedure.  This
-procedure is mainly intended as something from which higher-level
-asynchronous file operations can be constructed.  The &rsquo;loop&rsquo; argument
-is optional: this procedure operates on the event loop passed in as an
-argument, or if none is passed (or #f is passed), on the default event
-loop
+further details).  It is intended to be called within a waitable
+procedure invoked by a-sync (which supplies the &rsquo;resume&rsquo; argument).
+The watch is multi-shot - it is for the user to bring it to an end at
+the right time by calling event-loop-remove-write-watch! in the
+waitable procedure.  This procedure is mainly intended as something
+from which higher-level asynchronous file operations can be
+constructed.  The &rsquo;loop&rsquo; argument is optional: this procedure operates
+on the event loop passed in as an argument, or if none is passed (or
+#f is passed), on the default event loop
 </p>
 <p>The documentation on the event-loop-add-write-watch! procedure
 explains why this procedure generally works best with an unbuffered or
@@ -1284,12 +1339,12 @@ start a write watch on &rsquo;port&rsquo; for writing the contents of a bytevect
 &rsquo;bv&rsquo; to the port.  It calls &rsquo;await&rsquo; while waiting for output to become
 available.  Provided &rsquo;port&rsquo; is a non-blocking port, the event loop
 will not be blocked by this procedure even if only individual bytes
-can be written at any one time.  It is intended to be called in a
-waitable procedure invoked by a-sync, and this procedure is
-implemented using a-sync-write-watch!.  The &rsquo;loop&rsquo; argument is
-optional: this procedure operates on the event loop passed in as an
-argument, or if none is passed (or #f is passed), on the default event
-loop.
+can be written at any one time.  It is intended to be called within a
+waitable procedure invoked by a-sync (which supplies the &rsquo;await&rsquo; and
+&rsquo;resume&rsquo; arguments), and this procedure is implemented using
+a-sync-write-watch!.  The &rsquo;loop&rsquo; argument is optional: this procedure
+operates on the event loop passed in as an argument, or if none is
+passed (or #f is passed), on the default event loop.
 </p>
 <p>&rsquo;port&rsquo; must be a non-blocking port, and may be a binary port or a
 textual port.  It should be unbuffered for output (say by applying the
@@ -1355,11 +1410,11 @@ It calls &rsquo;await&rsquo; while waiting for output to become available.
 Provided &rsquo;port&rsquo; is a non-blocking port, the event loop will not be
 blocked by this procedure even if only individual characters or part
 characters can be written at any one time.  It is intended to be
-called in a waitable procedure invoked by a-sync, and this procedure
-is implemented using await-put-bytevector!.  The &rsquo;loop&rsquo; argument is
-optional: this procedure operates on the event loop passed in as an
-argument, or if none is passed (or #f is passed), on the default event
-loop.
+called within a waitable procedure invoked by a-sync (which supplies
+the &rsquo;await&rsquo; and &rsquo;resume&rsquo; arguments), and this procedure is implemented
+using await-put-bytevector!.  The &rsquo;loop&rsquo; argument is optional: this
+procedure operates on the event loop passed in as an argument, or if
+none is passed (or #f is passed), on the default event loop.
 </p>
 <p>&rsquo;port&rsquo; must be a non-blocking textual port.  It should be unbuffered
 for output (say by applying the set-textual-port-output-size!

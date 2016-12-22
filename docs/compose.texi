@@ -43,7 +43,7 @@ A 'compose-a-sync'-capable procedure is one which takes an 'await' and
 (if the optional 'loop' argument of this macro is used) takes the
 event loop as its third argument, followed by such further arguments
 as it requires.  All of the await-task!, await-task-in-thread!,
-await-task-in-event-loop!, await-generator!,
+await-task-in-event-loop!, await-yield!, await-generator!,
 await-generator-in-thread!, await-generator-in-event-loop!,
 await-timeout!, await-getline!, await-geteveryline!,
 await-getsomelines!, await-getblock!, await-geteveryblock!,
