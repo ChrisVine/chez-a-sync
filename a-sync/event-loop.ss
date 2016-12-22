@@ -2262,24 +2262,29 @@
     [(await resume port bv) (await-put-string! await resume #f port bv)]
     [(await resume loop port bv)
      (define length (bytevector-length bv))
-     (define index 0)
      (define fd (port-file-descriptor port))
      (raise-exception-if-regular-file fd)
-     (a-sync-write-watch! resume
-			  port
-			  (lambda (status)
-			    (set! index (+ index (c-write fd
-							  bv
-							  index
-							  (- length index))))
-			    (if (< index length)
-				'more
-				#f))
-			  loop)
-     (let next ((res (await)))
-       (if (eq? res 'more)
-	   (next (await))
-	   (event-loop-remove-write-watch! port loop)))]))
+
+     (let ([index (c-write fd bv 0 length)])
+     ;; for testing
+     ;;(let ([index 0])
+       ;; set up write watch if we haven't written everything
+       (when (< index length)
+	 (a-sync-write-watch! resume
+			      port
+			      (lambda (status)
+				(set! index (+ index (c-write fd
+							      bv
+							      index
+							      (- length index))))
+				(if (< index length)
+				    'more
+				    #f))
+			      loop)
+	 (let next ((res (await)))
+	   (if (eq? res 'more)
+	       (next (await))
+	       (event-loop-remove-write-watch! port loop)))))]))
 
 ;; This is a convenience procedure whose signature is:
 ;;
