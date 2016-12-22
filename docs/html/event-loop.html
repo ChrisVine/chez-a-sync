@@ -805,6 +805,9 @@ optional: this procedure operates on the event loop passed in as an
 argument, or if none is passed (or #f is passed), on the default event
 loop.
 </p>
+<p>In practice, calling event-sleep! may often be more convenient for
+composing asynchronous code than using this procedure.
+</p>
 <p>This procedure must (like the a-sync procedure) be called in the same
 thread as that in which the event loop runs.
 </p>
@@ -823,6 +826,44 @@ shouldn&rsquo;t happen unless memory is exhausted.  Exceptions raised by
 				  100
 				  (lambda ()
 				    &quot;expired&quot;)))))
+(event-loop-run!)
+</pre></div>
+</dd></dl>
+
+<dl>
+<dt><a name="index-await_002dsleep_0021"></a>Scheme Procedure: <strong>await-sleep!</strong> <em>await resume [loop] msecs</em></dt>
+<dd><p>This is a convenience procedure which will suspend execution of code
+in the current a-sync or compose-a-sync block for the duration of
+&rsquo;msecs&rsquo; milliseconds.  The event loop will not be blocked by the sleep
+- instead any other events in the event loop (including any other
+a-sync or compose-a-sync blocks) will be serviced.  It is intended to
+be called within a waitable procedure invoked by a-sync (which
+supplies the &rsquo;await&rsquo; and &rsquo;resume&rsquo; arguments).  The &rsquo;loop&rsquo; argument is
+optional: this procedure operates on the event loop passed in as an
+argument, or if none is passed (or #f is passed), on the default event
+loop.
+</p>
+<p>Calling this procedure is equivalent to calling await-timeout! with a
+&rsquo;proc&rsquo; argument comprising a lambda expression that does nothing.
+</p>
+<p>This procedure must (like the a-sync procedure) be called in the same
+thread as that in which the event loop runs.
+</p>
+<p>Exceptions may propagate out of this procedure if they arise while
+setting up (that is, before the timeout is installed), which shouldn&rsquo;t
+happen unless memory is exhausted.  Exceptions arising in code
+appearing after the call to this procedure in the a-sync or
+compose-a-sync block concerned will propagate out of event-loop-run!.
+</p>
+<p>This procedure is first available in version 0.9 of this library.
+</p>
+<p>Here is an example of the use of await-sleep!:
+</p><div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(a-sync (lambda (await resume)
+	  (display &quot;Entering sleep\n&quot;)
+	  (await-sleep! await resume 500)
+	  (display &quot;Timeout expired\n&quot;)))
 (event-loop-run!)
 </pre></div>
 </dd></dl>

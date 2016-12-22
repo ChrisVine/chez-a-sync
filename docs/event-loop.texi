@@ -728,6 +728,9 @@ optional: this procedure operates on the event loop passed in as an
 argument, or if none is passed (or #f is passed), on the default event
 loop.
 
+In practice, calling event-sleep! may often be more convenient for
+composing asynchronous code than using this procedure.
+
 This procedure must (like the a-sync procedure) be called in the same
 thread as that in which the event loop runs.
 
@@ -746,6 +749,43 @@ Here is an example of the use of event-timeout!:
 				  100
 				  (lambda ()
 				    "expired")))))
+(event-loop-run!)
+@end example
+@end deffn
+
+@deffn {Scheme Procedure} await-sleep! await resume [loop] msecs
+This is a convenience procedure which will suspend execution of code
+in the current a-sync or compose-a-sync block for the duration of
+'msecs' milliseconds.  The event loop will not be blocked by the sleep
+- instead any other events in the event loop (including any other
+a-sync or compose-a-sync blocks) will be serviced.  It is intended to
+be called within a waitable procedure invoked by a-sync (which
+supplies the 'await' and 'resume' arguments).  The 'loop' argument is
+optional: this procedure operates on the event loop passed in as an
+argument, or if none is passed (or #f is passed), on the default event
+loop.
+
+Calling this procedure is equivalent to calling await-timeout! with a
+'proc' argument comprising a lambda expression that does nothing.
+
+This procedure must (like the a-sync procedure) be called in the same
+thread as that in which the event loop runs.
+
+Exceptions may propagate out of this procedure if they arise while
+setting up (that is, before the timeout is installed), which shouldn't
+happen unless memory is exhausted.  Exceptions arising in code
+appearing after the call to this procedure in the a-sync or
+compose-a-sync block concerned will propagate out of event-loop-run!.
+
+This procedure is first available in version 0.9 of this library.
+
+Here is an example of the use of await-sleep!:
+@example
+(set-default-event-loop!) ;; if none has yet been set
+(a-sync (lambda (await resume)
+	  (display "Entering sleep\n")
+	  (await-sleep! await resume 500)
+	  (display "Timeout expired\n")))
 (event-loop-run!)
 @end example
 @end deffn
