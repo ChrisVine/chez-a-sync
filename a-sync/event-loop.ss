@@ -1056,7 +1056,7 @@
 ;; this procedure is waiting on 'await', so 'await' and 'resume'
 ;; cannot be used again in 'thunk' (although 'thunk' can call a-sync
 ;; to start another series of asynchronous operations with a new
-;; await-resume pair).  For that reason, event-yield! is usually more
+;; await-resume pair).  For that reason, await-yield! is usually more
 ;; convenient for composing asynchronous tasks.  In retrospect, this
 ;; procedure offers little over await-yield!, apart from symmetry with
 ;; await-task-in-thread!.
@@ -1114,11 +1114,8 @@
 ;; loop.  See the documentation on the make-event-loop procedure for
 ;; further information about that.
 ;;
-;; Exceptions may propagate out of this procedure if they arise while
-;; setting up (that is, before the task starts), which shouldn't
-;; happen unless memory is exhausted.  Exceptions arising in code
-;; appearing after the call to this procedure in the a-sync or
-;; compose-a-sync block will propagate out of event-loop-run!.
+;; This procedure should not raise any exceptions unless memory is
+;; exhausted.
 ;;
 ;; This procedure is first available in version 0.9 of this library.
 (define await-yield!
@@ -1441,12 +1438,8 @@
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.
 ;;
-;; Exceptions may propagate out of this procedure if they arise while
-;; setting up (that is, before the timeout is installed), which
-;; shouldn't happen unless memory is exhausted.  Exceptions arising in
-;; code appearing after the call to this procedure in the a-sync or
-;; compose-a-sync block concerned will propagate out of
-;; event-loop-run!.
+;; This procedure should not throw any exceptions unless memory is
+;; exhausted.
 ;;
 ;; This procedure is first available in version 0.9 of this library.
 (define await-sleep!

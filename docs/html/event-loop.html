@@ -508,7 +508,7 @@ co-operative multi-tasking.  However, when &rsquo;thunk&rsquo; is executed, this
 procedure is waiting on &rsquo;await&rsquo;, so &rsquo;await&rsquo; and &rsquo;resume&rsquo; cannot be
 used again in &rsquo;thunk&rsquo; (although &rsquo;thunk&rsquo; can call a-sync to start
 another series of asynchronous operations with a new await-resume
-pair).  For that reason, event-yield! is usually more convenient for
+pair).  For that reason, await-yield! is usually more convenient for
 composing asynchronous tasks.  In retrospect, this procedure offers
 little over await-yield!, apart from symmetry with
 await-task-in-thread!.
@@ -567,11 +567,8 @@ contribute to the throttling of other threads by the loop.  See the
 documentation on the make-event-loop procedure for further information
 about that.
 </p>
-<p>Exceptions may propagate out of this procedure if they arise while
-setting up (that is, before the task starts), which shouldn&rsquo;t happen
-unless memory is exhausted.  Exceptions arising in code appearing
-after the call to this procedure in the a-sync or compose-a-sync block
-will propagate out of event-loop-run!.
+<p>This procedure should not raise any exceptions unless memory is
+exhausted.
 </p>
 <p>This procedure is first available in version 0.9 of this library.
 </p>
@@ -863,11 +860,8 @@ loop.
 <p>This procedure must (like the a-sync procedure) be called in the same
 thread as that in which the event loop runs.
 </p>
-<p>Exceptions may propagate out of this procedure if they arise while
-setting up (that is, before the timeout is installed), which shouldn&rsquo;t
-happen unless memory is exhausted.  Exceptions arising in code
-appearing after the call to this procedure in the a-sync or
-compose-a-sync block concerned will propagate out of event-loop-run!.
+<p>This procedure should not throw any exceptions unless memory is
+exhausted.
 </p>
 <p>This procedure is first available in version 0.9 of this library.
 </p>
