@@ -1742,7 +1742,7 @@ the worker thread should post the closing as an event using event-post!.
      implementation of await-put-bytevector!:
           (define await-put-bytevector!
             (case-lambda
-              [(await resume port bv) (await-put-string! await resume #f port bv)]
+              [(await resume port bv) (await-put-bytevector! await resume #f port bv)]
               [(await resume loop port bv)
                (define length (bytevector-length bv))
                (define fd (port-file-descriptor port))
@@ -2149,7 +2149,7 @@ Node: Top83
 Node: overview1010
 Node: coroutines3960
 Node: event loop22335
-Node: compose102813
-Node: try108543
+Node: compose102817
+Node: try108547
 
 End Tag Table

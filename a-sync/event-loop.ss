@@ -2284,7 +2284,7 @@
 ;; This procedure is first available in version 0.8 of this library.
 (define await-put-bytevector!
   (case-lambda
-    [(await resume port bv) (await-put-string! await resume #f port bv)]
+    [(await resume port bv) (await-put-bytevector! await resume #f port bv)]
     [(await resume loop port bv)
      (define length (bytevector-length bv))
      (define fd (port-file-descriptor port))
