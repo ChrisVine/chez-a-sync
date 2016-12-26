@@ -51,14 +51,20 @@
   (define prompt-cont #f)
   (define iter-cont #f)
   (define done #f)
+  (define (prompt-and-null)
+    (let ([prompt prompt-cont])
+      (set! prompt-cont #f)
+      prompt))
   (define yield
     (case-lambda
       [() (yield #f)]
       [(arg)
+       (when (not prompt-cont)
+	 (error "yield" "yield attempted to expired prompt"))
        (call/cc
 	(lambda (k)
 	  (set! iter-cont k)
-	  (prompt-cont (lambda () arg))))]))
+	  ((prompt-and-null) (lambda () arg))))]))
   (define iter
     (case-lambda
       [() (iter #f)]
@@ -75,9 +81,9 @@
 		     ;; the current call to the iterator, not the
 		     ;; first
 		     (try (apply proc yield args)
-			  (except c (else (prompt-cont (lambda () (raise c))))))
+			  (except c (else ((prompt-and-null) (lambda () (raise c))))))
 		     (set! done #t)
-		     (prompt-cont (lambda () 'stop-iteration))))))))]))
+		     ((prompt-and-null) (lambda () 'stop-iteration))))))))]))
   iter)
 
 ;; this procedure takes a generator procedure, namely a procedure
@@ -111,10 +117,16 @@
 ;; this procedure into a non-continuable exception.
 (define (make-coroutine proc . args)
   (define prompt-cont #f)
+  (define (prompt-and-null)
+    (let ([prompt prompt-cont])
+      (set! prompt-cont #f)
+      prompt))
   (define yield
     (case-lambda
       [() (yield #f)]
       [(ret)
+       (when (not prompt-cont)
+	 (error "yield" "yield attempted to expired prompt"))
        (call/cc
 	(lambda (ky)
 	  (define resume
@@ -125,7 +137,7 @@
 		 (lambda (kr)
 		   (set! prompt-cont kr)
 		   (ky arg))))]))
-	  (prompt-cont (lambda () (values resume ret)))))]))
+	  ((prompt-and-null) (lambda () (values resume ret)))))]))
   ;; 'arg' is ignored - it is provided only for consistency with the
   ;; interface of resume
   (define cor
@@ -138,8 +150,8 @@
 	   ;; any exception must propagate in the context of the
 	   ;; current call to the coroutine, not the first
 	   (let ([ret (try (apply proc yield args)
-			   (except c (else (prompt-cont (lambda () (raise c))))))])
-	     (prompt-cont (lambda () (values #f ret)))))))]))
+			   (except c (else ((prompt-and-null) (lambda () (raise c))))))])
+	     ((prompt-and-null) (lambda () (values #f ret)))))))]))
   cor)
      
 ;; a-sync takes a waitable procedure (namely a procedure which takes
