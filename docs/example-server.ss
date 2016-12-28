@@ -57,6 +57,7 @@
 	      (event-loop-quit!)))))
 
 (define (start-server)
+  (set-ignore-sigpipe)
   (a-sync (lambda (await resume)
 	    (set! server-sock (listen-on-ipv6-socket #t 8000 5))
 	    (let loop ()

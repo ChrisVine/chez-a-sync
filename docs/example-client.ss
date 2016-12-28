@@ -73,6 +73,7 @@
 
 (a-sync
  (lambda (await resume)
+   (set-ignore-sigpipe)
    ;; getaddrinfo can block, so call it up with either
    ;; await-task-in-thread! or await-task-in-event-loop!
    (let* ([socket (await-task-in-thread! await resume
