@@ -57,17 +57,18 @@
 ;; with the number of bytes written (so 0 is returned if the file
 ;; descriptor is not available for writing because the device is
 ;; full).  On a write error other than EAGAIN, EWOULDBLOCK or EINTR, a
-;; &serious exception is raised which will give the errno number as an
-;; irritant.  EINTR is handled internally and is not an error.
+;; &i/o-write-error exception is raised which will give the errno
+;; number as an irritant (prior to version 0.11 a &serious exception
+;; was raised).  EINTR is handled internally and is not an error.
 ;;
 ;; This procedure is first available in version 0.8 of this library.
 (define (c-write fd bv begin count)
   (let ([res (a-sync-c-write fd bv begin count)])
     (when (= res -1)
-	  (raise (condition  (make-serious-condition)
-			     (make-who-condition "c-write")
-			     (make-message-condition "C write() function returned an error")
-			     (make-irritants-condition `(errno ,(a-sync-errno))))))
+	  (raise (condition (make-i/o-write-error)
+			    (make-who-condition "c-write")
+			    (make-message-condition "C write() function returned an error")
+			    (make-irritants-condition `(errno ,(a-sync-errno))))))
     res))
 	
 (define a-sync-regular-file-p (foreign-procedure "a_sync_regular_file_p"
@@ -77,10 +78,10 @@
 (define (raise-exception-if-regular-file fd)
   (case (a-sync-regular-file-p fd)
     [(0) #f]
-    [(1) (raise (condition (make-serious-condition)
+    [(1) (raise (condition (make-i/o-write-error)
 			   (make-who-condition "raise-condition-if-regular-file")
 			   (make-message-condition "await-put-bytevector! procedure cannot be used with regular files")))]
-    [(-1) (raise (condition (make-serious-condition)
+    [(-1) (raise (condition (make-i/o-write-error)
 			    (make-who-condition "raise-condition-if-regular-file")
 			    (make-message-condition "C fstat() function returned an error")
 			    (make-irritants-condition `(errno ,(a-sync-errno)))))]))

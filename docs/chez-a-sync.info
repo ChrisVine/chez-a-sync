@@ -1816,10 +1816,11 @@ the worker thread should post the closing as an event using event-post!.
      procedure other than c-write or an await-put* procedure, then it
      should be flushed before this procedure is called.
 
-     This procedure will raise a &serious exception if passed a regular
-     file with a file position pointer: there should be no need to use
-     this procedure with regular files, because they cannot normally
-     block on write and are always signalled as ready.
+     This procedure will raise a &i/o-write-error exception if passed a
+     regular file with a file position pointer (prior to version 0.11 a
+     &serious exception was raised): there should be no need to use this
+     procedure with regular files, because they cannot normally block on
+     write and are always signalled as ready.
 
      This procedure must (like the a-sync procedure) be called in the
      same thread as that in which the event loop runs.
@@ -1906,10 +1907,11 @@ the worker thread should post the closing as an event using event-post!.
      c-write or an await-put* procedure, then it should be flushed
      before this procedure is called.
 
-     This procedure will raise a &serious exception if passed a regular
-     file with a file position pointer: there should be no need to use
-     this procedure with regular files, because they cannot normally
-     block on write and are always signalled as ready.
+     This procedure will raise a &i/o-write-error exception if passed a
+     regular file with a file position pointer (prior to version 0.11 a
+     &serious exception was raised): there should be no need to use this
+     procedure with regular files, because they cannot normally block on
+     write and are always signalled as ready.
 
      This procedure must (like the a-sync procedure) be called in the
      same thread as that in which the event loop runs.
@@ -1980,8 +1982,9 @@ the worker thread should post the closing as an event using event-post!.
      with the number of bytes written (so 0 is returned if the file
      descriptor is not available for writing because the device is
      full).  On a write error other than EAGAIN, EWOULDBLOCK or EINTR, a
-     &serious exception is raised which will give the errno number as an
-     irritant.  EINTR is handled internally and is not an error.
+     &i/o-write-error exception is raised which will give the errno
+     number as an irritant (prior to version 0.11 a &serious exception
+     was raised).  EINTR is handled internally and is not an error.
 
      This procedure is first available in version 0.8 of this library.
 
@@ -2195,7 +2198,7 @@ Node: Top83
 Node: overview1010
 Node: coroutines3960
 Node: event loop22335
-Node: compose105181
-Node: try110911
+Node: compose105388
+Node: try111118
 
 End Tag Table

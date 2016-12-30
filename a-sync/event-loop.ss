@@ -2266,10 +2266,11 @@
 ;; procedure other than c-write or an await-put* procedure, then it
 ;; should be flushed before this procedure is called.
 ;;
-;; This procedure will raise a &serious exception if passed a regular
-;; file with a file position pointer: there should be no need to use
-;; this procedure with regular files, because they cannot normally
-;; block on write and are always signalled as ready.
+;; This procedure will raise a &i/o-write-error exception if passed a
+;; regular file with a file position pointer (prior to version 0.11 a
+;; &serious exception was raised): there should be no need to use this
+;; procedure with regular files, because they cannot normally block on
+;; write and are always signalled as ready.
 ;;
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.
@@ -2377,10 +2378,11 @@
 ;; c-write or an await-put* procedure, then it should be flushed
 ;; before this procedure is called.
 ;;
-;; This procedure will raise a &serious exception if passed a regular
-;; file with a file position pointer: there should be no need to use
-;; this procedure with regular files, because they cannot normally
-;; block on write and are always signalled as ready.
+;; This procedure will raise a &i/o-write-error exception if passed a
+;; regular file with a file position pointer (prior to version 0.11 a
+;; &serious exception was raised): there should be no need to use this
+;; procedure with regular files, because they cannot normally block on
+;; write and are always signalled as ready.
 ;;
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.

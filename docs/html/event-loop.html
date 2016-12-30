@@ -1448,8 +1448,9 @@ previously been used for output by a procedure other than c-write or
 an await-put* procedure, then it should be flushed before this
 procedure is called.
 </p>
-<p>This procedure will raise a &amp;serious exception if passed a regular
-file with a file position pointer: there should be no need to use this
+<p>This procedure will raise a &amp;i/o-write-error exception if passed a
+regular file with a file position pointer (prior to version 0.11 a
+&amp;serious exception was raised): there should be no need to use this
 procedure with regular files, because they cannot normally block on
 write and are always signalled as ready.
 </p>
@@ -1539,8 +1540,9 @@ procedures may be used for the port.  If using a port constructed by
 procedure other than c-write or an await-put* procedure, then it
 should be flushed before this procedure is called.
 </p>
-<p>This procedure will raise a &amp;serious exception if passed a regular
-file with a file position pointer: there should be no need to use this
+<p>This procedure will raise a &amp;i/o-write-error exception if passed a
+regular file with a file position pointer (prior to version 0.11 a
+&amp;serious exception was raised): there should be no need to use this
 procedure with regular files, because they cannot normally block on
 write and are always signalled as ready.
 </p>
@@ -1614,8 +1616,9 @@ from repeatedly until all of it has been sent.
 <p>Provided &rsquo;fd&rsquo; is non-blocking, this procedure returns immediately with
 the number of bytes written (so 0 is returned if the file descriptor
 is not available for writing because the device is full).  On a write
-error other than EAGAIN, EWOULDBLOCK or EINTR, a &amp;serious exception is
-raised which will give the errno number as an irritant.  EINTR is
+error other than EAGAIN, EWOULDBLOCK or EINTR, a &amp;i/o-write-error
+exception is raised which will give the errno number as an irritant
+(prior to version 0.11 a &amp;serious exception was raised).  EINTR is
 handled internally and is not an error.
 </p>
 <p>This procedure is first available in version 0.8 of this library.
