@@ -1471,6 +1471,23 @@ be propagated but will instead be returned by this procedure so the
 user can decide what to do with it.  Otherwise this procedure returns
 #t.
 </p>
+<p>Here is how EPIPE might be tested for (with linux and BSDs, the value
+of EPIPE is 32):
+</p><div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(a-sync (lambda (await resume)
+	  (let ([res (await-put-bytevector! await resume port bv)])
+	    (when (condition? res)
+		  (if (and (irritants-condition? res)
+			   (= (cadr (condition-irritants res)) 32))
+		      (begin
+			... do something to cater for EPIPE ...)
+		      (begin
+			;; possibly reraise the exception
+			(raise res)))))))
+(event-loop-run!)
+</pre></div>
+
 <p>This procedure is first available in version 0.8 of this library.
 </p>
 <p>An example of the use of await-put-string!, which is implemented using
@@ -1545,6 +1562,23 @@ will not be propagated but will instead be returned by this procedure
 so the user can decide what to do with it.  Otherwise this procedure
 returns #t.
 </p>
+<p>Here is how EPIPE might be tested for (with linux and BSDs, the value
+of EPIPE is 32):
+</p><div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(a-sync (lambda (await resume)
+	  (let ([res (await-put-string! await resume port &quot;test&quot;)])
+	    (when (condition? res)
+		  (if (and (irritants-condition? res)
+			   (= (cadr (condition-irritants res)) 32))
+		      (begin
+			... do something to cater for EPIPE ...)
+		      (begin
+			;; possibly reraise the exception
+			(raise res)))))))
+(event-loop-run!)
+</pre></div>
+
 <p>This procedure is first available in version 0.7 of this library.
 </p>
 <p>An example of the use of this procedure can be found in the

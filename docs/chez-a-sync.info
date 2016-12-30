@@ -1839,6 +1839,21 @@ the worker thread should post the closing as an event using event-post!.
      returned by this procedure so the user can decide what to do with
      it.  Otherwise this procedure returns #t.
 
+     Here is how EPIPE might be tested for (with linux and BSDs, the
+     value of EPIPE is 32):
+          (set-default-event-loop!) ;; if none has yet been set
+          (a-sync (lambda (await resume)
+          	  (let ([res (await-put-bytevector! await resume port bv)])
+          	    (when (condition? res)
+          		  (if (and (irritants-condition? res)
+          			   (= (cadr (condition-irritants res)) 32))
+          		      (begin
+          			... do something to cater for EPIPE ...)
+          		      (begin
+          			;; possibly reraise the exception
+          			(raise res)))))))
+          (event-loop-run!)
+
      This procedure is first available in version 0.8 of this library.
 
      An example of the use of await-put-string!, which is implemented
@@ -1913,6 +1928,21 @@ the worker thread should post the closing as an event using event-post!.
      the exception condition will not be propagated but will instead be
      returned by this procedure so the user can decide what to do with
      it.  Otherwise this procedure returns #t.
+
+     Here is how EPIPE might be tested for (with linux and BSDs, the
+     value of EPIPE is 32):
+          (set-default-event-loop!) ;; if none has yet been set
+          (a-sync (lambda (await resume)
+          	  (let ([res (await-put-string! await resume port "test")])
+          	    (when (condition? res)
+          		  (if (and (irritants-condition? res)
+          			   (= (cadr (condition-irritants res)) 32))
+          		      (begin
+          			... do something to cater for EPIPE ...)
+          		      (begin
+          			;; possibly reraise the exception
+          			(raise res)))))))
+          (event-loop-run!)
 
      This procedure is first available in version 0.7 of this library.
 
@@ -2165,7 +2195,7 @@ Node: Top83
 Node: overview1010
 Node: coroutines3960
 Node: event loop22335
-Node: compose103923
-Node: try109653
+Node: compose105181
+Node: try110911
 
 End Tag Table
