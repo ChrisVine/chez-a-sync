@@ -2277,18 +2277,16 @@
 ;;
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up (that is, before the first call to 'await' is made), say
-;; because a regular file is passed to this procedure or memory is
-;; exhausted.  With versions of this library before 0.11, this
-;; procedure would also raise an exception if write errors were
-;; encountered on the first attempt to write to the port, and any
-;; exceptions because of write errors on subsequent writes would
-;; propagate out of event-loop-run!.  Having write exceptions (say,
-;; because of EPIPE) interfering with anything using the event loop in
-;; this way was not a good approach, so from version 0.11 of this
-;; library if a write exception arises in this procedure, the
-;; exception condition will not be propagated but will instead be
-;; returned by this procedure so the user can decide what to do with
-;; it.  Otherwise this procedure returns #t.
+;; because a regular file is passed to this procedure, memory is
+;; exhausted or a write exception is encountered.  With versions of
+;; this library before 0.11, any exceptions because of write errors
+;; after the first write would propagate out of event-loop-run! and
+;; could not be caught locally.  Having write exceptions (say, because
+;; of EPIPE) interfering with anything using the event loop in this
+;; way was not a good approach, so from version 0.11 of this library
+;; all write exceptions will propagate in the first instance out of
+;; this procedure so that they may be caught locally, say by putting a
+;; 'try' block around the call to this procedure.
 ;;
 ;; This procedure is first available in version 0.8 of this library.
 (define await-put-bytevector!
@@ -2299,36 +2297,33 @@
      (define fd (port-file-descriptor port))
      (raise-exception-if-regular-file fd)
 
-     (let ([index (try (c-write fd bv 0 length)
-     		       (except c [else c]))])
+     (let ([index (c-write fd bv 0 length)])
      ;; for testing
      ;;(let ([index 0])
-       (cond
-	[(condition? index)
-	 index]
-	[(< index length)
-	 ;; set up write watch if we haven't written everything
-	 (a-sync-write-watch! resume
-			      port
-			      (lambda (status)
-				(let ([res (try (c-write fd bv index (- length index))
-						(except c [else c]))])
-				  (if (condition? res)
-				      res
-				      (begin
-					(set! index (+ index res))
-					(if (< index length)
-					    'more
-					    #t)))))
-			      loop)
-	 (let next ((res (await)))
-	   (if (eq? res 'more)
-	       (next (await))
-	       (begin
+       ;; set up write watch if we haven't written everything
+       (when (< index length)
+	     (a-sync-write-watch! resume
+				  port
+				  (lambda (status)
+				    (let ([res (try (c-write fd bv index (- length index))
+						    (except c [else c]))])
+				      (if (condition? res)
+					  res
+					  (begin
+					    (set! index (+ index res))
+					    (if (< index length)
+						'more
+						#f)))))
+				  loop)
+	     (let next ((res (await)))
+	       (cond
+		[(eq? res 'more)
+		 (next (await))]
+		[(condition? res)
 		 (event-loop-remove-write-watch! port loop)
-		 res)))]
-	[else
-	 #t]))]))
+		 (raise res)]
+		[else
+		 (event-loop-remove-write-watch! port loop)]))))]))
 
 ;; This is a convenience procedure whose signature is:
 ;;
@@ -2390,17 +2385,16 @@
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up (that is, before the first call to 'await' is made), say
 ;; because a regular file is passed to this procedure, memory is
-;; exhausted or a conversion error arises.  With versions of this
-;; library before 0.11, this procedure would also raise an exception
-;; if write errors were encountered on the first attempt to write to
-;; the port, and any exceptions because of write errors on subsequent
-;; writes would propagate out of event-loop-run!.  Having write
-;; exceptions (say, because of EPIPE) interfering with anything using
-;; the event loop in this way was not a good approach, so from version
-;; 0.11 of this library if a write exception arises in this procedure,
-;; the exception condition will not be propagated but will instead be
-;; returned by this procedure so the user can decide what to do with
-;; it.  Otherwise this procedure returns #t.
+;; exhausted, a conversion error arises or a write exception is
+;; encountered.  With versions of this library before 0.11, any
+;; exceptions because of write errors after the first write would
+;; propagate out of event-loop-run! and could not be caught locally.
+;; Having write exceptions (say, because of EPIPE) interfering with
+;; anything using the event loop in this way was not a good approach,
+;; so from version 0.11 of this library all write exceptions will
+;; propagate in the first instance out of this procedure so that they
+;; may be caught locally, say by putting a 'try' block around the call
+;; to this procedure.
 ;;
 ;; This procedure is first available in version 0.7 of this library.
 (define await-put-string!

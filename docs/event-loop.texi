@@ -1372,33 +1372,28 @@ thread as that in which the event loop runs.
 
 Exceptions may propagate out of this procedure if they arise while
 setting up (that is, before the first call to 'await' is made), say
-because a regular file is passed to this procedure or memory is
-exhausted.  With versions of this library before 0.11, this procedure
-would also raise an exception if write errors were encountered on the
-first attempt to write to the port, and any exceptions because of
-write errors on subsequent writes would propagate out of
-event-loop-run!.  Having write exceptions (say, because of EPIPE)
+because a regular file is passed to this procedure, memory is
+exhausted or a write exception is encountered.  With versions of this
+library before 0.11, any exceptions because of write errors after the
+first write would propagate out of event-loop-run! and could not be
+caught locally.  Having write exceptions (say, because of EPIPE)
 interfering with anything using the event loop in this way was not a
-good approach, so from version 0.11 of this library if a write
-exception arises in this procedure, the exception condition will not
-be propagated but will instead be returned by this procedure so the
-user can decide what to do with it.  Otherwise this procedure returns
-#t.
+good approach, so from version 0.11 of this library all write
+exceptions will propagate in the first instance out of this procedure
+so that they may be caught locally, say by putting a 'try' block
+around the call to this procedure.
 
-Here is how EPIPE might be tested for (with linux and BSDs, the value
+Here is how EPIPE might be tested for, using the 'try' form from the
+@ref{try,,(a-sync try)} library file (with linux and BSDs, the value
 of EPIPE is 32):
 @example
 (set-default-event-loop!) ;; if none has yet been set
 (a-sync (lambda (await resume)
-	  (let ([res (await-put-bytevector! await resume port bv)])
-	    (when (condition? res)
-		  (if (and (irritants-condition? res)
-			   (= (cadr (condition-irritants res)) 32))
-		      (begin
-			... do something to cater for EPIPE ...)
-		      (begin
-			;; possibly reraise the exception
-			(raise res)))))))
+	  (try (await-put-bytevector! await resume port bv)
+	       (except c
+		       [(and (irritants-condition? c)
+			     (= (cadr (condition-irritants c)) 32))
+			... do something to cater for EPIPE ...]))))
 (event-loop-run!)
 @end example
 
@@ -1464,32 +1459,28 @@ thread as that in which the event loop runs.
 Exceptions may propagate out of this procedure if they arise while
 setting up (that is, before the first call to 'await' is made), say
 because a regular file is passed to this procedure, memory is
-exhausted or a conversion error arises.  With versions of this library
-before 0.11, this procedure would also raise an exception if write
-errors were encountered on the first attempt to write to the port, and
-any exceptions because of write errors on subsequent writes would
-propagate out of event-loop-run!.  Having write exceptions (say,
-because of EPIPE) interfering with anything using the event loop in
-this way was not a good approach, so from version 0.11 of this library
-if a write exception arises in this procedure, the exception condition
-will not be propagated but will instead be returned by this procedure
-so the user can decide what to do with it.  Otherwise this procedure
-returns #t.
+exhausted, a conversion error arises or a write exception is
+encountered.  With versions of this library before 0.11, any
+exceptions because of write errors after the first write would
+propagate out of event-loop-run! and could not be caught locally.
+Having write exceptions (say, because of EPIPE) interfering with
+anything using the event loop in this way was not a good approach, so
+from version 0.11 of this library all write exceptions will propagate
+in the first instance out of this procedure so that they may be caught
+locally, say by putting a 'try' block around the call to this
+procedure.
 
-Here is how EPIPE might be tested for (with linux and BSDs, the value
+Here is how EPIPE might be tested for, using the 'try' form from the
+@ref{try,,(a-sync try)} library file (with linux and BSDs, the value
 of EPIPE is 32):
 @example
 (set-default-event-loop!) ;; if none has yet been set
 (a-sync (lambda (await resume)
-	  (let ([res (await-put-string! await resume port "test")])
-	    (when (condition? res)
-		  (if (and (irritants-condition? res)
-			   (= (cadr (condition-irritants res)) 32))
-		      (begin
-			... do something to cater for EPIPE ...)
-		      (begin
-			;; possibly reraise the exception
-			(raise res)))))))
+	  (try (await-put-string! await resume port "test")
+	       (except c
+		       [(and (irritants-condition? c)
+			     (= (cadr (condition-irritants c)) 32))
+			... do something to cater for EPIPE ...]))))
 (event-loop-run!)
 @end example
 
