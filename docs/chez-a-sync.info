@@ -1368,9 +1368,15 @@ the worker thread should post the closing as an event using event-post!.
 
      Exceptions may propagate out of this procedure if they arise while
      setting up (that is, before the first call to 'await' is made),
-     which shouldn't happen unless memory is exhausted.  Subsequent
-     exceptions (say, because of port errors) will propagate out of
-     event-loop-run!.
+     which shouldn't happen unless memory is exhausted.  With versions
+     of this library before 0.11, any exceptions because of read errors
+     would propagate out of event-loop-run!  and could not be caught
+     locally.  Having read errors interfering with anything using the
+     event loop in this way was not a good approach, so from version
+     0.11 of this library all read exceptions will propagate in the
+     first instance out of this procedure so that they may be caught
+     locally, say by putting a 'try' block around the call to this
+     procedure.
 
      Here is an example of the use of await-getline!:
           (set-default-event-loop!) ;; if none has yet been set
@@ -1423,10 +1429,16 @@ the worker thread should post the closing as an event using event-post!.
 
      Exceptions may propagate out of this procedure if they arise while
      setting up (that is, before the first call to 'await' is made),
-     which shouldn't happen unless memory is exhausted.  Subsequent
-     exceptions (say, because of port errors) will propagate out of
-     event-loop-run!.  Exceptions raised by 'proc', if not caught
-     locally, will also propagate out of event-loop-run!.
+     which shouldn't happen unless memory is exhausted.  With versions
+     of this library before 0.11, any exceptions because of read errors
+     would propagate out of event-loop-run!  and could not be caught
+     locally.  Having read errors interfering with anything using the
+     event loop in this way was not a good approach, so from version
+     0.11 of this library all read exceptions will propagate in the
+     first instance out of this procedure so that they may be caught
+     locally, say by putting a 'try' block around the call to this
+     procedure.  Exceptions raised by 'proc', if not caught locally,
+     will also propagate out of event-loop-run!.
 
      If a continuable exception propagates out of this procedure, it
      will be converted into a non-continuable one (continuable
@@ -1496,10 +1508,16 @@ the worker thread should post the closing as an event using event-post!.
 
      Exceptions may propagate out of this procedure if they arise while
      setting up (that is, before the first call to 'await' is made),
-     which shouldn't happen unless memory is exhausted.  Subsequent
-     exceptions (say, because of port errors) will propagate out of
-     event-loop-run!.  Exceptions raised by 'proc', if not caught
-     locally, will also propagate out of event-loop-run!.
+     which shouldn't happen unless memory is exhausted.  With versions
+     of this library before 0.11, any exceptions because of read errors
+     would propagate out of event-loop-run!  and could not be caught
+     locally.  Having read errors interfering with anything using the
+     event loop in this way was not a good approach, so from version
+     0.11 of this library all read exceptions will propagate in the
+     first instance out of this procedure so that they may be caught
+     locally, say by putting a 'try' block around the call to this
+     procedure.  Exceptions raised by 'proc', if not caught locally,
+     will also propagate out of event-loop-run!.
 
      If a continuable exception propagates out of this procedure, it
      will be converted into a non-continuable one (continuable
@@ -1564,9 +1582,15 @@ the worker thread should post the closing as an event using event-post!.
 
      Exceptions may propagate out of this procedure if they arise while
      setting up (that is, before the first call to 'await' is made),
-     which shouldn't happen unless memory is exhausted.  Subsequent
-     exceptions (say, because of port errors) will propagate out of
-     event-loop-run!.
+     which shouldn't happen unless memory is exhausted.  With versions
+     of this library before 0.11, any exceptions because of read errors
+     would propagate out of event-loop-run!  and could not be caught
+     locally.  Having read errors interfering with anything using the
+     event loop in this way was not a good approach, so from version
+     0.11 of this library all read exceptions will propagate in the
+     first instance out of this procedure so that they may be caught
+     locally, say by putting a 'try' block around the call to this
+     procedure.
 
      This procedure is first available in version 0.8 of this library.
 
@@ -1623,10 +1647,16 @@ the worker thread should post the closing as an event using event-post!.
 
      Exceptions may propagate out of this procedure if they arise while
      setting up (that is, before the first call to 'await' is made),
-     which shouldn't happen unless memory is exhausted.  Subsequent
-     exceptions (say, because of port errors) will propagate out of
-     event-loop-run!.  Exceptions raised by 'proc', if not caught
-     locally, will also propagate out of event-loop-run!.
+     which shouldn't happen unless memory is exhausted.  With versions
+     of this library before 0.11, any exceptions because of read errors
+     would propagate out of event-loop-run!  and could not be caught
+     locally.  Having read errors interfering with anything using the
+     event loop in this way was not a good approach, so from version
+     0.11 of this library all read exceptions will propagate in the
+     first instance out of this procedure so that they may be caught
+     locally, say by putting a 'try' block around the call to this
+     procedure.  Exceptions raised by 'proc', if not caught locally,
+     will also propagate out of event-loop-run!.
 
      If a continuable exception propagates out of this procedure, it
      will be converted into a non-continuable one (continuable
@@ -1694,10 +1724,16 @@ the worker thread should post the closing as an event using event-post!.
 
      Exceptions may propagate out of this procedure if they arise while
      setting up (that is, before the first call to 'await' is made),
-     which shouldn't happen unless memory is exhausted.  Subsequent
-     exceptions (say, because of port errors) will propagate out of
-     event-loop-run!.  Exceptions raised by 'proc', if not caught
-     locally, will also propagate out of event-loop-run!.
+     which shouldn't happen unless memory is exhausted.  With versions
+     of this library before 0.11, any exceptions because of read errors
+     would propagate out of event-loop-run!  and could not be caught
+     locally.  Having read errors interfering with anything using the
+     event loop in this way was not a good approach, so from version
+     0.11 of this library all read exceptions will propagate in the
+     first instance out of this procedure so that they may be caught
+     locally, say by putting a 'try' block around the call to this
+     procedure.  Exceptions raised by 'proc', if not caught locally,
+     will also propagate out of event-loop-run!.
 
      If a continuable exception propagates out of this procedure, it
      will be converted into a non-continuable one (continuable
@@ -2189,7 +2225,7 @@ Node: Top83
 Node: overview1010
 Node: coroutines3960
 Node: event loop22335
-Node: compose105038
-Node: try110768
+Node: compose107516
+Node: try113246
 
 End Tag Table

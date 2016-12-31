@@ -1533,9 +1533,15 @@
 ;;
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up (that is, before the first call to 'await' is made),
-;; which shouldn't happen unless memory is exhausted.  Subsequent
-;; exceptions (say, because of port errors) will propagate out of
-;; event-loop-run!.
+;; which shouldn't happen unless memory is exhausted.  With versions
+;; of this library before 0.11, any exceptions because of read errors
+;; would propagate out of event-loop-run! and could not be caught
+;; locally.  Having read errors interfering with anything using the
+;; event loop in this way was not a good approach, so from version
+;; 0.11 of this library all read exceptions will propagate in the
+;; first instance out of this procedure so that they may be caught
+;; locally, say by putting a 'try' block around the call to this
+;; procedure.
 (define await-getline!
   (case-lambda
     [(await resume port) (await-getline! await resume #f port)]
@@ -1561,30 +1567,38 @@
 				 ;; because it enables us to distinguish between EAGAIN/EWOULDBLOCK
 				 ;; on a non-blocking file descriptor (res == 0) and EOF (res ==
 				 ;; eof-object)
-				 (let next ([res (get-string-some! port buf 0 1)])
-				   (cond
-				    [(eqv? res 0)
-				     'more]
-				    [(eof-object? res)
-				     (if (= text-len 0)
-					 res
-					 (substring text 0 text-len))]
-				    [else
-				     (let ([ch (string-ref buf 0)])
-				       (if (char=? ch #\newline)
-					   (substring text 0 text-len)
-					   (begin
-					     (append-char! ch)
-					     (if (char-ready? port)
-						 (next (get-string-some! port buf 0 1))
-						 'more))))]))))
+				 (let next ()
+				   (let ([res (try (get-string-some! port buf 0 1)
+						   (except c [else c]))])
+				     (cond
+				      [(condition? res)
+				       res]
+				      [(eqv? res 0)
+				       'more]
+				      [(eof-object? res)
+				       (if (= text-len 0)
+					   res
+					   (substring text 0 text-len))]
+				      [else
+				       (let ([ch (string-ref buf 0)])
+					 (if (char=? ch #\newline)
+					     (substring text 0 text-len)
+					     (begin
+					       (append-char! ch)
+					       (if (char-ready? port)
+						   (next)
+						   'more))))])))))
 			   loop))
      (let next ((res (await)))
-       (if (eq? res 'more)
-	   (next (await))
-	   (begin
-	     (event-loop-remove-read-watch! port loop)
-	     res)))]))
+       (cond
+	[(eq? res 'more)
+	 (next (await))]
+	[(condition? res)
+	 (event-loop-remove-read-watch! port loop)
+	 (raise res)]
+	[else
+	 (event-loop-remove-read-watch! port loop)
+	 res]))]))
 
 ;; This is a convenience procedure whose signature is:
 ;;
@@ -1629,10 +1643,16 @@
 ;;
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up (that is, before the first call to 'await' is made),
-;; which shouldn't happen unless memory is exhausted.  Subsequent
-;; exceptions (say, because of port errors) will propagate out of
-;; event-loop-run!.  Exceptions raised by 'proc', if not caught
-;; locally, will also propagate out of event-loop-run!.
+;; which shouldn't happen unless memory is exhausted.  With versions
+;; of this library before 0.11, any exceptions because of read errors
+;; would propagate out of event-loop-run! and could not be caught
+;; locally.  Having read errors interfering with anything using the
+;; event loop in this way was not a good approach, so from version
+;; 0.11 of this library all read exceptions will propagate in the
+;; first instance out of this procedure so that they may be caught
+;; locally, say by putting a 'try' block around the call to this
+;; procedure.  Exceptions raised by 'proc', if not caught locally,
+;; will also propagate out of event-loop-run!.
 ;;
 ;; If a continuable exception propagates out of this procedure, it
 ;; will be converted into a non-continuable one (continuable
@@ -1667,27 +1687,31 @@
 				 ;; because it enables us to distinguish between EAGAIN/EWOULDBLOCK
 				 ;; on a non-blocking file descriptor (res == 0) and EOF (res ==
 				 ;; eof-object)
-				 (let next ([res (get-string-some! port buf 0 1)])
-				   (cond
-				    [(eqv? res 0)
-				     'more]
-				    [(eof-object? res)
-				     (if (= text-len 0)
-					 res
-					 (let ([line (substring text 0 text-len)])
-					   (reset)
-					   line))]
-				    [else
-				     (let ([ch (string-ref buf 0)])
-				       (if (char=? ch #\newline)
+				 (let next ()
+				   (let ([res (try (get-string-some! port buf 0 1)
+						   (except c [else c]))])
+				     (cond
+				      [(condition? res)
+				       res]
+				      [(eqv? res 0)
+				       'more]
+				      [(eof-object? res)
+				       (if (= text-len 0)
+					   res
 					   (let ([line (substring text 0 text-len)])
 					     (reset)
-					     line)
-					   (begin
-					     (append-char! ch)
-					     (if (char-ready? port)
-						 (next (get-string-some! port buf 0 1))
-						 'more))))]))))
+					     line))]
+				      [else
+				       (let ([ch (string-ref buf 0)])
+					 (if (char=? ch #\newline)
+					     (let ([line (substring text 0 text-len)])
+					       (reset)
+					       line)
+					     (begin
+					       (append-char! ch)
+					       (if (char-ready? port)
+						   (next)
+						   'more))))])))))
 			   loop))
      ;; exceptions might be thrown from the remainder of this
      ;; procedure (and in particular from 'proc').  This try block
@@ -1697,6 +1721,8 @@
      (try
       (let next ([res (await)])
 	(cond
+	 [(condition? res)
+	  (raise res)]
 	 [(eq? res 'more)
 	  (next (await))]
 	 [(or (eof-object? res)
@@ -1761,10 +1787,16 @@
 ;;
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up (that is, before the first call to 'await' is made),
-;; which shouldn't happen unless memory is exhausted.  Subsequent
-;; exceptions (say, because of port errors) will propagate out of
-;; event-loop-run!.  Exceptions raised by 'proc', if not caught
-;; locally, will also propagate out of event-loop-run!.
+;; which shouldn't happen unless memory is exhausted.  With versions
+;; of this library before 0.11, any exceptions because of read errors
+;; would propagate out of event-loop-run! and could not be caught
+;; locally.  Having read errors interfering with anything using the
+;; event loop in this way was not a good approach, so from version
+;; 0.11 of this library all read exceptions will propagate in the
+;; first instance out of this procedure so that they may be caught
+;; locally, say by putting a 'try' block around the call to this
+;; procedure.  Exceptions raised by 'proc', if not caught locally,
+;; will also propagate out of event-loop-run!.
 ;;
 ;; If a continuable exception propagates out of this procedure, it
 ;; will be converted into a non-continuable one (continuable
@@ -1799,27 +1831,31 @@
 				 ;; because it enables us to distinguish between EAGAIN/EWOULDBLOCK
 				 ;; on a non-blocking file descriptor (res == 0) and EOF (res ==
 				 ;; eof-object)
-				 (let next ([res (get-string-some! port buf 0 1)])
-				   (cond
-				    [(eqv? res 0)
-				     'more]
-				    [(eof-object? res)
-				     (if (= text-len 0)
-					 res
-					 (let ([line (substring text 0 text-len)])
-					   (reset)
-					   line))]
-				    [else
-				     (let ([ch (string-ref buf 0)])
-				       (if (char=? ch #\newline)
+				 (let next ()
+				   (let ([res (try (get-string-some! port buf 0 1)
+						   (except c [else c]))])
+				     (cond
+				      [(condition? res)
+				       res]
+				      [(eqv? res 0)
+				       'more]
+				      [(eof-object? res)
+				       (if (= text-len 0)
+					   res
 					   (let ([line (substring text 0 text-len)])
 					     (reset)
-					     line)
-					   (begin
-					     (append-char! ch)
-					     (if (char-ready? port)
-						 (next (get-string-some! port buf 0 1))
-						 'more))))]))))
+					     line))]
+				      [else
+				       (let ([ch (string-ref buf 0)])
+					 (if (char=? ch #\newline)
+					     (let ([line (substring text 0 text-len)])
+					       (reset)
+					       line)
+					     (begin
+					       (append-char! ch)
+					       (if (char-ready? port)
+						   (next)
+						   'more))))])))))
 			   loop))
      ;; exceptions might be thrown from the remainder of this
      ;; procedure (and in particular from 'proc').  This try block
@@ -1830,6 +1866,8 @@
       (let ([ret-val
 	     (let next ([res (await)])
 	       (cond
+		[(condition? res)
+		 (raise res)]
 		[(eq? res 'more)
 		 (next (await))]
 		[(or (eof-object? res)
@@ -1891,9 +1929,15 @@
 ;;
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up (that is, before the first call to 'await' is made),
-;; which shouldn't happen unless memory is exhausted.  Subsequent
-;; exceptions (say, because of port errors) will propagate out of
-;; event-loop-run!.
+;; which shouldn't happen unless memory is exhausted.  With versions
+;; of this library before 0.11, any exceptions because of read errors
+;; would propagate out of event-loop-run! and could not be caught
+;; locally.  Having read errors interfering with anything using the
+;; event loop in this way was not a good approach, so from version
+;; 0.11 of this library all read exceptions will propagate in the
+;; first instance out of this procedure so that they may be caught
+;; locally, say by putting a 'try' block around the call to this
+;; procedure.
 ;;
 ;; This procedure is first available in version 0.8 of this library.
 (define await-getblock!
@@ -1908,23 +1952,31 @@
 			   (lambda (status)
 			     (if (eq? status 'excpt)
 				 (cons #f #f)
-				 (let ([res (get-bytevector-some! port bv index (- size index))])
-				    (if (eof-object? res)
-					(if (= index 0)
-					    (cons res #f)
-					    (cons bv index))
-					(begin
-					  (set! index (+ index res))
-					  (if (= index size)
-					      (cons bv size)
-					      (cons 'more #f)))))))
+				 (let ([res (try (get-bytevector-some! port bv index (- size index))
+						 (except c [else c]))])
+				   (cond
+				    [(condition? res)
+				     (cons res #f)]
+				    [(eof-object? res)
+				     (if (= index 0)
+					 (cons res #f)
+					 (cons bv index))]
+				    [else
+				     (set! index (+ index res))
+				     (if (= index size)
+					 (cons bv size)
+					 (cons 'more #f))]))))
 			   loop))
      (let next ([res (await)])
-       (if (eq? (car res) 'more)
-	   (next (await))
-	   (begin
-	     (event-loop-remove-read-watch! port loop)
-	     res)))]))
+       (cond
+	[(eq? (car res) 'more)
+	 (next (await))]
+	[(condition? (car res))
+	 (event-loop-remove-read-watch! port loop)
+	 (raise (car res))]
+	[else
+	 (event-loop-remove-read-watch! port loop)
+	 res]))]))
 
 ;; This is a convenience procedure whose signature is:
 ;;
@@ -1980,10 +2032,16 @@
 ;;
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up (that is, before the first call to 'await' is made),
-;; which shouldn't happen unless memory is exhausted.  Subsequent
-;; exceptions (say, because of port errors) will propagate out of
-;; event-loop-run!.  Exceptions raised by 'proc', if not caught
-;; locally, will also propagate out of event-loop-run!.
+;; which shouldn't happen unless memory is exhausted.  With versions
+;; of this library before 0.11, any exceptions because of read errors
+;; would propagate out of event-loop-run! and could not be caught
+;; locally.  Having read errors interfering with anything using the
+;; event loop in this way was not a good approach, so from version
+;; 0.11 of this library all read exceptions will propagate in the
+;; first instance out of this procedure so that they may be caught
+;; locally, say by putting a 'try' block around the call to this
+;; procedure.  Exceptions raised by 'proc', if not caught locally,
+;; will also propagate out of event-loop-run!.
 ;;
 ;; If a continuable exception propagates out of this procedure, it
 ;; will be converted into a non-continuable one (continuable
@@ -2004,20 +2062,24 @@
 			   (lambda (status)
 			     (if (eq? status 'excpt)
 				 (cons #f #f)
-				 (let ([res (get-bytevector-some! port bv index (- size index))])
-				    (if (eof-object? res)
-					(if (= index 0)
-					    (cons res #f)
-					    (let ([len index])
-					      (set! index 0)
-					      (cons bv len)))
-					(begin
-					  (set! index (+ index res))
-					  (if (= index size)
-					      (begin
-						(set! index 0)
-						(cons bv size))
-					      (cons 'more #f)))))))
+				 (let ([res (try (get-bytevector-some! port bv index (- size index))
+						 (except c [else c]))])
+				   (cond
+				    [(condition? res)
+				     (cons res #f)]
+				    [(eof-object? res)
+				     (if (= index 0)
+					 (cons res #f)
+					 (let ([len index])
+					   (set! index 0)
+					   (cons bv len)))]
+				    [else
+				     (set! index (+ index res))
+				     (if (= index size)
+					 (begin
+					   (set! index 0)
+					   (cons bv size))
+					 (cons 'more #f))]))))
 			   loop))
      ;; exceptions might be thrown from the remainder of this
      ;; procedure (and in particular from 'proc').  This try block
@@ -2032,6 +2094,8 @@
 		 (cond
 		  [(eq? val 'more)
 		   (next (await))]
+		  [(condition? val)
+		   (raise val)]
 		  [(or (eof-object? val)
 		       (not val))
 		   val]
@@ -2106,10 +2170,16 @@
 ;;
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up (that is, before the first call to 'await' is made),
-;; which shouldn't happen unless memory is exhausted.  Subsequent
-;; exceptions (say, because of port errors) will propagate out of
-;; event-loop-run!.  Exceptions raised by 'proc', if not caught
-;; locally, will also propagate out of event-loop-run!.
+;; which shouldn't happen unless memory is exhausted.  With versions
+;; of this library before 0.11, any exceptions because of read errors
+;; would propagate out of event-loop-run! and could not be caught
+;; locally.  Having read errors interfering with anything using the
+;; event loop in this way was not a good approach, so from version
+;; 0.11 of this library all read exceptions will propagate in the
+;; first instance out of this procedure so that they may be caught
+;; locally, say by putting a 'try' block around the call to this
+;; procedure.  Exceptions raised by 'proc', if not caught locally,
+;; will also propagate out of event-loop-run!.
 ;;
 ;; If a continuable exception propagates out of this procedure, it
 ;; will be converted into a non-continuable one (continuable
@@ -2130,20 +2200,24 @@
 			   (lambda (status)
 			     (if (eq? status 'excpt)
 				 (cons #f #f)
-				 (let ([res (get-bytevector-some! port bv index (- size index))])
-				    (if (eof-object? res)
-					(if (= index 0)
-					    (cons res #f)
-					    (let ([len index])
-					      (set! index 0)
-					      (cons bv len)))
-					(begin
-					  (set! index (+ index res))
-					  (if (= index size)
-					      (begin
-						(set! index 0)
-						(cons bv size))
-					      (cons 'more #f)))))))
+				 (let ([res (try (get-bytevector-some! port bv index (- size index))
+				  		 (except c [else c]))])
+				   (cond
+				    [(condition? res)
+				     (cons res #f)]
+				    [(eof-object? res)
+				     (if (= index 0)
+					 (cons res #f)
+					 (let ([len index])
+					   (set! index 0)
+					   (cons bv len)))]
+				    [else
+				     (set! index (+ index res))
+				     (if (= index size)
+					 (begin
+					   (set! index 0)
+					   (cons bv size))
+					 (cons 'more #f))]))))
 			   loop))
      ;; exceptions might be thrown from the remainder of this
      ;; procedure (and in particular from 'proc').  This try block
@@ -2158,6 +2232,8 @@
 		 (cond
 		  [(eq? val 'more)
 		   (next (await))]
+		  [(condition? val)
+		   (raise val)]
 		  [(or (eof-object? val)
 		       (not val))
 		   val]

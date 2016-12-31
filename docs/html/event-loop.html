@@ -996,8 +996,14 @@ thread as that in which the event loop runs.
 </p>
 <p>Exceptions may propagate out of this procedure if they arise while
 setting up (that is, before the first call to &rsquo;await&rsquo; is made), which
-shouldn&rsquo;t happen unless memory is exhausted.  Subsequent exceptions
-(say, because of port errors) will propagate out of event-loop-run!.
+shouldn&rsquo;t happen unless memory is exhausted.  With versions of this
+library before 0.11, any exceptions because of read errors would
+propagate out of event-loop-run! and could not be caught locally.
+Having read errors interfering with anything using the event loop in
+this way was not a good approach, so from version 0.11 of this library
+all read exceptions will propagate in the first instance out of this
+procedure so that they may be caught locally, say by putting a &rsquo;try&rsquo;
+block around the call to this procedure.
 </p>
 <p>Here is an example of the use of await-getline!:
 </p><div class="example">
@@ -1053,10 +1059,15 @@ thread as that in which the event loop runs.
 </p>
 <p>Exceptions may propagate out of this procedure if they arise while
 setting up (that is, before the first call to &rsquo;await&rsquo; is made), which
-shouldn&rsquo;t happen unless memory is exhausted.  Subsequent exceptions
-(say, because of port errors) will propagate out of event-loop-run!.
-Exceptions raised by &rsquo;proc&rsquo;, if not caught locally, will also
-propagate out of event-loop-run!.
+shouldn&rsquo;t happen unless memory is exhausted.  With versions of this
+library before 0.11, any exceptions because of read errors would
+propagate out of event-loop-run! and could not be caught locally.
+Having read errors interfering with anything using the event loop in
+this way was not a good approach, so from version 0.11 of this library
+all read exceptions will propagate in the first instance out of this
+procedure so that they may be caught locally, say by putting a &rsquo;try&rsquo;
+block around the call to this procedure.  Exceptions raised by &rsquo;proc&rsquo;,
+if not caught locally, will also propagate out of event-loop-run!.
 </p>
 <p>If a continuable exception propagates out of this procedure, it will
 be converted into a non-continuable one (continuable exceptions are
@@ -1128,10 +1139,15 @@ thread as that in which the event loop runs.
 </p>
 <p>Exceptions may propagate out of this procedure if they arise while
 setting up (that is, before the first call to &rsquo;await&rsquo; is made), which
-shouldn&rsquo;t happen unless memory is exhausted.  Subsequent exceptions
-(say, because of port errors) will propagate out of event-loop-run!.
-Exceptions raised by &rsquo;proc&rsquo;, if not caught locally, will also
-propagate out of event-loop-run!.
+shouldn&rsquo;t happen unless memory is exhausted.  With versions of this
+library before 0.11, any exceptions because of read errors would
+propagate out of event-loop-run! and could not be caught locally.
+Having read errors interfering with anything using the event loop in
+this way was not a good approach, so from version 0.11 of this library
+all read exceptions will propagate in the first instance out of this
+procedure so that they may be caught locally, say by putting a &rsquo;try&rsquo;
+block around the call to this procedure.  Exceptions raised by &rsquo;proc&rsquo;,
+if not caught locally, will also propagate out of event-loop-run!.
 </p>
 <p>If a continuable exception propagates out of this procedure, it will
 be converted into a non-continuable one (continuable exceptions are
@@ -1198,8 +1214,14 @@ thread as that in which the event loop runs.
 </p>
 <p>Exceptions may propagate out of this procedure if they arise while
 setting up (that is, before the first call to &rsquo;await&rsquo; is made), which
-shouldn&rsquo;t happen unless memory is exhausted.  Subsequent exceptions
-(say, because of port errors) will propagate out of event-loop-run!.
+shouldn&rsquo;t happen unless memory is exhausted.  With versions of this
+library before 0.11, any exceptions because of read errors would
+propagate out of event-loop-run! and could not be caught locally.
+Having read errors interfering with anything using the event loop in
+this way was not a good approach, so from version 0.11 of this library
+all read exceptions will propagate in the first instance out of this
+procedure so that they may be caught locally, say by putting a &rsquo;try&rsquo;
+block around the call to this procedure.
 </p>
 <p>This procedure is first available in version 0.8 of this library.
 </p></dd></dl>
@@ -1254,10 +1276,15 @@ thread as that in which the event loop runs.
 </p>
 <p>Exceptions may propagate out of this procedure if they arise while
 setting up (that is, before the first call to &rsquo;await&rsquo; is made), which
-shouldn&rsquo;t happen unless memory is exhausted.  Subsequent exceptions
-(say, because of port errors) will propagate out of event-loop-run!.
-Exceptions raised by &rsquo;proc&rsquo;, if not caught locally, will also
-propagate out of event-loop-run!.
+shouldn&rsquo;t happen unless memory is exhausted.  With versions of this
+library before 0.11, any exceptions because of read errors would
+propagate out of event-loop-run! and could not be caught locally.
+Having read errors interfering with anything using the event loop in
+this way was not a good approach, so from version 0.11 of this library
+all read exceptions will propagate in the first instance out of this
+procedure so that they may be caught locally, say by putting a &rsquo;try&rsquo;
+block around the call to this procedure.  Exceptions raised by &rsquo;proc&rsquo;,
+if not caught locally, will also propagate out of event-loop-run!.
 </p>
 <p>If a continuable exception propagates out of this procedure, it will
 be converted into a non-continuable one (continuable exceptions are
@@ -1324,10 +1351,15 @@ thread as that in which the event loop runs.
 </p>
 <p>Exceptions may propagate out of this procedure if they arise while
 setting up (that is, before the first call to &rsquo;await&rsquo; is made), which
-shouldn&rsquo;t happen unless memory is exhausted.  Subsequent exceptions
-(say, because of port errors) will propagate out of event-loop-run!.
-Exceptions raised by &rsquo;proc&rsquo;, if not caught locally, will also
-propagate out of event-loop-run!.
+shouldn&rsquo;t happen unless memory is exhausted.  With versions of this
+library before 0.11, any exceptions because of read errors would
+propagate out of event-loop-run! and could not be caught locally.
+Having read errors interfering with anything using the event loop in
+this way was not a good approach, so from version 0.11 of this library
+all read exceptions will propagate in the first instance out of this
+procedure so that they may be caught locally, say by putting a &rsquo;try&rsquo;
+block around the call to this procedure.  Exceptions raised by &rsquo;proc&rsquo;,
+if not caught locally, will also propagate out of event-loop-run!.
 </p>
 <p>If a continuable exception propagates out of this procedure, it will
 be converted into a non-continuable one (continuable exceptions are

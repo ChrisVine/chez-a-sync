@@ -511,6 +511,7 @@
 					     20
 	    				     (lambda (bv-in len k)
 					       (test-result 10 len)
+					       (test-result (bytevector-s8-ref bv-in 0) 22)
 					       (assert (test-bytevector bv3 bv-in))))])
 	      (assert (eof-object? res)))
 	    (let ([res (await-getsomeblocks! await resume
@@ -1064,6 +1065,7 @@
 					     20
 	    				     (lambda (bv-in len k)
 					       (test-result 10 len)
+					       (test-result (bytevector-s8-ref bv-in 0) 22)
 					       (assert (test-bytevector bv3 bv-in))))])
 	      (assert (eof-object? res)))
 	    (let ([res (await-getsomeblocks! await resume
