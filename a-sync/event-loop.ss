@@ -2368,8 +2368,7 @@
 ;; way was not a good approach, so from version 0.11 of this library
 ;; all write exceptions will propagate in the first instance out of
 ;; this procedure so that they may be caught locally, say by putting a
-;; 'try' block around the call to this procedure, and only out of
-;; event-loop-run! if not caught in that way.
+;; 'try' block around the call to this procedure.
 ;;
 ;; This procedure is first available in version 0.8 of this library.
 (define await-put-bytevector!
@@ -2477,8 +2476,7 @@
 ;; so from version 0.11 of this library all write exceptions will
 ;; propagate in the first instance out of this procedure so that they
 ;; may be caught locally, say by putting a 'try' block around the call
-;; to this procedure, and only out of event-loop-run! if not caught in
-;; that way.
+;; to this procedure.
 ;;
 ;; This procedure is first available in version 0.7 of this library.
 (define await-put-string!

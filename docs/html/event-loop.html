@@ -1510,8 +1510,7 @@ interfering with anything using the event loop in this way was not a
 good approach, so from version 0.11 of this library all write
 exceptions will propagate in the first instance out of this procedure
 so that they may be caught locally, say by putting a &rsquo;try&rsquo; block
-around the call to this procedure, and only out of event-loop-run! if
-not caught in that way.
+around the call to this procedure.
 </p>
 <p>Here is how EPIPE might be tested for, using the &rsquo;try&rsquo; form from the
 <a href="try.html#try">(a-sync try)</a> library file (with linux and BSDs, the value
@@ -1599,7 +1598,7 @@ anything using the event loop in this way was not a good approach, so
 from version 0.11 of this library all write exceptions will propagate
 in the first instance out of this procedure so that they may be caught
 locally, say by putting a &rsquo;try&rsquo; block around the call to this
-procedure, and only out of event-loop-run! if not caught in that way.
+procedure.
 </p>
 <p>Here is how EPIPE might be tested for, using the &rsquo;try&rsquo; form from the
 <a href="try.html#try">(a-sync try)</a> library file (with linux and BSDs, the value
