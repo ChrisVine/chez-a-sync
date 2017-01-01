@@ -1,5 +1,5 @@
 dnl Process this file with autoconf to produce a configure script.
-AC_INIT([chez-a-sync], [0.10])
+AC_INIT([chez-a-sync], [0.11])
 
 dnl Require autoconf 2.59c or greater for docdir and htmldir
 AC_PREREQ(2.59c)
