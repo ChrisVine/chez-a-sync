@@ -1376,7 +1376,8 @@ the worker thread should post the closing as an event using event-post!.
      0.11 of this library all read exceptions will propagate in the
      first instance out of this procedure so that they may be caught
      locally, say by putting a 'try' block around the call to this
-     procedure.
+     procedure, and only out of event-loop-run!  if not caught in that
+     way.
 
      Here is an example of the use of await-getline!:
           (set-default-event-loop!) ;; if none has yet been set
@@ -1437,8 +1438,9 @@ the worker thread should post the closing as an event using event-post!.
      0.11 of this library all read exceptions will propagate in the
      first instance out of this procedure so that they may be caught
      locally, say by putting a 'try' block around the call to this
-     procedure.  Exceptions raised by 'proc', if not caught locally,
-     will also propagate out of event-loop-run!.
+     procedure, and only out of event-loop-run!  if not caught in that
+     way.  Exceptions raised by 'proc', if not caught locally, will also
+     propagate out of event-loop-run!.
 
      If a continuable exception propagates out of this procedure, it
      will be converted into a non-continuable one (continuable
@@ -1516,8 +1518,9 @@ the worker thread should post the closing as an event using event-post!.
      0.11 of this library all read exceptions will propagate in the
      first instance out of this procedure so that they may be caught
      locally, say by putting a 'try' block around the call to this
-     procedure.  Exceptions raised by 'proc', if not caught locally,
-     will also propagate out of event-loop-run!.
+     procedure, and only out of event-loop-run!  if not caught in that
+     way.  Exceptions raised by 'proc', if not caught locally, will also
+     propagate out of event-loop-run!.
 
      If a continuable exception propagates out of this procedure, it
      will be converted into a non-continuable one (continuable
@@ -1590,7 +1593,8 @@ the worker thread should post the closing as an event using event-post!.
      0.11 of this library all read exceptions will propagate in the
      first instance out of this procedure so that they may be caught
      locally, say by putting a 'try' block around the call to this
-     procedure.
+     procedure, and only out of event-loop-run!  if not caught in that
+     way.
 
      This procedure is first available in version 0.8 of this library.
 
@@ -1655,8 +1659,9 @@ the worker thread should post the closing as an event using event-post!.
      0.11 of this library all read exceptions will propagate in the
      first instance out of this procedure so that they may be caught
      locally, say by putting a 'try' block around the call to this
-     procedure.  Exceptions raised by 'proc', if not caught locally,
-     will also propagate out of event-loop-run!.
+     procedure, and only out of event-loop-run!  if not caught in that
+     way.  Exceptions raised by 'proc', if not caught locally, will also
+     propagate out of event-loop-run!.
 
      If a continuable exception propagates out of this procedure, it
      will be converted into a non-continuable one (continuable
@@ -1732,8 +1737,9 @@ the worker thread should post the closing as an event using event-post!.
      0.11 of this library all read exceptions will propagate in the
      first instance out of this procedure so that they may be caught
      locally, say by putting a 'try' block around the call to this
-     procedure.  Exceptions raised by 'proc', if not caught locally,
-     will also propagate out of event-loop-run!.
+     procedure, and only out of event-loop-run!  if not caught in that
+     way.  Exceptions raised by 'proc', if not caught locally, will also
+     propagate out of event-loop-run!.
 
      If a continuable exception propagates out of this procedure, it
      will be converted into a non-continuable one (continuable
@@ -1872,7 +1878,8 @@ the worker thread should post the closing as an event using event-post!.
      way was not a good approach, so from version 0.11 of this library
      all write exceptions will propagate in the first instance out of
      this procedure so that they may be caught locally, say by putting a
-     'try' block around the call to this procedure.
+     'try' block around the call to this procedure, and only out of
+     event-loop-run!  if not caught in that way.
 
      Here is how EPIPE might be tested for, using the 'try' form from
      the *note (a-sync try): try. library file (with linux and BSDs, the
@@ -1959,7 +1966,8 @@ the worker thread should post the closing as an event using event-post!.
      so from version 0.11 of this library all write exceptions will
      propagate in the first instance out of this procedure so that they
      may be caught locally, say by putting a 'try' block around the call
-     to this procedure.
+     to this procedure, and only out of event-loop-run!  if not caught
+     in that way.
 
      Here is how EPIPE might be tested for, using the 'try' form from
      the *note (a-sync try): try. library file (with linux and BSDs, the
@@ -2225,7 +2233,7 @@ Node: Top83
 Node: overview1010
 Node: coroutines3960
 Node: event loop22335
-Node: compose107516
-Node: try113246
+Node: compose108036
+Node: try113766
 
 End Tag Table

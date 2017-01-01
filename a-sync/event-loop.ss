@@ -1,4 +1,4 @@
-;; Copyright (C) 2014 and 2016 Chris Vine
+;; Copyright (C) 2014 to 2017 Chris Vine
 ;; 
 ;; This file is licensed under the Apache License, Version 2.0 (the
 ;; "License"); you may not use this file except in compliance with the
@@ -1541,7 +1541,8 @@
 ;; 0.11 of this library all read exceptions will propagate in the
 ;; first instance out of this procedure so that they may be caught
 ;; locally, say by putting a 'try' block around the call to this
-;; procedure.
+;; procedure, and only out of event-loop-run! if not caught in that
+;; way.
 (define await-getline!
   (case-lambda
     [(await resume port) (await-getline! await resume #f port)]
@@ -1651,8 +1652,9 @@
 ;; 0.11 of this library all read exceptions will propagate in the
 ;; first instance out of this procedure so that they may be caught
 ;; locally, say by putting a 'try' block around the call to this
-;; procedure.  Exceptions raised by 'proc', if not caught locally,
-;; will also propagate out of event-loop-run!.
+;; procedure, and only out of event-loop-run! if not caught in that
+;; way.  Exceptions raised by 'proc', if not caught locally, will also
+;; propagate out of event-loop-run!.
 ;;
 ;; If a continuable exception propagates out of this procedure, it
 ;; will be converted into a non-continuable one (continuable
@@ -1795,8 +1797,9 @@
 ;; 0.11 of this library all read exceptions will propagate in the
 ;; first instance out of this procedure so that they may be caught
 ;; locally, say by putting a 'try' block around the call to this
-;; procedure.  Exceptions raised by 'proc', if not caught locally,
-;; will also propagate out of event-loop-run!.
+;; procedure, and only out of event-loop-run! if not caught in that
+;; way.  Exceptions raised by 'proc', if not caught locally, will also
+;; propagate out of event-loop-run!.
 ;;
 ;; If a continuable exception propagates out of this procedure, it
 ;; will be converted into a non-continuable one (continuable
@@ -1937,7 +1940,8 @@
 ;; 0.11 of this library all read exceptions will propagate in the
 ;; first instance out of this procedure so that they may be caught
 ;; locally, say by putting a 'try' block around the call to this
-;; procedure.
+;; procedure, and only out of event-loop-run! if not caught in that
+;; way.
 ;;
 ;; This procedure is first available in version 0.8 of this library.
 (define await-getblock!
@@ -2040,8 +2044,9 @@
 ;; 0.11 of this library all read exceptions will propagate in the
 ;; first instance out of this procedure so that they may be caught
 ;; locally, say by putting a 'try' block around the call to this
-;; procedure.  Exceptions raised by 'proc', if not caught locally,
-;; will also propagate out of event-loop-run!.
+;; procedure, and only out of event-loop-run! if not caught in that
+;; way.  Exceptions raised by 'proc', if not caught locally, will also
+;; propagate out of event-loop-run!.
 ;;
 ;; If a continuable exception propagates out of this procedure, it
 ;; will be converted into a non-continuable one (continuable
@@ -2178,8 +2183,9 @@
 ;; 0.11 of this library all read exceptions will propagate in the
 ;; first instance out of this procedure so that they may be caught
 ;; locally, say by putting a 'try' block around the call to this
-;; procedure.  Exceptions raised by 'proc', if not caught locally,
-;; will also propagate out of event-loop-run!.
+;; procedure, and only out of event-loop-run! if not caught in that
+;; way.  Exceptions raised by 'proc', if not caught locally, will also
+;; propagate out of event-loop-run!.
 ;;
 ;; If a continuable exception propagates out of this procedure, it
 ;; will be converted into a non-continuable one (continuable
@@ -2362,7 +2368,8 @@
 ;; way was not a good approach, so from version 0.11 of this library
 ;; all write exceptions will propagate in the first instance out of
 ;; this procedure so that they may be caught locally, say by putting a
-;; 'try' block around the call to this procedure.
+;; 'try' block around the call to this procedure, and only out of
+;; event-loop-run! if not caught in that way.
 ;;
 ;; This procedure is first available in version 0.8 of this library.
 (define await-put-bytevector!
@@ -2470,7 +2477,8 @@
 ;; so from version 0.11 of this library all write exceptions will
 ;; propagate in the first instance out of this procedure so that they
 ;; may be caught locally, say by putting a 'try' block around the call
-;; to this procedure.
+;; to this procedure, and only out of event-loop-run! if not caught in
+;; that way.
 ;;
 ;; This procedure is first available in version 0.7 of this library.
 (define await-put-string!

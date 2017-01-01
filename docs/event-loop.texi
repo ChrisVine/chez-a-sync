@@ -923,7 +923,8 @@ Having read errors interfering with anything using the event loop in
 this way was not a good approach, so from version 0.11 of this library
 all read exceptions will propagate in the first instance out of this
 procedure so that they may be caught locally, say by putting a 'try'
-block around the call to this procedure.
+block around the call to this procedure, and only out of
+event-loop-run! if not caught in that way.
 
 Here is an example of the use of await-getline!:
 @example
@@ -985,8 +986,10 @@ Having read errors interfering with anything using the event loop in
 this way was not a good approach, so from version 0.11 of this library
 all read exceptions will propagate in the first instance out of this
 procedure so that they may be caught locally, say by putting a 'try'
-block around the call to this procedure.  Exceptions raised by 'proc',
-if not caught locally, will also propagate out of event-loop-run!.
+block around the call to this procedure, and only out of
+event-loop-run! if not caught in that way.  Exceptions raised by
+'proc', if not caught locally, will also propagate out of
+event-loop-run!.
 
 If a continuable exception propagates out of this procedure, it will
 be converted into a non-continuable one (continuable exceptions are
@@ -1064,8 +1067,10 @@ Having read errors interfering with anything using the event loop in
 this way was not a good approach, so from version 0.11 of this library
 all read exceptions will propagate in the first instance out of this
 procedure so that they may be caught locally, say by putting a 'try'
-block around the call to this procedure.  Exceptions raised by 'proc',
-if not caught locally, will also propagate out of event-loop-run!.
+block around the call to this procedure, and only out of
+event-loop-run! if not caught in that way.  Exceptions raised by
+'proc', if not caught locally, will also propagate out of
+event-loop-run!.
 
 If a continuable exception propagates out of this procedure, it will
 be converted into a non-continuable one (continuable exceptions are
@@ -1138,7 +1143,8 @@ Having read errors interfering with anything using the event loop in
 this way was not a good approach, so from version 0.11 of this library
 all read exceptions will propagate in the first instance out of this
 procedure so that they may be caught locally, say by putting a 'try'
-block around the call to this procedure.
+block around the call to this procedure, and only out of
+event-loop-run! if not caught in that way.
 
 This procedure is first available in version 0.8 of this library.
 @end deffn
@@ -1199,8 +1205,10 @@ Having read errors interfering with anything using the event loop in
 this way was not a good approach, so from version 0.11 of this library
 all read exceptions will propagate in the first instance out of this
 procedure so that they may be caught locally, say by putting a 'try'
-block around the call to this procedure.  Exceptions raised by 'proc',
-if not caught locally, will also propagate out of event-loop-run!.
+block around the call to this procedure, and only out of
+event-loop-run! if not caught in that way.  Exceptions raised by
+'proc', if not caught locally, will also propagate out of
+event-loop-run!.
 
 If a continuable exception propagates out of this procedure, it will
 be converted into a non-continuable one (continuable exceptions are
@@ -1273,8 +1281,10 @@ Having read errors interfering with anything using the event loop in
 this way was not a good approach, so from version 0.11 of this library
 all read exceptions will propagate in the first instance out of this
 procedure so that they may be caught locally, say by putting a 'try'
-block around the call to this procedure.  Exceptions raised by 'proc',
-if not caught locally, will also propagate out of event-loop-run!.
+block around the call to this procedure, and only out of
+event-loop-run! if not caught in that way.  Exceptions raised by
+'proc', if not caught locally, will also propagate out of
+event-loop-run!.
 
 If a continuable exception propagates out of this procedure, it will
 be converted into a non-continuable one (continuable exceptions are
@@ -1413,7 +1423,8 @@ interfering with anything using the event loop in this way was not a
 good approach, so from version 0.11 of this library all write
 exceptions will propagate in the first instance out of this procedure
 so that they may be caught locally, say by putting a 'try' block
-around the call to this procedure.
+around the call to this procedure, and only out of event-loop-run! if
+not caught in that way.
 
 Here is how EPIPE might be tested for, using the 'try' form from the
 @ref{try,,(a-sync try)} library file (with linux and BSDs, the value
@@ -1500,7 +1511,7 @@ anything using the event loop in this way was not a good approach, so
 from version 0.11 of this library all write exceptions will propagate
 in the first instance out of this procedure so that they may be caught
 locally, say by putting a 'try' block around the call to this
-procedure.
+procedure, and only out of event-loop-run! if not caught in that way.
 
 Here is how EPIPE might be tested for, using the 'try' form from the
 @ref{try,,(a-sync try)} library file (with linux and BSDs, the value
