@@ -43,18 +43,19 @@
 
 (define (handle-conversation port)
   (a-sync (lambda (await resume)
-            (await-getsomelines! await resume port
-                                 (lambda (line k)
-                                   (if (not (string=? line ""))
-                                       (await-put-string! await resume port (string-append "echo: " line "\n"))
-                                       (k #f))))
-	    ;; we must call clear-input-port before applying
-	    ;; close-port
-	    (clear-input-port port)
-	    (close-port port)
-	    (set! count (- count 1))
-	    (when (zero? count)
-	      (event-loop-quit!)))))
+	    (let next ([line (await-getline! await resume port)])
+	      (if (not (string=? line ""))
+		  (begin
+		    (await-put-string! await resume port (string-append "echo: " line "\n"))
+		    (next (await-getline! await resume port)))
+		  (begin
+		    ;; we must call clear-input-port before applying
+		    ;; close-port
+		    (clear-input-port port)
+		    (close-port port)
+		    (set! count (- count 1))
+		    (when (zero? count)
+		      (event-loop-quit!))))))))
 
 (define (start-server)
   (set-ignore-sigpipe)

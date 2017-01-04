@@ -1325,9 +1325,9 @@
 ;; 'proc' runs it will do so as a separate event in the event loop and
 ;; so be multi-plexed with other events.
 ;;
-;; When 'proc' executes, this procedure will have released 'await' and
-;; 'resume', so they may be used by 'proc' to initiate other
-;; asynchronous operations sequentially.
+;; When 'proc' executes, 'await' and 'resume' will still be in use, so
+;; they may not be used by 'proc' to initiate other asynchronous
+;; operations.
 ;;
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.
@@ -1635,9 +1635,9 @@
 ;; 'close-output-port' or 'close-input-port' is applied to it, to
 ;; avoid an illegal seek exception.
 ;;
-;; When 'proc' executes, this procedure will have released 'await' and
-;; 'resume', so they may be used by 'proc' to initiate other
-;; asynchronous operations sequentially.
+;; When 'proc' executes, 'await' and 'resume' will still be in use, so
+;; they may not be used by 'proc' to initiate other asynchronous
+;; operations.
 ;;
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.
@@ -1780,9 +1780,9 @@
 ;; 'close-output-port' or 'close-input-port' is applied to it, to
 ;; avoid an illegal seek exception.
 ;;
-;; When 'proc' executes, this procedure will have released 'await' and
-;; 'resume', so they may be used by 'proc' to initiate other
-;; asynchronous operations sequentially.
+;; When 'proc' executes, 'await' and 'resume' will still be in use, so
+;; they may not be used by 'proc' to initiate other asynchronous
+;; operations.
 ;;
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.
@@ -2027,9 +2027,9 @@
 ;; 'close-output-port' or 'close-input-port' is applied to it, to
 ;; avoid an illegal seek exception.
 ;;
-;; When 'proc' executes, this procedure will have released 'await' and
-;; 'resume', so they may be used by 'proc' to initiate other
-;; asynchronous operations sequentially.
+;; When 'proc' executes, 'await' and 'resume' will still be in use, so
+;; they may not be used by 'proc' to initiate other asynchronous
+;; operations.
 ;;
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.
@@ -2166,9 +2166,9 @@
 ;; 'close-output-port' or 'close-input-port' is applied to it, to
 ;; avoid an illegal seek exception.
 ;;
-;; When 'proc' executes, this procedure will have released 'await' and
-;; 'resume', so they may be used by 'proc' to initiate other
-;; asynchronous operations sequentially.
+;; When 'proc' executes, 'await' and 'resume' will still be in use, so
+;; they may not be used by 'proc' to initiate other asynchronous
+;; operations.
 ;;
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.

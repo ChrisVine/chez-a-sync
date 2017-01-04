@@ -1129,9 +1129,9 @@ the worker thread should post the closing as an event using event-post!.
      'proc' runs it will do so as a separate event in the event loop and
      so be multi-plexed with other events.
 
-     When 'proc' executes, this procedure will have released 'await' and
-     'resume', so they may be used by 'proc' to initiate other
-     asynchronous operations sequentially.
+     When 'proc' executes, 'await' and 'resume' will still be in use, so
+     they may not be used by 'proc' to initiate other asynchronous
+     operations.
 
      This procedure must (like the a-sync procedure) be called in the
      same thread as that in which the event loop runs.
@@ -1421,9 +1421,9 @@ the worker thread should post the closing as an event using event-post!.
      'close-output-port' or 'close-input-port' is applied to it, to
      avoid an illegal seek exception.
 
-     When 'proc' executes, this procedure will have released 'await' and
-     'resume', so they may be used by 'proc' to initiate other
-     asynchronous operations sequentially.
+     When 'proc' executes, 'await' and 'resume' will still be in use, so
+     they may not be used by 'proc' to initiate other asynchronous
+     operations.
 
      This procedure must (like the a-sync procedure) be called in the
      same thread as that in which the event loop runs.
@@ -1501,9 +1501,9 @@ the worker thread should post the closing as an event using event-post!.
      'close-output-port' or 'close-input-port' is applied to it, to
      avoid an illegal seek exception.
 
-     When 'proc' executes, this procedure will have released 'await' and
-     'resume', so they may be used by 'proc' to initiate other
-     asynchronous operations sequentially.
+     When 'proc' executes, 'await' and 'resume' will still be in use, so
+     they may not be used by 'proc' to initiate other asynchronous
+     operations.
 
      This procedure must (like the a-sync procedure) be called in the
      same thread as that in which the event loop runs.
@@ -1642,9 +1642,9 @@ the worker thread should post the closing as an event using event-post!.
      'close-output-port' or 'close-input-port' is applied to it, to
      avoid an illegal seek exception.
 
-     When 'proc' executes, this procedure will have released 'await' and
-     'resume', so they may be used by 'proc' to initiate other
-     asynchronous operations sequentially.
+     When 'proc' executes, 'await' and 'resume' will still be in use, so
+     they may not be used by 'proc' to initiate other asynchronous
+     operations.
 
      This procedure must (like the a-sync procedure) be called in the
      same thread as that in which the event loop runs.
@@ -1720,9 +1720,9 @@ the worker thread should post the closing as an event using event-post!.
      'close-output-port' or 'close-input-port' is applied to it, to
      avoid an illegal seek exception.
 
-     When 'proc' executes, this procedure will have released 'await' and
-     'resume', so they may be used by 'proc' to initiate other
-     asynchronous operations sequentially.
+     When 'proc' executes, 'await' and 'resume' will still be in use, so
+     they may not be used by 'proc' to initiate other asynchronous
+     operations.
 
      This procedure must (like the a-sync procedure) be called in the
      same thread as that in which the event loop runs.
@@ -2231,7 +2231,7 @@ Node: Top83
 Node: overview1010
 Node: coroutines3960
 Node: event loop22335
-Node: compose107906
-Node: try113636
+Node: compose107796
+Node: try113526
 
 End Tag Table
