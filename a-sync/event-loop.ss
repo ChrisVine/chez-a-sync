@@ -1325,10 +1325,6 @@
 ;; 'proc' runs it will do so as a separate event in the event loop and
 ;; so be multi-plexed with other events.
 ;;
-;; When 'proc' executes, 'await' and 'resume' will still be in use, so
-;; they may not be used by 'proc' to initiate other asynchronous
-;; operations.
-;;
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.
 ;;
@@ -1342,6 +1338,10 @@
 ;; 'generator'.  This procedure can be useful for the purpose of
 ;; implementing co-operative multi-tasking, say by composing tasks
 ;; with compose-a-sync (see compose.scm).
+;;
+;; When 'proc' executes, 'await' and 'resume' will still be in use by
+;; this procedure, so they may not be reused by 'proc' (even though
+;; 'proc' runs in the event loop thread).
 ;;
 ;; This procedure calls event-post! in the event loop concerned.  This
 ;; is done in the same thread as that in which the event loop runs so
@@ -1635,12 +1635,12 @@
 ;; 'close-output-port' or 'close-input-port' is applied to it, to
 ;; avoid an illegal seek exception.
 ;;
-;; When 'proc' executes, 'await' and 'resume' will still be in use, so
-;; they may not be used by 'proc' to initiate other asynchronous
-;; operations.
-;;
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.
+;;
+;; When 'proc' executes, 'await' and 'resume' will still be in use by
+;; this procedure, so they may not be reused by 'proc' (even though
+;; 'proc' runs in the event loop thread).
 ;;
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up (that is, before the first call to 'await' is made),
@@ -1780,12 +1780,12 @@
 ;; 'close-output-port' or 'close-input-port' is applied to it, to
 ;; avoid an illegal seek exception.
 ;;
-;; When 'proc' executes, 'await' and 'resume' will still be in use, so
-;; they may not be used by 'proc' to initiate other asynchronous
-;; operations.
-;;
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.
+;;
+;; When 'proc' executes, 'await' and 'resume' will still be in use by
+;; this procedure, so they may not be reused by 'proc' (even though
+;; 'proc' runs in the event loop thread).
 ;;
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up (that is, before the first call to 'await' is made),
@@ -2027,12 +2027,12 @@
 ;; 'close-output-port' or 'close-input-port' is applied to it, to
 ;; avoid an illegal seek exception.
 ;;
-;; When 'proc' executes, 'await' and 'resume' will still be in use, so
-;; they may not be used by 'proc' to initiate other asynchronous
-;; operations.
-;;
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.
+;;
+;; When 'proc' executes, 'await' and 'resume' will still be in use by
+;; this procedure, so they may not be reused by 'proc' (even though
+;; 'proc' runs in the event loop thread).
 ;;
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up (that is, before the first call to 'await' is made),
@@ -2166,12 +2166,12 @@
 ;; 'close-output-port' or 'close-input-port' is applied to it, to
 ;; avoid an illegal seek exception.
 ;;
-;; When 'proc' executes, 'await' and 'resume' will still be in use, so
-;; they may not be used by 'proc' to initiate other asynchronous
-;; operations.
-;;
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.
+;;
+;; When 'proc' executes, 'await' and 'resume' will still be in use by
+;; this procedure, so they may not be reused by 'proc' (even though
+;; 'proc' runs in the event loop thread).
 ;;
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up (that is, before the first call to 'await' is made),
