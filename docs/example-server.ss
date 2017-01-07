@@ -55,7 +55,11 @@
 		    (close-port port)
 		    (set! count (- count 1))
 		    (when (zero? count)
-		      (event-loop-quit!))))))))
+		      ;; this a-sync block can bring the execution of
+		      ;; the a-sync block in start-server to an end by
+		      ;; removing the watch established by
+		      ;; await-accept!
+		      (event-loop-remove-read-watch! server-sock))))))))
 
 (define (start-server)
   (set-ignore-sigpipe)

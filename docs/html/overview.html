@@ -109,7 +109,16 @@ thread, the event-loop thread), but at present it is messy.  Instead
 of starting two intercommunicating &quot;pseudo-threads&quot;, the preferred
 method of achieving a similar result is to use generators (see the
 await-generator! procedure in the <a href="event-loop.html#event-loop">(a-sync
-event-loop)</a> library file).
+event-loop)</a> library file).  However, one interesting feature of these
+&quot;pseudo-threads&quot; is that where one &rsquo;a-sync&rsquo; or &rsquo;compose-a-sync&rsquo; block
+is waiting on a read or write watch (including in the await-get*,
+await-put*, await-connect! or await-accept! procedures), another
+a-sync block running on the same event loop can cause execution of the
+waiting block to come to an end by removing the watch using
+event-loop-remove-read-watch! or event-loop-remove-write-watch!, as
+the case may be (and another native OS thread can do this by posting
+an event to the event loop which does the same).  An example is in the
+example-server.scm file in the docs directory.
 </p>
 <p>Apart from these &quot;pseudo-threads&quot;, true parallelism is possible using
 native OS threads, with the await-task-in-thread!,
