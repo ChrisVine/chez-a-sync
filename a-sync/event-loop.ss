@@ -522,8 +522,8 @@
   ;; the only foolproof way of vacating a unix pipe is to close it and
   ;; then create another one
   (with-mutex (_mutex-get el)
-    (close-port (_event-in-get el))
     (close-port (_event-out-get el))      
+    (close-port (_event-in-get el))
     (let-values ([(in out) (make-pipe (buffer-mode block)
 				      (buffer-mode none))])
       (set-port-nonblocking! in #t)
