@@ -32,7 +32,8 @@
 ;; await-put-string!) and is exported by event-loop.ss so that it can
 ;; be used by other asynchronous procedures.  It makes a block write
 ;; directly to output, bypassing any output buffers, using unix write.
-;; It is intended for use with asynchronous procedures which must not
+;; Although it can be used with blocking file descriptors, it is
+;; mainly intended for use with asynchronous procedures which must not
 ;; block and must write immediately without requiring a subsequent
 ;; flush to do so (chez scheme's textual ports always implement some
 ;; buffering and will not write without a flush, irrespective of their
@@ -40,26 +41,24 @@
 ;;
 ;; This procedure provides a 'begin' parameter indicating the start of
 ;; the sequence of bytes to be written, as an index.  'fd' is the file
-;; descriptor of the device to be written to, and it should be
-;; non-blocking (say, 'fd' is derived from a port to which
+;; descriptor of the device to be written to, and it should normally
+;; be non-blocking (say, 'fd' is derived from a port to which
 ;; set-port-nonblocking! has been applied with an argument of #t).
 ;; 'bv' is a bytevector containing the bytes to be written.  'count'
-;; is the maximum number of bytes to be written.  Because this
-;; procedure is intended for use with non-blocking ports, it may write
-;; less than 'count' bytes: only the number of bytes available to the
-;; device to be written to will be written at any one time.  The sum
-;; of 'begin' and 'count' must not be more than the length of the
-;; bytevector.  The use of a separate 'begin' index enables the same
-;; bytevector to be written from repeatedly until all of it has been
-;; sent.
+;; is the maximum number of bytes to be written.  This procedure
+;; returns the number of bytes actually written, which can be less
+;; than 'count' bytes.  The sum of 'begin' and 'count' must not be
+;; more than the length of the bytevector.  The use of a separate
+;; 'begin' index enables the same bytevector to be written from
+;; repeatedly until all of it has been sent.
 ;;
-;; Provided 'fd' is non-blocking, this procedure returns immediately
-;; with the number of bytes written (so 0 is returned if the file
-;; descriptor is not available for writing because the device is
-;; full).  On a write error other than EAGAIN, EWOULDBLOCK or EINTR, a
-;; &i/o-write-error exception is raised which will give the errno
-;; number as an irritant (prior to version 0.11 a &serious exception
-;; was raised).  EINTR is handled internally and is not an error.
+;; Provided 'fd' is non-blocking, this procedure returns straight away
+;; (so 0 may be returned if the file descriptor is not available for
+;; writing because of insufficient space).  On a write error other
+;; than EAGAIN, EWOULDBLOCK or EINTR, a &i/o-write-error exception is
+;; raised which will give the errno number as an irritant (prior to
+;; version 0.11 a &serious exception was raised).  EINTR is handled
+;; internally and is not an error.
 ;;
 ;; This procedure is first available in version 0.8 of this library.
 (define (c-write fd bv begin count)
