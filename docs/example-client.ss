@@ -86,7 +86,7 @@
        (newline))
      (event-loop-block! #f)
      ;; we must call clear-input-port before applying close-port
-     (clear-input-port)
+     (clear-input-port sockport)
      (close-port sockport))))
 
 (event-loop-block! #t)
