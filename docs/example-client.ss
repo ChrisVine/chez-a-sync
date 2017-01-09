@@ -57,7 +57,7 @@
 
 (define (await-send-get-request await resume host path sockport)
   (await-put-string! await resume sockport
-		     (string-append "GET " path " HTTP/1.1\nHost: "host"\n\n")))
+		     (string-append "GET " path " HTTP/1.1\nHost: " host "\nConnection: close\n\n")))
 
 (define (make-sockport codec socket)
   (let ([sockport (open-fd-input/output-port socket
