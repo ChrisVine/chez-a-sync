@@ -807,7 +807,7 @@
 (let ()
   (define val 0)
   (a-sync (lambda (await resume)
-	    (await-sleep! await resume main-loop 100)
+	    (await-sleep! await resume 100)
 	    (test-result 1 val)
 	    (print-result)))
   (set! val 1)

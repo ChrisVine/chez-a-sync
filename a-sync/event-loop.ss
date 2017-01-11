@@ -1445,7 +1445,7 @@
 (define await-sleep!
   (case-lambda
     [(await resume msecs)
-     (await-timeout! await resume #f msecs)]
+     (await-sleep! await resume #f msecs)]
     [(await resume loop msecs)
      (timeout-post! msecs
 		    (lambda ()
