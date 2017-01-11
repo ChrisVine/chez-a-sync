@@ -24,6 +24,7 @@ Library files
 * coroutines::     (a-sync coroutines) library file - provides coroutines for await semantics on asynchronous events
 * event loop::     (a-sync event-loop) library file - provides an event loop for asynchronous events
 * compose::        (a-sync compose) library file - provides the compose-a-sync macro interface for the a-sync coroutine
+* meeting::        (a-sync meeting) library file - provides for synchronization between two a-sync or compose-a-sync blocks 
 * try::            (a-sync try) library file - provides the try macro interface for dealing with exceptions
 @end menu
 
@@ -31,6 +32,7 @@ Library files
 @include coroutines.texi
 @include event-loop.texi
 @include compose.texi
+@include meeting.texi
 @include try.texi
 
 @bye

@@ -1,4 +1,4 @@
-@node try,,compose,Top
+@node try,,meeting,Top
 
 This (a-sync try) library file provides a 'try' macro for dealing with
 exceptions.

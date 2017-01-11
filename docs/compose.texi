@@ -1,4 +1,4 @@
-@node compose,try,event loop,Top
+@node compose,meeting,event loop,Top
 
 This (a-sync compose) library file provides a compose-a-sync macro
 interface for the a-sync procedure provided by the

@@ -21,6 +21,7 @@ Library files
 * coroutines::     (a-sync coroutines) library file - provides coroutines for await semantics on asynchronous events
 * event loop::     (a-sync event-loop) library file - provides an event loop for asynchronous events
 * compose::        (a-sync compose) library file - provides the compose-a-sync macro interface for the a-sync coroutine
+* meeting::        (a-sync meeting) library file - provides for synchronization between two a-sync or compose-a-sync blocks
 * try::            (a-sync try) library file - provides the try macro interface for dealing with exceptions
 
 
@@ -71,25 +72,23 @@ timeout expires):
        (event-loop-run! loop)
        (display ret)(newline))
 
-   Apart from joining on event-loop-run!, there is no built in
-abstraction for two "pseudo-threads" (that is two 'a-sync' or
-'compose-a-sync' blocks) running on the same event loop to
-intercommunicate.  This can be done using shared data (helped by the
-fact that all the mutation would be carried out in the same native OS
-thread, the event-loop thread), but at present it is messy.  Instead of
-starting two intercommunicating "pseudo-threads", the preferred method
-of achieving a similar result is to use generators (see the
+   Two "pseudo-threads" (that is two 'a-sync' or 'compose-a-sync'
+blocks) running on the same event loop can intercommunicate by holding
+meetings to exchange a datum (see *note (a-sync meeting): meeting.).  A
+similar result can also be achieved using generators (see the
 await-generator!  procedure in the *note (a-sync event-loop): event
-loop. library file).  However, one interesting feature of these
-"pseudo-threads" is that where one 'a-sync' or 'compose-a-sync' block is
-waiting on a read or write watch (including in the await-get*,
-await-put*, await-connect!  or await-accept!  procedures), another
-a-sync block running on the same event loop can cause execution of the
-waiting block to come to an end by removing the watch using
-event-loop-remove-read-watch!  or event-loop-remove-write-watch!, as the
-case may be (and another native OS thread can do this by posting an
-event to the event loop which does the same).  An example is in the
-example-server.scm file in the docs directory.
+loop. library file).
+
+   One interesting feature of these "pseudo-threads" is that where one
+'a-sync' or 'compose-a-sync' block is waiting on a read or write watch
+(including in the await-get*, await-put*, await-connect!  or
+await-accept!  procedures), another a-sync block running on the same
+event loop can cause execution of the waiting block to come to an end by
+removing the watch using event-loop-remove-read-watch!  or
+event-loop-remove-write-watch!, as the case may be (and another native
+OS thread can do this by posting an event to the event loop which does
+the same).  An example is in the example-server.ss file in the docs
+directory.
 
    Apart from these "pseudo-threads", true parallelism is possible using
 native OS threads, with the await-task-in-thread!,
@@ -2057,7 +2056,7 @@ use are in the example-client.ss and example-server.ss files in the docs
 directory.
 
 
-File: chez-a-sync.info,  Node: compose,  Next: try,  Prev: event loop,  Up: Top
+File: chez-a-sync.info,  Node: compose,  Next: meeting,  Prev: event loop,  Up: Top
 
 This (a-sync compose) library file provides a compose-a-sync macro
 interface for the a-sync procedure provided by the *note (a-sync
@@ -2166,7 +2165,194 @@ coroutines): coroutines. library file.
           (var ((no-await (+ a b))))
 
 
-File: chez-a-sync.info,  Node: try,  Prev: compose,  Up: Top
+File: chez-a-sync.info,  Node: meeting,  Next: try,  Prev: compose,  Up: Top
+
+As explained in the *note general overview: overview, each 'a-sync'
+block (see *note (a-sync coroutines): coroutines.) or 'compose-a-sync'
+block (see *note (a-sync compose): compose.) is a separate unit of
+computation which appears within itself to proceed sequentially but
+which also appears to execute concurrently with other 'a-sync' or
+'compose-a-sync' blocks running on the same event loop.  Each 'a-sync'
+or 'compose-a-sync' block is therefore in some sense analogous to a
+thread of execution.
+
+   This (a-sync meeting) library file provides a 'meeting' type which
+can be used to synchronize between such "pseudo-threads" (that is,
+between a-sync or compose-a-sync blocks).  A 'meeting' object is, in
+terms of communicating sequential processes, an unbuffered (synchronous)
+channel.  Unbuffered channels in the CSP style are a natural fit for use
+with coroutines running on a single native thread (but not necessarily
+for native threads running in parallel unless combined with work
+stealing).  They are therefore a natural fit for synchronizing the
+"pseudo-threads" provided by this library.
+
+   Some of the things that can be done by using meetings can also be
+done using await-generator!.  Note also that any one meeting object is
+strictly for use by two "pseudo-threads" which are both running on the
+same event loop, and so 'ipso facto' running in the same native OS
+thread.  To have other native OS threads communicate with an event-loop,
+use await-task-in-thread!, await-task-in-event-loop!,
+await-generator-in-thread!  or await-generator-in-event-loop!  (see
+*note (a-sync event-loop): event loop.).  Having said that, some things,
+such as having one "pseudo-thread" join on another "pseudo-thread", are
+more easily done with meeting objects.
+
+   A "pseudo-thread" enters a meeting by applying meeting-receive (where
+it is to receive a datum at the meeting) or meeting-send (where it is to
+provide the datum) to the meeting object.  Once a "pseudo-thread" enters
+a meeting it cannot leave until its co-operating pair also enters the
+meeting so the datum exchange can take place, or until the meeting-close
+procedure is applied.  Once a datum exchange has taken place, the
+meeting object can be reused for making another exchange (provided the
+meeting object has not been closed).
+
+   Synchronization occurs at the moment that the exchange of the datum
+takes place.  Once one of the "pseudo-threads" leaves the meeting upon
+meeting-receive or meeting-send (or both) returning, all subsequent
+events are unsynchronized until another datum exchange is arranged.
+This means that where "pseudo-threads" share access to other objects,
+one "pseudo-thread" is guaranteed to see a value of the shared object
+which is not earlier than the value it held at the moment of datum
+exchange, but it may or may not see a later value.
+
+   Here is an example of the use of a meeting object:
+
+     (set-default-event-loop!) ;; if none has yet been set
+     (define m1 (make-meeting))
+
+     (a-sync (lambda (await resume)
+     	  (let loop ([datum (meeting-receive await resume m1)])
+     	    (when (not (eq? datum 'stop-iteration))
+     	      (display datum)
+     	      (newline)
+     	      (loop (meeting-receive await resume m1))))))
+
+     (a-sync (lambda (await resume)
+     	  (let loop ([count 0])
+     	    (if (< count 4)
+     		(begin
+     		  (meeting-send await resume m1 count)
+     		  (loop (+ count 1)))
+     		(meeting-close m1)))))
+     (event-loop-run!)
+
+   The (a-sync meeting) library file provides the following procedures:
+
+ -- Scheme Procedure: make-meeting [loop]
+     This procedure makes and returns a meeting object.  Meetings are
+     objects on which two a-sync or compose-a-sync blocks running on the
+     same event loop can synchronize by one passing a datum to the
+     other.  The 'loop' argument specifies the event loop (as
+     constructed by make-event-loop in the (a-sync event-loop module))
+     with respect to which the meeting will be held: it is an error if
+     the meeting-send or meeting-receive procedures are passed a
+     different event loop as an argument.  The 'loop' argument is
+     optional - if none is passed, or #f is passed, then the default
+     event loop will be chosen.
+
+     Strictly speaking this procedure can be called in any native OS
+     thread, but since it carries out no synchronization of native
+     threads the user would have to provide her own synchronization if
+     called in other than the thread of the event loop with respect to
+     which the meeting will be held; so it is best if this procedure is
+     called in the thread of that event loop.
+
+     This procedure is first available in version 0.13 of this library.
+
+ -- Scheme Procedure: meeting? obj
+     This procedure indicates whether 'obj' is a meeting object
+     constructed by make-meeting.
+
+     This procedure is first available in version 0.13 of this library.
+
+ -- Scheme Procedure: meeting-close meeting
+     This closes a meeting object.  It's purpose is to wake up any
+     "pseudo-thread" (that is, any a-sync or compose-a-sync block)
+     waiting in meeting-send or meeting-receive by causing either
+     procedure to return with a 'stop-iteration value.
+
+     Where that is not necessary (say, the receiver already knows how
+     many items are to be sent), then this procedure does not need to be
+     applied.  It is not needed in order to release resources.
+
+     This procedure is first available in version 0.13 of this library.
+
+ -- Scheme Procedure: meeting-send await resume [loop] meeting datum
+     This sends a datum to a receiver which is running on the same event
+     loop as the sender, via the meeting object 'meeting'.  If no
+     receiver is waiting for the datum, this procedure waits until a
+     receiver calls meeting-receive to request the datum.  If a receiver
+     is already waiting, this procedure passes on the datum and returns
+     immediately.
+
+     The 'loop' argument is optional.  If not supplied, or #f is passed,
+     this procedure will use the default event loop.  It is an error if
+     this procedure is given a different event loop than the one which
+     was passed to make-meeting on constructing the 'meeting' object.
+
+     This procedure is intended to be called within a waitable procedure
+     invoked by a-sync (which supplies the 'await' and 'resume'
+     arguments).
+
+     It is an error for a sender to invoke this procedure when another
+     a-sync or compose-a-sync block running on the event loop concerned
+     is already waiting to send on the same 'meeting' object.  Any one
+     meeting is intended to be held between a co-operating pair of
+     blocks, not more.  However, once a datum exchange has taken place,
+     the meeting object can be reused for making another exchange
+     (provided the meeting object has not been closed).
+
+     This procedure must be called in the native OS thread in which the
+     event loop concerned runs.  To have other native OS threads
+     communicate with an event-loop, use await-task-in-thread!,
+     await-task-in-event-loop!, await-generator-in-thread!  or
+     await-generator-in-event-loop!.
+
+     This procedure always returns #f unless meeting-close has been
+     applied to the meeting object, in which case 'stop-iteration is
+     returned.
+
+     This procedure is first available in version 0.13 of this library.
+
+ -- Scheme Procedure: meeting-receive await resume [loop] meeting
+     This receives a datum from a sender running on the same event loop
+     as the receiver, via the meeting object 'meeting'.  If no sender is
+     waiting to pass the datum, this procedure waits until a sender
+     calls meeting-send to provide the datum.  If a sender is already
+     waiting, this procedure returns immediately with the datum
+     supplied.
+
+     The 'loop' argument is optional.  If not supplied, or #f is passed,
+     this procedure will use the default event loop.  It is an error if
+     this procedure is given a different event loop than the one which
+     was passed to make-meeting on constructing the 'meeting' object.
+
+     This procedure is intended to be called within a waitable procedure
+     invoked by a-sync (which supplies the 'await' and 'resume'
+     arguments).
+
+     It is an error for a receiver to invoke this procedure when another
+     a-sync or compose-a-sync block running on the event loop concerned
+     is already waiting to receive from the same 'meeting' object.  Any
+     one meeting is intended to be held between a co-operating pair of
+     blocks, not more.  However, once a datum exchange has taken place,
+     the meeting object can be reused for making another exchange
+     (provided the meeting object has not been closed).
+
+     This procedure must be called in the native OS thread in which the
+     event loop concerned runs.  To have other native OS threads
+     communicate with an event-loop, use await-task-in-thread!,
+     await-task-in-event-loop!, await-generator-in-thread!  or
+     await-generator-in-event-loop!.
+
+     This procedure always returns the datum value supplied by
+     meeting-send unless meeting-close has been applied to the meeting
+     object, in which case 'stop-iteration is returned.
+
+     This procedure is first available in version 0.13 of this library.
+
+
+File: chez-a-sync.info,  Node: try,  Prev: meeting,  Up: Top
 
 This (a-sync try) library file provides a 'try' macro for dealing with
 exceptions.
@@ -2236,10 +2422,11 @@ exceptions.
 
 Tag Table:
 Node: Top83
-Node: overview1010
-Node: coroutines4593
-Node: event loop22968
-Node: compose108511
-Node: try114241
+Node: overview1134
+Node: coroutines4455
+Node: event loop22830
+Node: compose108373
+Node: meeting114107
+Node: try123483
 
 End Tag Table

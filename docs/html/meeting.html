@@ -1,0 +1,255 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<!-- Created by GNU Texinfo 6.3, http://www.gnu.org/software/texinfo/ -->
+<head>
+<title>chez-a-sync: meeting</title>
+
+<meta name="description" content="chez-a-sync: meeting">
+<meta name="keywords" content="chez-a-sync: meeting">
+<meta name="resource-type" content="document">
+<meta name="distribution" content="global">
+<meta name="Generator" content="makeinfo">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<link href="index.html#Top" rel="start" title="Top">
+<link href="index.html#Top" rel="up" title="Top">
+<link href="try.html#try" rel="next" title="try">
+<link href="compose.html#compose" rel="prev" title="compose">
+<style type="text/css">
+<!--
+a.summary-letter {text-decoration: none}
+blockquote.indentedblock {margin-right: 0em}
+blockquote.smallindentedblock {margin-right: 0em; font-size: smaller}
+blockquote.smallquotation {font-size: smaller}
+div.display {margin-left: 3.2em}
+div.example {margin-left: 3.2em}
+div.lisp {margin-left: 3.2em}
+div.smalldisplay {margin-left: 3.2em}
+div.smallexample {margin-left: 3.2em}
+div.smalllisp {margin-left: 3.2em}
+kbd {font-style: oblique}
+pre.display {font-family: inherit}
+pre.format {font-family: inherit}
+pre.menu-comment {font-family: serif}
+pre.menu-preformatted {font-family: serif}
+pre.smalldisplay {font-family: inherit; font-size: smaller}
+pre.smallexample {font-size: smaller}
+pre.smallformat {font-family: inherit; font-size: smaller}
+pre.smalllisp {font-size: smaller}
+span.nolinebreak {white-space: nowrap}
+span.roman {font-family: initial; font-weight: normal}
+span.sansserif {font-family: sans-serif; font-weight: normal}
+ul.no-bullet {list-style: none}
+-->
+</style>
+
+
+</head>
+
+<body lang="en">
+<a name="meeting"></a>
+<div class="header">
+<p>
+Next: <a href="try.html#try" accesskey="n" rel="next">try</a>, Previous: <a href="compose.html#compose" accesskey="p" rel="prev">compose</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>
+</div>
+<hr>
+<h4 class="node-heading">meeting</h4>
+
+<p>As explained in the <a href="overview.html#overview">general overview</a>, each &rsquo;a-sync&rsquo;
+block (see <a href="coroutines.html#coroutines">(a-sync coroutines)</a>) or &rsquo;compose-a-sync&rsquo;
+block (see <a href="compose.html#compose">(a-sync compose)</a>) is a separate unit of
+computation which appears within itself to proceed sequentially but
+which also appears to execute concurrently with other &rsquo;a-sync&rsquo; or
+&rsquo;compose-a-sync&rsquo; blocks running on the same event loop.  Each &rsquo;a-sync&rsquo;
+or &rsquo;compose-a-sync&rsquo; block is therefore in some sense analogous to a
+thread of execution.
+</p>
+<p>This (a-sync meeting) library file provides a &rsquo;meeting&rsquo; type which can
+be used to synchronize between such &quot;pseudo-threads&quot; (that is, between
+a-sync or compose-a-sync blocks).  A &rsquo;meeting&rsquo; object is, in terms of
+communicating sequential processes, an unbuffered (synchronous)
+channel.  Unbuffered channels in the CSP style are a natural fit for
+use with coroutines running on a single native thread (but not
+necessarily for native threads running in parallel unless combined
+with work stealing).  They are therefore a natural fit for
+synchronizing the &quot;pseudo-threads&quot; provided by this library.
+</p>
+<p>Some of the things that can be done by using meetings can also be done
+using await-generator!.  Note also that any one meeting object is
+strictly for use by two &quot;pseudo-threads&quot; which are both running on the
+same event loop, and so &rsquo;ipso facto&rsquo; running in the same native OS
+thread.  To have other native OS threads communicate with an
+event-loop, use await-task-in-thread!, await-task-in-event-loop!,
+await-generator-in-thread! or await-generator-in-event-loop! (see
+<a href="event-loop.html#event-loop">(a-sync event-loop)</a>).  Having said that, some
+things, such as having one &quot;pseudo-thread&quot; join on another
+&quot;pseudo-thread&quot;, are more easily done with meeting objects.
+</p>
+<p>A &quot;pseudo-thread&quot; enters a meeting by applying meeting-receive (where
+it is to receive a datum at the meeting) or meeting-send (where it is
+to provide the datum) to the meeting object.  Once a &quot;pseudo-thread&quot;
+enters a meeting it cannot leave until its co-operating pair also
+enters the meeting so the datum exchange can take place, or until the
+meeting-close procedure is applied.  Once a datum exchange has taken
+place, the meeting object can be reused for making another exchange
+(provided the meeting object has not been closed).
+</p>
+<p>Synchronization occurs at the moment that the exchange of the datum
+takes place.  Once one of the &quot;pseudo-threads&quot; leaves the meeting upon
+meeting-receive or meeting-send (or both) returning, all subsequent
+events are unsynchronized until another datum exchange is arranged.
+This means that where &quot;pseudo-threads&quot; share access to other objects,
+one &quot;pseudo-thread&quot; is guaranteed to see a value of the shared object
+which is not earlier than the value it held at the moment of datum
+exchange, but it may or may not see a later value.
+</p>
+<p>Here is an example of the use of a meeting object:
+</p>
+<div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(define m1 (make-meeting))
+
+(a-sync (lambda (await resume)
+	  (let loop ([datum (meeting-receive await resume m1)])
+	    (when (not (eq? datum 'stop-iteration))
+	      (display datum)
+	      (newline)
+	      (loop (meeting-receive await resume m1))))))
+
+(a-sync (lambda (await resume)
+	  (let loop ([count 0])
+	    (if (&lt; count 4)
+		(begin
+		  (meeting-send await resume m1 count)
+		  (loop (+ count 1)))
+		(meeting-close m1)))))
+(event-loop-run!)
+</pre></div>
+
+<p>The (a-sync meeting) library file provides the following procedures:
+</p>
+<dl>
+<dt><a name="index-make_002dmeeting"></a>Scheme Procedure: <strong>make-meeting</strong> <em>[loop]</em></dt>
+<dd><p>This procedure makes and returns a meeting object.  Meetings are
+objects on which two a-sync or compose-a-sync blocks running on the
+same event loop can synchronize by one passing a datum to the other.
+The &rsquo;loop&rsquo; argument specifies the event loop (as constructed by
+make-event-loop in the (a-sync event-loop module)) with respect to
+which the meeting will be held: it is an error if the meeting-send or
+meeting-receive procedures are passed a different event loop as an
+argument.  The &rsquo;loop&rsquo; argument is optional - if none is passed, or #f
+is passed, then the default event loop will be chosen.
+</p>
+<p>Strictly speaking this procedure can be called in any native OS
+thread, but since it carries out no synchronization of native threads
+the user would have to provide her own synchronization if called in
+other than the thread of the event loop with respect to which the
+meeting will be held; so it is best if this procedure is called in the
+thread of that event loop.
+</p>
+<p>This procedure is first available in version 0.13 of this library.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-meeting_003f"></a>Scheme Procedure: <strong>meeting?</strong> <em>obj</em></dt>
+<dd><p>This procedure indicates whether &rsquo;obj&rsquo; is a meeting object constructed
+by make-meeting.
+</p>
+<p>This procedure is first available in version 0.13 of this library.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-meeting_002dclose"></a>Scheme Procedure: <strong>meeting-close</strong> <em>meeting</em></dt>
+<dd><p>This closes a meeting object.  It&rsquo;s purpose is to wake up any
+&quot;pseudo-thread&quot; (that is, any a-sync or compose-a-sync block) waiting
+in meeting-send or meeting-receive by causing either procedure to
+return with a &rsquo;stop-iteration value.
+</p>
+<p>Where that is not necessary (say, the receiver already knows how many
+items are to be sent), then this procedure does not need to be
+applied.  It is not needed in order to release resources.
+</p>
+<p>This procedure is first available in version 0.13 of this library.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-meeting_002dsend"></a>Scheme Procedure: <strong>meeting-send</strong> <em>await resume [loop] meeting datum</em></dt>
+<dd><p>This sends a datum to a receiver which is running on the same event
+loop as the sender, via the meeting object &rsquo;meeting&rsquo;.  If no receiver
+is waiting for the datum, this procedure waits until a receiver calls
+meeting-receive to request the datum.  If a receiver is already
+waiting, this procedure passes on the datum and returns immediately.
+</p>
+<p>The &rsquo;loop&rsquo; argument is optional.  If not supplied, or #f is passed,
+this procedure will use the default event loop.  It is an error if
+this procedure is given a different event loop than the one which was
+passed to make-meeting on constructing the &rsquo;meeting&rsquo; object.
+</p>
+<p>This procedure is intended to be called within a waitable procedure
+invoked by a-sync (which supplies the &rsquo;await&rsquo; and &rsquo;resume&rsquo; arguments).
+</p>
+<p>It is an error for a sender to invoke this procedure when another
+a-sync or compose-a-sync block running on the event loop concerned is
+already waiting to send on the same &rsquo;meeting&rsquo; object.  Any one meeting
+is intended to be held between a co-operating pair of blocks, not
+more.  However, once a datum exchange has taken place, the meeting
+object can be reused for making another exchange (provided the meeting
+object has not been closed).
+</p>
+<p>This procedure must be called in the native OS thread in which the
+event loop concerned runs.  To have other native OS threads
+communicate with an event-loop, use await-task-in-thread!,
+await-task-in-event-loop!, await-generator-in-thread! or
+await-generator-in-event-loop!.
+</p>
+<p>This procedure always returns #f unless meeting-close has been applied
+to the meeting object, in which case &rsquo;stop-iteration is returned.
+</p>
+<p>This procedure is first available in version 0.13 of this library.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-meeting_002dreceive"></a>Scheme Procedure: <strong>meeting-receive</strong> <em>await resume [loop] meeting</em></dt>
+<dd><p>This receives a datum from a sender running on the same event loop as
+the receiver, via the meeting object &rsquo;meeting&rsquo;.  If no sender is
+waiting to pass the datum, this procedure waits until a sender calls
+meeting-send to provide the datum.  If a sender is already waiting,
+this procedure returns immediately with the datum supplied.
+</p>
+<p>The &rsquo;loop&rsquo; argument is optional.  If not supplied, or #f is passed,
+this procedure will use the default event loop.  It is an error if
+this procedure is given a different event loop than the one which was
+passed to make-meeting on constructing the &rsquo;meeting&rsquo; object.
+</p>
+<p>This procedure is intended to be called within a waitable procedure
+invoked by a-sync (which supplies the &rsquo;await&rsquo; and &rsquo;resume&rsquo; arguments).
+</p>
+<p>It is an error for a receiver to invoke this procedure when another
+a-sync or compose-a-sync block running on the event loop concerned is
+already waiting to receive from the same &rsquo;meeting&rsquo; object.  Any one
+meeting is intended to be held between a co-operating pair of blocks,
+not more.  However, once a datum exchange has taken place, the meeting
+object can be reused for making another exchange (provided the meeting
+object has not been closed).
+</p>
+<p>This procedure must be called in the native OS thread in which the
+event loop concerned runs.  To have other native OS threads
+communicate with an event-loop, use await-task-in-thread!,
+await-task-in-event-loop!, await-generator-in-thread! or
+await-generator-in-event-loop!.
+</p>
+<p>This procedure always returns the datum value supplied by meeting-send
+unless meeting-close has been applied to the meeting object, in which
+case &rsquo;stop-iteration is returned.
+</p>
+<p>This procedure is first available in version 0.13 of this library.
+</p></dd></dl>
+<hr>
+<div class="header">
+<p>
+Next: <a href="try.html#try" accesskey="n" rel="next">try</a>, Previous: <a href="compose.html#compose" accesskey="p" rel="prev">compose</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>
+</div>
+
+
+
+</body>
+</html>

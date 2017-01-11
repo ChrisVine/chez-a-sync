@@ -3,6 +3,6 @@
 SUBDIRS = helper
 
 chezschemedir = $(datadir)/chez-a-sync/a-sync
-chezscheme_DATA = compose.ss coroutines.ss event-loop.ss try.ss
+chezscheme_DATA = compose.ss coroutines.ss event-loop.ss meeting.ss try.ss
 
-EXTRA_DIST = compose.ss coroutines.ss event-loop.ss try.ss
+EXTRA_DIST = compose.ss coroutines.ss event-loop.ss meeting.ss try.ss
