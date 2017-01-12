@@ -103,6 +103,12 @@ other than the datum exchanged and they might be mutated, one
 objects which is not earlier than the value they held at the moment of
 datum exchange, but it may or may not see a later value.
 </p>
+<p>Having synchronization is quite nice, but nonetheless &rsquo;meeting&rsquo;
+objects are at present quite limited.  It would be nice to enable a
+&quot;pseudo-thread&quot; to wait simultaneously on more than one meeting.
+Whether and how best to implement this is a matter for further
+consideration.
+</p>
 <p>Here is an example of the use of a meeting object:
 </p>
 <div class="example">
