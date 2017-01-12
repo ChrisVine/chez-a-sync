@@ -74,6 +74,10 @@
 ;; by compose-a-sync, the no-await macro can be used to generate a
 ;; 'compose-a-sync'-capable procedure for it (see below).
 ;;
+;; The meeting-send and meeting-receive procedures in the (a-sync
+;; meeting) library file also meet the 'compose-a-sync'-capable
+;; requirements
+;;
 ;; Each binding is initialized as if sequentially (although it is done
 ;; asynchronously on the relevant event loop).  An initialization does
 ;; not begin until an earlier one has completed.  In addition, each

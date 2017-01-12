@@ -75,6 +75,20 @@ to it.  The compose-a-sync macro will do it for you.
 (event-loop-run!)
 @end example
 
+The meeting-send and meeting-receive procedures in the (a-sync
+meeting) library file also meet the 'compose-a-sync'-capable
+requirements.  Here is an example using them:
+
+@example
+(set-default-event-loop!) ;; if none has yet been set
+(define m1 (make-meeting))
+(compose-a-sync ((datum (meeting-receive m1)))
+		((no-await (display datum)(newline))))
+(compose-a-sync ()
+		(meeting-send m1 100))
+(event-loop-run!)
+@end example
+
 Each block of code within a compose-a-sync block will run
 independently of (and concurrently with) code in other compose-a-sync
 blocks.  Asynchronous operations are only serialized within any one

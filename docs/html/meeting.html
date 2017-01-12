@@ -97,10 +97,11 @@ place, the meeting object can be reused for making another exchange
 takes place.  Once one of the &quot;pseudo-threads&quot; leaves the meeting upon
 meeting-receive or meeting-send (or both) returning, all subsequent
 events are unsynchronized until another datum exchange is arranged.
-This means that where &quot;pseudo-threads&quot; share access to other objects,
-one &quot;pseudo-thread&quot; is guaranteed to see a value of the shared object
-which is not earlier than the value it held at the moment of datum
-exchange, but it may or may not see a later value.
+This means that where two &quot;pseudo-threads&quot; share access to objects
+other than the datum exchanged and they might be mutated, one
+&quot;pseudo-thread&quot; is guaranteed to see a value of the unexchanged shared
+objects which is not earlier than the value they held at the moment of
+datum exchange, but it may or may not see a later value.
 </p>
 <p>Here is an example of the use of a meeting object:
 </p>

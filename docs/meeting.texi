@@ -43,10 +43,11 @@ Synchronization occurs at the moment that the exchange of the datum
 takes place.  Once one of the "pseudo-threads" leaves the meeting upon
 meeting-receive or meeting-send (or both) returning, all subsequent
 events are unsynchronized until another datum exchange is arranged.
-This means that where "pseudo-threads" share access to other objects,
-one "pseudo-thread" is guaranteed to see a value of the shared object
-which is not earlier than the value it held at the moment of datum
-exchange, but it may or may not see a later value.
+This means that where two "pseudo-threads" share access to objects
+other than the datum exchanged and they might be mutated, one
+"pseudo-thread" is guaranteed to see a value of the unexchanged shared
+objects which is not earlier than the value they held at the moment of
+datum exchange, but it may or may not see a later value.
 
 Here is an example of the use of a meeting object:
 
