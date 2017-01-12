@@ -2243,10 +2243,10 @@ exchange, but it may or may not see a later value.
      objects on which two a-sync or compose-a-sync blocks running on the
      same event loop can synchronize by one passing a datum to the
      other.  The 'loop' argument specifies the event loop (as
-     constructed by make-event-loop in the (a-sync event-loop module))
-     with respect to which the meeting will be held: it is an error if
-     the meeting-send or meeting-receive procedures are passed a
-     different event loop as an argument.  The 'loop' argument is
+     constructed by make-event-loop in the (a-sync event-loop) library
+     file) with respect to which the meeting will be held: it is an
+     error if the meeting-send or meeting-receive procedures are passed
+     a different event loop as an argument.  The 'loop' argument is
      optional - if none is passed, or #f is passed, then the default
      event loop will be chosen.
 
@@ -2427,6 +2427,6 @@ Node: coroutines4455
 Node: event loop22830
 Node: compose108373
 Node: meeting114107
-Node: try123483
+Node: try123489
 
 End Tag Table

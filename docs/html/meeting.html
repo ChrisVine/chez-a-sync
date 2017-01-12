@@ -133,9 +133,9 @@ exchange, but it may or may not see a later value.
 objects on which two a-sync or compose-a-sync blocks running on the
 same event loop can synchronize by one passing a datum to the other.
 The &rsquo;loop&rsquo; argument specifies the event loop (as constructed by
-make-event-loop in the (a-sync event-loop module)) with respect to
-which the meeting will be held: it is an error if the meeting-send or
-meeting-receive procedures are passed a different event loop as an
+make-event-loop in the (a-sync event-loop) library file) with respect
+to which the meeting will be held: it is an error if the meeting-send
+or meeting-receive procedures are passed a different event loop as an
 argument.  The &rsquo;loop&rsquo; argument is optional - if none is passed, or #f
 is passed, then the default event loop will be chosen.
 </p>
