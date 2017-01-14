@@ -75,6 +75,9 @@ worker threads to post an event to an event loop, say with the result
 of a computation, so that the event callback will execute in the event
 loop thread.
 </p>
+<p><a href="meeting.html#meeting">(a-sync meeting)</a> provides synchronization facilities
+for event loops provided under this library file.
+</p>
 <p>The file watches provided by this library file uses chez scheme&rsquo;s FFI
 to call a wrapper for the poll() system call.  This has the
 consequence that in linux poll() applied to sockets can give rise to

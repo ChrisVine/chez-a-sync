@@ -19,6 +19,7 @@
    make-meeting
    meeting?
    meeting-close
+   meeting-ready?
    meeting-send
    meeting-receive)
   (import
@@ -75,6 +76,17 @@
     (when res (event-post! (lambda () (res 'stop-iteration))
 			   (loop-get m)))
     (status-set! m 'closed)))
+
+;; This indicates whether applying message-send or message-receive (as
+;; the case may be) to the meeting object 'm' will return immediately:
+;; in other words, it will return #t if another a-sync or
+;; compose-a-sync block is already waiting on the object or the
+;; meeting object has been closed.
+;;
+;; This procedure is first available in version 0.13 of this library.
+(define (meeting-ready? m)
+  (or (not (not (resume-get m)))
+      (eq? (status-get m) 'closed)))
 
 ;; This sends a datum to a receiver which is running on the same event
 ;; loop as the sender, via the meeting object 'm'.  If no receiver is

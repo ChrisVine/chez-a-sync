@@ -502,6 +502,9 @@ worker threads to post an event to an event loop, say with the result of
 a computation, so that the event callback will execute in the event loop
 thread.
 
+   *note (a-sync meeting): meeting. provides synchronization facilities
+for event loops provided under this library file.
+
    The file watches provided by this library file uses chez scheme's FFI
 to call a wrapper for the poll() system call.  This has the consequence
 that in linux poll() applied to sockets can give rise to spurious
@@ -2228,11 +2231,11 @@ is guaranteed to see a value of the unexchanged shared objects which is
 not earlier than the value they held at the moment of datum exchange,
 but it may or may not see a later value.
 
-   Having synchronization is quite nice, but nonetheless 'meeting'
-objects are at present quite limited.  It would be nice to enable a
-"pseudo-thread" to wait simultaneously on more than one meeting.
-Whether and how best to implement this is a matter for further
-consideration.
+   Having synchronization is nice, but the functionality of 'meeting'
+objects can be extended further.  It may be useful to enable a
+"pseudo-thread" to wait contemporaneously on a number of meeting objects
+for the first one which happens to become available.  Whether and how
+best to implement this is a matter for further consideration.
 
    Here is an example of the use of a meeting object:
 
@@ -2293,6 +2296,15 @@ consideration.
      Where that is not necessary (say, the receiver already knows how
      many items are to be sent), then this procedure does not need to be
      applied.  It is not needed in order to release resources.
+
+     This procedure is first available in version 0.13 of this library.
+
+ -- Scheme Procedure: meeting-ready? meeting
+     This indicates whether applying message-send or message-receive (as
+     the case may be) to the meeting object 'meeting' will return
+     immediately: in other words, it will return #t if another a-sync or
+     compose-a-sync block is already waiting on the object or the
+     meeting object has been closed.
 
      This procedure is first available in version 0.13 of this library.
 
@@ -2444,8 +2456,8 @@ Node: Top83
 Node: overview1134
 Node: coroutines4455
 Node: event loop22830
-Node: compose108373
-Node: meeting114595
-Node: try124326
+Node: compose108496
+Node: meeting114718
+Node: try124943
 
 End Tag Table

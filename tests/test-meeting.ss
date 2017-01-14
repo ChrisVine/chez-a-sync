@@ -28,7 +28,7 @@
        (format #t "~a: Test ~a OK\n" "test-meeting.ss" count)
        (set! count (1+ count))))))
 
-;; Test 1: start sending before receiving
+;; Test 1: start receiving before sending
 
 (define main-loop (make-event-loop))
 
@@ -54,7 +54,7 @@
   (assert (equal? res '(3 2 1 0)))
   (print-result))
 
-;; Test 2: start receiving before sending
+;; Test 2: start sending before receiving
 
 (let ()
   (define m1 (make-meeting main-loop))
@@ -82,7 +82,7 @@
 
 (set-default-event-loop! main-loop)
 
-;; Test 3: start sending before receiving
+;; Test 3: start receiving before sending
 
 (let ()
   (define m1 (make-meeting))
@@ -106,7 +106,7 @@
   (assert (equal? res '(3 2 1 0)))
   (print-result))
 
-;; Test 4: start receiving before sending
+;; Test 4: start sending before receiving
 
 (let ()
   (define m1 (make-meeting))
@@ -130,3 +130,18 @@
   (assert (equal? res '(3 2 1 0)))
   (print-result))
 
+;; Test 5: meeting-ready?
+
+(let ()
+  (define m1 (make-meeting))
+
+  (a-sync (lambda (await resume)
+	    (assert (not (meeting-ready? m1)))
+	    (meeting-send await resume m1 0)
+	    (assert (meeting-ready? m1))
+	    (meeting-receive await resume m1)
+	    (assert (not (meeting-ready? m1)))
+	    (meeting-close m1)
+	    (assert (meeting-ready? m1))))
+  (event-loop-run!)
+  (print-result))
