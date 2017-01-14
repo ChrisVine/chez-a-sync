@@ -79,9 +79,9 @@
 
 ;; This indicates whether applying message-send or message-receive (as
 ;; the case may be) to the meeting object 'm' will return immediately:
-;; in other words, it will return #t if another a-sync or
+;; in other words, this procedure will return #t if another a-sync or
 ;; compose-a-sync block is already waiting on the object or the
-;; meeting object has been closed.
+;; meeting object has been closed, otherwise #f.
 ;;
 ;; This procedure is first available in version 0.13 of this library.
 (define (meeting-ready? m)
