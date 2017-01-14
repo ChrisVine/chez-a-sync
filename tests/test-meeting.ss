@@ -137,11 +137,13 @@
 
   (a-sync (lambda (await resume)
 	    (assert (not (meeting-ready? m1)))
-	    (meeting-send await resume m1 0)
+	    (meeting-send await resume m1 0)))
+
+  (a-sync (lambda (await resume)
 	    (assert (meeting-ready? m1))
 	    (meeting-receive await resume m1)
 	    (assert (not (meeting-ready? m1)))
 	    (meeting-close m1)
-	    (assert (meeting-ready? m1))))
-  (event-loop-run!)
-  (print-result))
+	    (assert (meeting-ready? m1))
+	    (print-result)))
+  (event-loop-run!))
