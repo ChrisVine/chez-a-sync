@@ -21,10 +21,10 @@ synchronizing the "pseudo-threads" provided by this library.
 
 Some of the things that can be done by using meetings can also be done
 using await-generator!.  Note also that any one meeting object is
-strictly for use by two "pseudo-threads" which are both running on the
-same event loop, and so 'ipso facto' running in the same native OS
-thread.  To have other native OS threads communicate with an
-event-loop, use await-task-in-thread!, await-task-in-event-loop!,
+strictly for use by "pseudo-threads" which are running on the same
+event loop, and so 'ipso facto' running in the same native OS thread.
+To have other native OS threads communicate with an event-loop, use
+await-task-in-thread!, await-task-in-event-loop!,
 await-generator-in-thread! or await-generator-in-event-loop! (see
 @ref{event loop,,(a-sync event-loop)}).  Having said that, some
 things, such as having one "pseudo-thread" join on another
@@ -148,13 +148,17 @@ passed to make-meeting on constructing the 'meeting' object.
 This procedure is intended to be called within a waitable procedure
 invoked by a-sync (which supplies the 'await' and 'resume' arguments).
 
-It is an error for a sender to invoke this procedure when another
-a-sync or compose-a-sync block running on the event loop concerned is
-already waiting to send on the same 'meeting' object.  Any one meeting
-is intended to be held between a co-operating pair of blocks, not
-more.  However, once a datum exchange has taken place, the meeting
-object can be reused for making another exchange (provided the meeting
-object has not been closed).
+With version 0.13 of this library, a sender could not invoke this
+procedure when another a-sync or compose-a-sync block running on the
+event loop concerned was already waiting to send on the same 'meeting'
+object.  From version 0.14, multiple senders may wait on a meeting
+object.  The provided datum of each sender will be passed to a
+receiver (as and when a receiver becomes available) in the order in
+which this procedure was invoked.
+
+Once a datum exchange has taken place, the meeting object can be
+reused for making another exchange (provided the meeting object has
+not been closed).
 
 This procedure must be called in the native OS thread in which the
 event loop concerned runs.  To have other native OS threads
@@ -183,13 +187,17 @@ passed to make-meeting on constructing the 'meeting' object.
 This procedure is intended to be called within a waitable procedure
 invoked by a-sync (which supplies the 'await' and 'resume' arguments).
 
-It is an error for a receiver to invoke this procedure when another
-a-sync or compose-a-sync block running on the event loop concerned is
-already waiting to receive from the same 'meeting' object.  Any one
-meeting is intended to be held between a co-operating pair of blocks,
-not more.  However, once a datum exchange has taken place, the meeting
-object can be reused for making another exchange (provided the meeting
-object has not been closed).
+With version 0.13 of this library, a receiver could not invoke this
+procedure when another a-sync or compose-a-sync block running on the
+event loop concerned was already waiting to receive from the same
+'meeting' object.  From version 0.14, multiple receivers may wait on a
+meeting object.  The waiting receivers will be released (as and when a
+sender provides a datum) in the order in which this procedure was
+invoked.
+
+Once a datum exchange has taken place, the meeting object can be
+reused for making another exchange (provided the meeting object has
+not been closed).
 
 This procedure must be called in the native OS thread in which the
 event loop concerned runs.  To have other native OS threads
