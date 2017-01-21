@@ -21,6 +21,11 @@
 
 ;; helpers
 
+(define-syntax test-result
+  (syntax-rules ()
+    [(_ expected res)
+     (assert (eqv? expected res))]))
+
 (define print-result
   ((lambda ()
      (define count 1)
@@ -130,6 +135,8 @@
   (assert (equal? res '(3 2 1 0)))
   (print-result))
 
+;;;;;;;;;;;;;;;;;; additional tests ;;;;;;;;;;;;;;;;;;
+
 ;; Test 5: meeting-ready?
 
 (let ()
@@ -147,3 +154,71 @@
 	    (assert (meeting-ready? m1))
 	    (print-result)))
   (event-loop-run!))
+
+;; Test 6: multiple readers
+
+(let ()
+  (define m1 (make-meeting))
+
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-receive await resume m1) 0)))
+
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-receive await resume m1) 1)))
+
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-receive await resume m1) 2)))
+
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-receive await resume m1) 'stop-iteration)))
+
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-receive await resume m1) 'stop-iteration)))
+
+  (a-sync (lambda (await resume)
+	    (let next ([count 0])
+	      (if (< count 3)
+		  (begin
+		    (meeting-send await resume m1 count)
+		    (next (+ count 1)))
+		  (meeting-close m1)))))
+
+  (a-sync (lambda (await resume)
+  	    (test-result (meeting-receive await resume m1) 'stop-iteration)))
+
+  (event-loop-run!)
+  (print-result))
+
+;; Test 7: multiple senders
+
+(let ()
+  (define m1 (make-meeting))
+
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-send await resume m1 0) #f)))
+
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-send await resume m1 1) #f)))
+
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-send await resume m1 2) #f)))
+
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-send await resume m1 3) 'stop-iteration)))
+
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-send await resume m1 4) 'stop-iteration)))
+
+  (a-sync (lambda (await resume)
+	    (let next ([count 0])
+	      (if (< count 3)
+		  (let ([datum (meeting-receive await resume m1)])
+		    (test-result datum count)
+		    (next (+ count 1)))
+		  (meeting-close m1)))))
+  
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-send await resume m1 5) 'stop-iteration)))
+
+  (event-loop-run!)
+  (print-result))
