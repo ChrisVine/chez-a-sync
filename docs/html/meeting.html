@@ -86,12 +86,12 @@ things, such as having one &quot;pseudo-thread&quot; join on another
 </p>
 <p>A &quot;pseudo-thread&quot; enters a meeting by applying meeting-receive (where
 it is to receive a datum at the meeting) or meeting-send (where it is
-to provide the datum) to the meeting object.  Once a &quot;pseudo-thread&quot;
-enters a meeting it cannot leave until its co-operating pair also
-enters the meeting so the datum exchange can take place, or until the
-meeting-close procedure is applied.  Once a datum exchange has taken
-place, the meeting object can be reused for making another exchange
-(provided the meeting object has not been closed).
+to provide the datum) to a meeting object.  Once a &quot;pseudo-thread&quot;
+enters a meeting it cannot leave until another co-operating
+&quot;pseudo-thread&quot; also enters the meeting so the datum exchange can take
+place, or until the meeting-close procedure is applied.  Once a datum
+exchange has taken place, a meeting object can be reused for making
+another exchange (provided the meeting object has not been closed).
 </p>
 <p>Synchronization occurs at the moment that the exchange of the datum
 takes place.  Once one of the &quot;pseudo-threads&quot; leaves the meeting upon
@@ -102,14 +102,6 @@ other than the datum exchanged and they might be mutated, one
 &quot;pseudo-thread&quot; is guaranteed to see a value of the unexchanged shared
 objects which is not earlier than the value they held at the moment of
 datum exchange, but it may or may not see a later value.
-</p>
-<p>Having synchronization is nice, but the functionality of &rsquo;meeting&rsquo;
-objects can be extended further.  It may be useful to enable a
-&quot;pseudo-thread&quot; to wait contemporaneously on a number of meeting
-objects for the first one which happens to become available.  Whether
-and how best to implement this is a matter for further consideration.
-(At present, the way you have to deal with this is to poll
-&rsquo;meeting-ready?&rsquo; on a timeout.)
 </p>
 <p>Here is an example of the use of a meeting object:
 </p>
@@ -134,6 +126,12 @@ and how best to implement this is a matter for further consideration.
 (event-loop-run!)
 </pre></div>
 
+<p>See the documentation on the meeting-send and meeting-receive
+procedures below for an example of multiple &quot;pseudo-threads&quot; sending
+to or receiving from a single meeting object for fan in and fan out,
+and for an example of those procedures &rsquo;selecting&rsquo; on more than one
+meeting object.
+</p>
 <p>The (a-sync meeting) library file provides the following procedures:
 </p>
 <dl>
@@ -192,17 +190,18 @@ meeting object has been closed, otherwise #f.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-meeting_002dsend"></a>Scheme Procedure: <strong>meeting-send</strong> <em>await resume [loop] meeting datum</em></dt>
+<dt><a name="index-meeting_002dsend"></a>Scheme Procedure: <strong>meeting-send</strong> <em>await resume [loop] m0 [m1 ...] datum</em></dt>
 <dd><p>This sends a datum to a receiver which is running on the same event
-loop as the sender, via the meeting object &rsquo;meeting&rsquo;.  If no receiver
-is waiting for the datum, this procedure waits until a receiver calls
-meeting-receive to request the datum.  If a receiver is already
-waiting, this procedure passes on the datum and returns immediately.
+loop as the sender, via one or more meeting objects &rsquo;m0 m1 ...&rsquo;.  If
+no receiver is waiting for the datum, this procedure waits until a
+receiver calls meeting-receive on one of the meeting objects to
+request the datum.  If a receiver is already waiting, this procedure
+passes on the datum and returns immediately.
 </p>
 <p>The &rsquo;loop&rsquo; argument is optional.  If not supplied, or #f is passed,
 this procedure will use the default event loop.  It is an error if
 this procedure is given a different event loop than the one which was
-passed to make-meeting on constructing the &rsquo;meeting&rsquo; object.
+passed to make-meeting on constructing the &rsquo;meeting&rsquo; objects.
 </p>
 <p>This procedure is intended to be called within a waitable procedure
 invoked by a-sync (which supplies the &rsquo;await&rsquo; and &rsquo;resume&rsquo; arguments).
@@ -211,12 +210,56 @@ invoked by a-sync (which supplies the &rsquo;await&rsquo; and &rsquo;resume&rsqu
 procedure when another a-sync or compose-a-sync block running on the
 event loop concerned was already waiting to send on the same &rsquo;meeting&rsquo;
 object.  From version 0.14, multiple senders may wait on a meeting
-object.  The provided datum of each sender will be passed to a
-receiver (as and when a receiver becomes available) in the order in
-which this procedure was invoked.
+object to permit fan in.  The provided datum of each sender will be
+passed to a receiver (as and when a receiver becomes available) in the
+order in which this procedure was invoked.
 </p>
-<p>Once a datum exchange has taken place, the meeting object can be
-reused for making another exchange (provided the meeting object has
+<p>Here is an example of such a fan in:
+</p>
+<div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(define m1 (make-meeting))
+
+(a-sync (lambda (await resume)
+	  (meeting-send await resume m1 &quot;Hello from a-sync1&quot;)))
+(a-sync (lambda (await resume)
+	  (meeting-send await resume m1 &quot;Hello from a-sync2&quot;)))
+
+(a-sync (lambda (await resume)
+	  (let next ((count 0))
+	    (when (&lt; count 2)
+	      (display (meeting-receive await resume m1))
+	      (newline)
+	      (next (1+ count))))))
+(event-loop-run!))
+</pre></div>
+
+<p>In addition, with version 0.13 of this library, only a single meeting
+object could be passed to this procedure.  From version 0.14 this
+procedure has &rsquo;select&rsquo;-like behavior: multiple meeting objects may be
+passed and this procedure will send to the first one which becomes
+available to receive the datum.
+</p>
+<p>Here is an example of selecting on send (here, meeting-send will send
+to the first meeting which becomes available for receiving, which is
+m2):
+</p>
+<div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(define m1 (make-meeting))
+(define m2 (make-meeting))
+
+(a-sync (lambda (await resume)
+	  (meeting-send await resume m1 m2 &quot;Hello&quot;)))
+
+(a-sync (lambda (await resume)
+	  (simple-format #t &quot;meeting-send says: ~a~%&quot;
+			 (meeting-receive await resume m2))))
+(event-loop-run!))
+</pre></div>
+
+<p>Once a datum exchange has taken place, the meeting object(s) can be
+reused for making another exchange (provided the meeting objects have
 not been closed).
 </p>
 <p>This procedure must be called in the native OS thread in which the
@@ -226,23 +269,29 @@ await-task-in-event-loop!, await-generator-in-thread! or
 await-generator-in-event-loop!.
 </p>
 <p>This procedure always returns #f unless meeting-close has been applied
-to the meeting object, in which case &rsquo;stop-iteration is returned.
+to a meeting object, in which case &rsquo;stop-iteration is returned.  Note
+that if multiple meeting objects are passed to this procedure and one
+of them is then closed, this procedure will return &rsquo;stop-iteration and
+any wait will be abandonned.  It is usually a bad idea to close a
+meeting object on which this procedure is waiting where this procedure
+is selecting on more than one meeting object.
 </p>
 <p>This procedure is first available in version 0.13 of this library.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-meeting_002dreceive"></a>Scheme Procedure: <strong>meeting-receive</strong> <em>await resume [loop] meeting</em></dt>
+<dt><a name="index-meeting_002dreceive"></a>Scheme Procedure: <strong>meeting-receive</strong> <em>await resume [loop] m0 [m1 ...]</em></dt>
 <dd><p>This receives a datum from a sender running on the same event loop as
-the receiver, via the meeting object &rsquo;meeting&rsquo;.  If no sender is
-waiting to pass the datum, this procedure waits until a sender calls
-meeting-send to provide the datum.  If a sender is already waiting,
-this procedure returns immediately with the datum supplied.
+the receiver, via one or more meeting objects &rsquo;m0 m1 ...&rsquo;.  If no
+sender is waiting to pass the datum, this procedure waits until a
+sender calls meeting-send on one of the meeting objects to provide the
+datum.  If a sender is already waiting, this procedure returns
+immediately with the datum supplied.
 </p>
 <p>The &rsquo;loop&rsquo; argument is optional.  If not supplied, or #f is passed,
 this procedure will use the default event loop.  It is an error if
 this procedure is given a different event loop than the one which was
-passed to make-meeting on constructing the &rsquo;meeting&rsquo; object.
+passed to make-meeting on constructing the &rsquo;meeting&rsquo; objects.
 </p>
 <p>This procedure is intended to be called within a waitable procedure
 invoked by a-sync (which supplies the &rsquo;await&rsquo; and &rsquo;resume&rsquo; arguments).
@@ -251,12 +300,60 @@ invoked by a-sync (which supplies the &rsquo;await&rsquo; and &rsquo;resume&rsqu
 procedure when another a-sync or compose-a-sync block running on the
 event loop concerned was already waiting to receive from the same
 &rsquo;meeting&rsquo; object.  From version 0.14, multiple receivers may wait on a
-meeting object.  The waiting receivers will be released (as and when a
-sender provides a datum) in the order in which this procedure was
-invoked.
+meeting object to permit fan out.  The waiting receivers will be
+released (as and when a sender provides a datum) in the order in which
+this procedure was invoked.
 </p>
-<p>Once a datum exchange has taken place, the meeting object can be
-reused for making another exchange (provided the meeting object has
+<p>Here is an example of such a fan out:
+</p>
+<div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(define m1 (make-meeting))
+
+(a-sync (lambda (await resume)
+	  (display (meeting-receive await resume m1))
+	  (newline)))
+(a-sync (lambda (await resume)
+	  (display (meeting-receive await resume m1))
+	  (newline)))
+
+(a-sync (lambda (await resume)
+	  (let next ((count 0))
+	    (when (&lt; count 2)
+	      (meeting-send await resume m1 count)
+	      (next (1+ count))))))
+(event-loop-run!))
+</pre></div>
+
+<p>In addition, with version 0.13 of this library, only a single meeting
+object could be passed to this procedure.  From version 0.14 this
+procedure has &rsquo;select&rsquo;-like behavior: multiple meeting objects may be
+passed and this procedure will receive from the first one which sends
+a datum.
+</p>
+<p>Here is an example of selecting on receive:
+</p>
+<div class="example">
+<pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(define m1 (make-meeting))
+(define m2 (make-meeting))
+
+(a-sync (lambda (await resume)
+	  (meeting-send await resume m1 &quot;m1&quot;)))
+(a-sync (lambda (await resume)
+	  (meeting-send await resume m2 &quot;m2&quot;)))
+
+(a-sync (lambda (await resume)
+	  (let next ((count 0))
+	    (when (&lt; count 2)
+	      (simple-format #t &quot;Message received from ~a~%&quot;
+			     (meeting-receive await resume m1 m2))
+	      (next (1+ count))))))
+(event-loop-run!))
+</pre></div>
+
+<p>Once a datum exchange has taken place, the meeting object(s) can be
+reused for making another exchange (provided the meeting objects have
 not been closed).
 </p>
 <p>This procedure must be called in the native OS thread in which the
@@ -266,8 +363,13 @@ await-task-in-event-loop!, await-generator-in-thread! or
 await-generator-in-event-loop!.
 </p>
 <p>This procedure always returns the datum value supplied by meeting-send
-unless meeting-close has been applied to the meeting object, in which
-case &rsquo;stop-iteration is returned.
+unless meeting-close has been applied to a meeting object, in which
+case &rsquo;stop-iteration is returned.  Note that if multiple meeting
+objects are passed to this procedure and one of them is then closed,
+this procedure will return &rsquo;stop-iteration and any wait will be
+abandonned.  It is usually a bad idea to close a meeting object on
+which this procedure is waiting where this procedure is selecting on
+more than one meeting object.
 </p>
 <p>This procedure is first available in version 0.13 of this library.
 </p></dd></dl>

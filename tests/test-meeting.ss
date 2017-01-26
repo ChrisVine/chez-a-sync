@@ -33,7 +33,7 @@
        (format #t "~a: Test ~a OK\n" "test-meeting.ss" count)
        (set! count (1+ count))))))
 
-;; Test 1: start receiving before sending
+;; Test 1: start receiving before sending, iteratively on single meeting object
 
 (define main-loop (make-event-loop))
 
@@ -59,7 +59,7 @@
   (assert (equal? res '(3 2 1 0)))
   (print-result))
 
-;; Test 2: start sending before receiving
+;; Test 2: start sending before receiving, iteratively on single meeting object
 
 (let ()
   (define m1 (make-meeting main-loop))
@@ -87,7 +87,7 @@
 
 (set-default-event-loop! main-loop)
 
-;; Test 3: start receiving before sending
+;; Test 3: start receiving before sending, iteratively on single meeting object
 
 (let ()
   (define m1 (make-meeting))
@@ -111,7 +111,7 @@
   (assert (equal? res '(3 2 1 0)))
   (print-result))
 
-;; Test 4: start sending before receiving
+;; Test 4: start sending before receiving, iteratively on single meeting object
 
 (let ()
   (define m1 (make-meeting))
@@ -155,7 +155,7 @@
 	    (print-result)))
   (event-loop-run!))
 
-;; Test 6: multiple readers
+;; Test 6: multiple readers on single meeting object (fan out)
 
 (let ()
   (define m1 (make-meeting))
@@ -189,7 +189,7 @@
   (event-loop-run!)
   (print-result))
 
-;; Test 7: multiple senders
+;; Test 7: multiple senders on single meeting object (fan in)
 
 (let ()
   (define m1 (make-meeting))
@@ -219,6 +219,184 @@
   
   (a-sync (lambda (await resume)
 	    (test-result (meeting-send await resume m1 5) 'stop-iteration)))
+
+  (event-loop-run!)
+  (print-result))
+
+;; Test 8: waiting to receive from multiple meeting objects (1)
+
+(let ()
+  (define m1 (make-meeting))
+  (define m2 (make-meeting))
+  (define m3 (make-meeting))
+  (define m4 (make-meeting))
+
+  (a-sync (lambda (await resume)
+	    (let next ((count 1))
+	      (when (< count 4)
+		(test-result (meeting-receive await resume m1 m2 m3 m4) count)
+		(next (+ count 1))))))
+
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-send await resume m1 1) #f)))
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-send await resume m2 2) #f)))
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-send await resume m3 3) #f)))
+
+  (event-loop-run!)
+  (print-result))
+
+;; Test 9: waiting to receive from multiple meeting objects (2)
+
+(let ()
+  (define m1 (make-meeting))
+  (define m2 (make-meeting))
+  (define m3 (make-meeting))
+  (define m4 (make-meeting))
+
+  (a-sync (lambda (await resume)
+	    (let next ((count 1))
+	      (when (< count 4)
+		(test-result (meeting-receive await resume m1 m2 m3 m4) count)
+		(next (+ count 1))))))
+
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-send await resume m1 1) #f)
+	    (test-result (meeting-send await resume m2 2) #f)
+	    (test-result (meeting-send await resume m3 3) #f)))
+
+  (event-loop-run!)
+  (print-result))
+
+;; Test 10: waiting to receive from multiple meeting objects (3)
+
+(let ()
+  (define m1 (make-meeting))
+  (define m2 (make-meeting))
+  (define m3 (make-meeting))
+  (define m4 (make-meeting))
+
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-send await resume m1 1) #f)))
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-send await resume m2 2) #f)))
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-send await resume m3 3) #f)))
+
+  (a-sync (lambda (await resume)
+	    (let next ((count 1))
+	      (when (< count 4)
+		(test-result (meeting-receive await resume m1 m2 m3 m4) count)
+		(next (+ count 1))))))
+
+  (event-loop-run!)
+  (print-result))
+
+;; Test 11: waiting to receive from multiple meeting objects (4)
+
+(let ()
+  (define m1 (make-meeting))
+  (define m2 (make-meeting))
+  (define m3 (make-meeting))
+  (define m4 (make-meeting))
+
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-send await resume m1 1) #f)
+	    (test-result (meeting-send await resume m2 2) #f)
+	    (test-result (meeting-send await resume m3 3) #f)))
+
+  (a-sync (lambda (await resume)
+	    (let next ((count 1))
+	      (when (< count 4)
+		(test-result (meeting-receive await resume m1 m2 m3 m4) count)
+		(next (+ count 1))))))
+
+  (event-loop-run!)
+  (print-result))
+
+;; Test 12: waiting to send to multiple meeting objects (1)
+
+(let ()
+  (define m1 (make-meeting))
+  (define m2 (make-meeting))
+
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-send await resume m1 m2 1) #f)
+	    (test-result (meeting-send await resume m1 m2 2) #f)
+	    (test-result (meeting-send await resume m1 m2 3) #f)
+	    (test-result (meeting-send await resume m1 m2 4) #f)))
+
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-receive await resume m2) 1)))
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-receive await resume m1) 2)))
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-receive await resume m2) 3)))
+
+  (event-loop-run!)
+  (print-result))
+
+;; Test 13: waiting to send to multiple meeting objects (2)
+
+(let ()
+  (define m1 (make-meeting))
+  (define m2 (make-meeting))
+
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-send await resume m1 m2 1) #f)
+	    (test-result (meeting-send await resume m1 m2 2) #f)
+	    (test-result (meeting-send await resume m1 m2 3) #f)
+	    (test-result (meeting-send await resume m1 m2 4) #f)))
+
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-receive await resume m2) 1)
+  	    (test-result (meeting-receive await resume m1) 2)
+  	    (test-result (meeting-receive await resume m2) 3)
+  	    (test-result (meeting-receive await resume m1) 4)))
+
+  (event-loop-run!)
+  (print-result))
+
+;; Test 14: waiting to send to multiple meeting objects (3)
+
+(let ()
+  (define m1 (make-meeting))
+  (define m2 (make-meeting))
+
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-receive await resume m2) 2)))
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-receive await resume m1) 1)))
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-receive await resume m2) 3)))
+
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-send await resume m1 m2 1) #f)
+	    (test-result (meeting-send await resume m1 m2 2) #f)
+	    (test-result (meeting-send await resume m1 m2 3) #f)
+	    (test-result (meeting-send await resume m1 m2 4) #f)))
+
+  (event-loop-run!)
+  (print-result))
+
+;; Test 15: waiting to send to multiple meeting objects (4)
+
+(let ()
+  (define m1 (make-meeting))
+  (define m2 (make-meeting))
+
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-receive await resume m2) 1)
+  	    (test-result (meeting-receive await resume m1) 2)
+  	    (test-result (meeting-receive await resume m2) 3)
+  	    (test-result (meeting-receive await resume m1) 4)))
+
+  (a-sync (lambda (await resume)
+	    (test-result (meeting-send await resume m1 m2 1) #f)
+	    (test-result (meeting-send await resume m1 m2 2) #f)
+	    (test-result (meeting-send await resume m1 m2 3) #f)
+	    (test-result (meeting-send await resume m1 m2 4) #f)))
 
   (event-loop-run!)
   (print-result))

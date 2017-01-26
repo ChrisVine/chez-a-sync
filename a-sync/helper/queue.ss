@@ -56,3 +56,17 @@
 
 (define (q-empty? q)
   (null? (cdr (_data-get q))))
+
+;; removes every datum in the queue which is eq? to item (if any)
+(define (q-remove! q item)
+  (define (q-filter lst)
+    (let ([first (car lst)]
+	  [rest (cdr lst)])
+      (if (null? rest)
+	  (_back-get q)
+	  (if (eq? first item)
+	      (q-filter rest)
+	      (cons (car lst) (q-filter rest))))))
+  (_data-set q (q-filter (_data-get q))))
+  
+	  

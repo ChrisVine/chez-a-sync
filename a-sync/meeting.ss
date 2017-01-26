@@ -76,9 +76,10 @@
   (let ([res (resumptions-get m)]
 	[loop (loop-get m)])
     (when (not (q-empty? res))
-      (let lp ((elt (q-deq! res)))
-	(event-post! (lambda () ((car elt) 'stop-iteration))
+      (let lp ([elt (q-deq! res)])
+	(event-post! (lambda () ((vector-ref elt 0) 'stop-iteration))
 		     loop)
+	((vector-ref elt 2)) ;; clean up all other meeting objects waiting with this one
 	(when (not (q-empty? res))
 	  (lp (q-deq! res)))))
     (status-set! m 'closed)))
@@ -94,17 +95,21 @@
   (or (not (q-empty? (resumptions-get m)))
       (eq? (status-get m) 'closed)))
 
+;; The signature of this procedure is:
+;;
+;;   (meeting-send await resume [loop] m0 [m1 ...] datum)
+;;
 ;; This sends a datum to a receiver which is running on the same event
-;; loop as the sender, via the meeting object 'm'.  If no receiver is
-;; waiting for the datum, this procedure waits until a receiver calls
-;; meeting-receive to request the datum.  If a receiver is already
-;; waiting, this procedure passes on the datum and returns
-;; immediately.
+;; loop as the sender, via one or more meeting objects 'm0 m1 ...'.
+;; If no receiver is waiting for the datum, this procedure waits until
+;; a receiver calls meeting-receive on one of the meeting objects to
+;; request the datum.  If a receiver is already waiting, this
+;; procedure passes on the datum and returns immediately.
 ;;
 ;; The 'loop' argument is optional.  If not supplied, or #f is passed,
 ;; this procedure will use the default event loop.  It is an error if
 ;; this procedure is given a different event loop than the one which
-;; was passed to make-meeting on constructing the 'meeting' object.
+;; was passed to make-meeting on constructing the 'meeting' objects.
 ;;
 ;; This procedure is intended to be called within a waitable procedure
 ;; invoked by a-sync (which supplies the 'await' and 'resume'
@@ -114,13 +119,19 @@
 ;; procedure when another a-sync or compose-a-sync block running on
 ;; the event loop concerned was already waiting to send on the same
 ;; 'meeting' object.  From version 0.14, multiple senders may wait on
-;; a meeting object.  The provided datum of each sender will be passed
-;; to a receiver (as and when a receiver becomes available) in the
-;; order in which this procedure was invoked.
+;; a meeting object to permit fan in.  The provided datum of each
+;; sender will be passed to a receiver (as and when a receiver becomes
+;; available) in the order in which this procedure was invoked.
 ;;
-;; Once a datum exchange has taken place, the meeting object can be
-;; reused for making another exchange (provided the meeting object has
-;; not been closed).
+;; In addition, with version 0.13 of this library, only a single
+;; meeting object could be passed to this procedure.  From version
+;; 0.14 this procedure has 'select'-like behavior: multiple meeting
+;; objects may be passed and this procedure will send to the first one
+;; which becomes available to receive the datum.
+;;
+;; Once a datum exchange has taken place, the meeting object(s) can be
+;; reused for making another exchange (provided the meeting objects
+;; have not been closed).
 ;;
 ;; This procedure must be called in the native OS thread in which the
 ;; event loop concerned runs.  To have other native OS threads
@@ -129,59 +140,110 @@
 ;; await-generator-in-event-loop!.
 ;;
 ;; This procedure always returns #f unless meeting-close has been
-;; applied to the meeting object, in which case 'stop-iteration is
-;; returned.
+;; applied to a meeting object, in which case 'stop-iteration is
+;; returned.  Note that if multiple meeting objects are passed to this
+;; procedure and one of them is then closed, this procedure will
+;; return 'stop-iteration and any wait will be abandonned.  It is
+;; usually a bad idea to close a meeting object on which this
+;; procedure is waiting where this procedure is selecting on more than
+;; one meeting object.
 ;;
 ;; This procedure is first available in version 0.13 of this library.
-(define meeting-send
-  (case-lambda 
-    [(await resume m datum)
-     (meeting-send await resume #f m datum)]
-    [(await resume loop m datum)
-     ;; If status is already at 'set, another sender is already
-     ;; waiting on this meeting and we should add ourselves to the
-     ;; queue and also wait.  Otherwise, if resumptions is not empty
-     ;; then it must contain resumption iterators for one or more
-     ;; waiting receivers so we can proceed, or if it is empty then
-     ;; nothing is waiting and this sender must add itself to the
-     ;; queue and wait instead.
-     (let ([loop (or loop (get-default-event-loop))]
-	   [res (resumptions-get m)])
-       (when (not (eq? loop (loop-get m))) 
-	 (error "meeting-send"
-		"meeting-send passed an event loop object for which the meeting was not constructed"))
-       (case (status-get m)
-	 ((closed)
-	  'stop-iteration)
-	 ((set)
-	  (when (q-empty? res)
-	    (error "meeting-send"
-		   "meeting-send encountered a set meeting object with no sender resumption iterator"))
-	  (q-enq! res (cons resume datum))
-	  (await))
-	 ((unset)
-	  (if (q-empty? res)
-	      (begin
-		(status-set! m 'set)
-		(q-enq! res (cons resume datum))
-		(await))
-	      (let ((elt (q-deq! res)))
-		(event-post! (lambda ()
-			       ((car elt) datum))
-			     loop)
-		#f)))))]))
+(define (meeting-send await resume . rest)
+  (cond
+   [(null? rest)
+    (error "meeting-send"
+	   "arity error for meeting-receive procedure")]
+   [(event-loop? (car rest))
+    (cond
+     [(not (meeting? (cadr rest)))
+      (error "meeting-send"
+	     "no meeting objects passed to meeting-receive procedure")]
+     [else
+      (apply meeting-send-impl await resume rest)])]
+   [else
+    (if (not (meeting? (car rest)))
+	(error "meeting-send"
+	       "no meeting objects passed to meeting-receive procedure")
+	(apply meeting-send-impl await resume #f rest))]))
+  
+(define (meeting-send-impl await resume loop . rest)
+  (let ([loop (or loop (get-default-event-loop))])
+    (when (not loop) 
+      (error "meeting-send-impl"
+	     "No default event loop set for call to meeting-receive"))
+    (let ([split (- (length rest) 1)])
+      (let ([meetings (list-head rest split)]
+	    [datum (car (list-tail rest split))])
+	;; If resumptions is not empty for one or more meetings whose
+	;; status is not at 'set then it must contain resumption
+	;; iterators for one or more waiting receivers so we can
+	;; proceed immediately.  Otherwise all the meeting objects
+	;; must either have status already at 'set so another sender
+	;; is already waiting on that meeting for a receiver, or the
+	;; meeting's resumptions are empty so nothing is waiting: in
+	;; either case we should also add ourselves to all the
+	;; meetings' queues and wait for a receiver.
+	(let ([meeting (call/cc
+			(lambda (k)
+			  (for-each (lambda (m)
+				      (let ([status (status-get m)])
+					(when (not (eq? loop (loop-get m))) 
+					  (error "meeting-send-impl"
+						 "meeting-send passed an event loop object for which the meeting was not constructed"))
+					(when (and (eq? status 'unset)
+						   (not (q-empty? (resumptions-get m))))
+					  (k m))
+					(when (eq? status 'closed)
+					  (k 'closed))))
+				    meetings)
+			  #f))])
+	  (cond
+	   [(eq? meeting 'closed)
+	    'stop-iteration]
+	   [meeting
+	    ;; if a meeting is both unset and has resumption
+	    ;; iterators, send the datum to a waiting receiver and
+	    ;; return
+	    (let ([elt (q-deq! (resumptions-get meeting))])
+	      (event-post! (lambda ()
+			     ((vector-ref elt 0) datum))
+			   loop)
+	      ((vector-ref elt 2))
+	      #f)]
+	   [else
+	    ;; if no meeting is unset with resumption iterators,
+	    ;; insert the resume iterator in each meeting object and
+	    ;; await a receiver
+	    (letrec ([item (vector resume
+				   datum
+				   (lambda ()
+				     (for-each (lambda (m)
+						 (let ([res (resumptions-get m)])
+						   (q-remove! res item)
+						   (when (q-empty? res) (status-set! m 'unset))))
+					       meetings)))])
+	      (for-each (lambda (m)
+			  (status-set! m 'set)
+			  (q-enq! (resumptions-get m) item))
+			meetings)
+	      (await))]))))))
 
+;; The signature of this procedure is:
+;;
+;;   (meeting-receive await resume [loop] m0 [m1 ...])
+;;
 ;; This receives a datum from a sender running on the same event loop
-;; as the receiver, via the meeting object 'm'.  If no sender is
-;; waiting to pass the datum, this procedure waits until a sender
-;; calls meeting-send to provide the datum.  If a sender is already
-;; waiting, this procedure returns immediately with the datum
-;; supplied.
+;; as the receiver, via one or more meeting objects 'm0 m1 ...'.  If
+;; no sender is waiting to pass the datum, this procedure waits until
+;; a sender calls meeting-send on one of the meeting objects to
+;; provide the datum.  If a sender is already waiting, this procedure
+;; returns immediately with the datum supplied.
 ;;
 ;; The 'loop' argument is optional.  If not supplied, or #f is passed,
 ;; this procedure will use the default event loop.  It is an error if
 ;; this procedure is given a different event loop than the one which
-;; was passed to make-meeting on constructing the 'meeting' object.
+;; was passed to make-meeting on constructing the 'meeting' objects.
 ;;
 ;; This procedure is intended to be called within a waitable procedure
 ;; invoked by a-sync (which supplies the 'await' and 'resume'
@@ -191,13 +253,19 @@
 ;; procedure when another a-sync or compose-a-sync block running on
 ;; the event loop concerned was already waiting to receive from the
 ;; same 'meeting' object.  From version 0.14, multiple receivers may
-;; wait on a meeting object.  The waiting receivers will be released
-;; (as and when a sender provides a datum) in the order in which this
-;; procedure was invoked.
+;; wait on a meeting object to permit fan out.  The waiting receivers
+;; will be released (as and when a sender provides a datum) in the
+;; order in which this procedure was invoked.
 ;;
-;; Once a datum exchange has taken place, the meeting object can be
-;; reused for making another exchange (provided the meeting object has
-;; not been closed).
+;; In addition, with version 0.13 of this library, only a single
+;; meeting object could be passed to this procedure.  From version
+;; 0.14 this procedure has 'select'-like behavior: multiple meeting
+;; objects may be passed and this procedure will receive from the
+;; first one which sends a datum.
+;;
+;; Once a datum exchange has taken place, the meeting object(s) can be
+;; reused for making another exchange (provided the meeting objects
+;; have not been closed).
 ;;
 ;; This procedure must be called in the native OS thread in which the
 ;; event loop concerned runs.  To have other native OS threads
@@ -206,40 +274,80 @@
 ;; await-generator-in-event-loop!.
 ;;
 ;; This procedure always returns the datum value supplied by
-;; meeting-send unless meeting-close has been applied to the meeting
-;; object, in which case 'stop-iteration is returned.
+;; meeting-send unless meeting-close has been applied to a meeting
+;; object, in which case 'stop-iteration is returned.  Note that if
+;; multiple meeting objects are passed to this procedure and one of
+;; them is then closed, this procedure will return 'stop-iteration and
+;; any wait will be abandonned.  It is usually a bad idea to close a
+;; meeting object on which this procedure is waiting where this
+;; procedure is selecting on more than one meeting object.
 ;;
 ;; This procedure is first available in version 0.13 of this library.
-(define meeting-receive
-  (case-lambda 
-    [(await resume m)
-     (meeting-receive await resume #f m)]
-    [(await resume loop m)
-     ;; We can only enter this procedure under two circumstances:
-     ;; either status is 'unset, which means that a sender is not
-     ;; waiting and we must add ourselves to the queue and wait, or
-     ;; status is 'set and resumptions is not empty, in which case a
-     ;; sender is waiting and we can proceed.
-     (let ([loop (or loop (get-default-event-loop))]
-	   [res (resumptions-get m)])
-       (when (not (eq? loop (loop-get m)))
-	 (error "meeting-receive"
-		"meeting-receive passed an event loop object for which the meeting was not constructed"))
-       (case (status-get m)
-	 ((closed)
-	  'stop-iteration)
-	 ((unset)
-	  (q-enq! res (cons resume #f))
-	  (await))
-	 ((set)
+(define (meeting-receive await resume . rest)
+  (cond
+   [(null? rest)
+    (error "meeting-receive"
+	   "no meeting objects passed to meeting-receive procedure")]
+   [(event-loop? (car rest))
+    (if (null? (cadr rest))
+	(error "meeting-receive"
+	       "no meeting objects passed to meeting-receive procedure")
+	(apply meeting-receive-impl await resume rest))]
+   [else
+    (apply meeting-receive-impl await resume #f rest)]))
+  
+(define (meeting-receive-impl await resume loop . meetings)
+  (let ([loop (or loop (get-default-event-loop))])
+    (when (not loop) 
+      (error "meeting-receive-impl"
+	     "No default event loop set for call to meeting-receive"))
+    ;; We can only enter this procedure with repect to a meeting
+    ;; object under two circumstances: either the status for at leasts
+    ;; one meeting is 'set and resumptions for it is not empty, in
+    ;; which case a sender is waiting and we can proceed, or status is
+    ;; 'unset for all of them, which means that no sender is waiting
+    ;; and we must add ourselves to all the meetings' queues and wait
+    ;; for a sender.
+    (let ([meeting (call/cc
+		    (lambda (k)
+		      (for-each (lambda (m)
+				  (let ([status (status-get m)])
+				    (when (not (eq? loop (loop-get m))) 
+				      (error "meeting-receive-impl"
+					     "meeting-receive passed an event loop object for which the meeting was not constructed"))
+				    (when (eq? status 'set)
+				      (k m))
+				    (when (eq? status 'closed)
+				      (k 'closed))))
+				meetings)
+		      #f))])
+      (cond
+       [(eq? meeting 'closed)
+	'stop-iteration]
+       [meeting
+	;; if a meeting is set, extract the datum and return
+	(let ([res (resumptions-get meeting)])
 	  (when (q-empty? res)
-	    (error "meeting-receive"
+	    (error "meeting-receive-impl"
 		   "meeting-receive encountered a set meeting object with no sender resumption iterator"))
-	  (let ((elt (q-deq! res)))
+	  (let ([elt (q-deq! res)])
 	    (event-post! (lambda ()
-			   ((car elt) #f))
+			   ((vector-ref elt 0) #f))
 			 loop)
-	    (when (q-empty? res) (status-set! m 'unset))
-	    (cdr elt)))))]))
+	    ((vector-ref elt 2))
+	    (vector-ref elt 1)))]
+       [else
+	;; if no meeting is set, insert the resume iterator in each
+	;; meeting object and await a datum
+	(letrec ([item (vector resume
+			       #f
+			       (lambda ()
+				 (for-each (lambda (m)
+					     (q-remove! (resumptions-get m) item))
+					   meetings)))])
+	  (for-each (lambda (m)
+		      (q-enq! (resumptions-get m) item))
+		    meetings)
+	  (await))]))))
 
 ) ;; library
