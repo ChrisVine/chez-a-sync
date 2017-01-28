@@ -152,25 +152,34 @@
   (cond
    [(null? rest)
     (error "meeting-send"
-	   "arity error for meeting-receive procedure")]
+	   "arity error for meeting-send procedure")]
    [(event-loop? (car rest))
     (cond
-     [(not (meeting? (cadr rest)))
+     [(or (null? (cdr rest))
+	  (not (meeting? (cadr rest))))
       (error "meeting-send"
-	     "no meeting objects passed to meeting-receive procedure")]
+	     "no meeting objects passed to meeting-send procedure")]
+     [(null? (cddr rest))
+      (error "meeting-send"
+	     "no datum passed to meeting-send procedure")]
      [else
       (apply meeting-send-impl await resume rest)])]
    [else
-    (if (not (meeting? (car rest)))
-	(error "meeting-send"
-	       "no meeting objects passed to meeting-receive procedure")
-	(apply meeting-send-impl await resume #f rest))]))
+    (cond
+     [(not (meeting? (car rest)))
+      (error "meeting-send"
+	     "no meeting objects passed to meeting-send procedure")]
+     [(null? (cdr rest))
+      (error "meeting-send"
+	     "no datum passed to meeting-send procedure")]
+     [else
+      (apply meeting-send-impl await resume #f rest)])]))
   
 (define (meeting-send-impl await resume loop . rest)
   (let ([loop (or loop (get-default-event-loop))])
     (when (not loop) 
       (error "meeting-send-impl"
-	     "No default event loop set for call to meeting-receive"))
+	     "No default event loop set for call to meeting-send"))
     (let ([split (- (length rest) 1)])
       (let ([meetings (list-head rest split)]
 	    [datum (car (list-tail rest split))])
@@ -288,7 +297,7 @@
     (error "meeting-receive"
 	   "no meeting objects passed to meeting-receive procedure")]
    [(event-loop? (car rest))
-    (if (null? (cadr rest))
+    (if (null? (cdr rest))
 	(error "meeting-receive"
 	       "no meeting objects passed to meeting-receive procedure")
 	(apply meeting-receive-impl await resume rest))]
