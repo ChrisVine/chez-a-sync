@@ -21,7 +21,7 @@ Library files
 * coroutines::     (a-sync coroutines) library file - provides coroutines for await semantics on asynchronous events
 * event loop::     (a-sync event-loop) library file - provides an event loop for asynchronous events
 * compose::        (a-sync compose) library file - provides the compose-a-sync macro interface for the a-sync coroutine
-* meeting::        (a-sync meeting) library file - provides for synchronization between two a-sync or compose-a-sync blocks
+* meeting::        (a-sync meeting) library file - provides for synchronization between a-sync or compose-a-sync blocks
 * try::            (a-sync try) library file - provides the try macro interface for dealing with exceptions
 
 
@@ -2555,11 +2555,11 @@ exceptions.
 
 Tag Table:
 Node: Top83
-Node: overview1134
-Node: coroutines4456
-Node: event loop22831
-Node: compose108497
-Node: meeting114719
-Node: try129193
+Node: overview1130
+Node: coroutines4452
+Node: event loop22827
+Node: compose108493
+Node: meeting114715
+Node: try129189
 
 End Tag Table
