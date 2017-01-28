@@ -68,5 +68,3 @@
 	      (q-filter rest)
 	      (cons first (q-filter rest))))))
   (_data-set q (q-filter (_data-get q))))
-  
-	  
