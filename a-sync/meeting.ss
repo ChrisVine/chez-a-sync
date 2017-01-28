@@ -34,15 +34,14 @@
 	  (mutable status status-get status-set!)))
 
 ;; This procedure makes and returns a meeting object.  Meetings are
-;; objects on which two a-sync or compose-a-sync blocks running on the
-;; same event loop can synchronize by one passing a datum to the
-;; other.  The 'loop' argument specifies the event loop (as
-;; constructed by make-event-loop in the (a-sync event-loop module))
-;; with respect to which the meeting will be held: it is an error if
-;; the meeting-send or meeting-receive procedures are passed a
-;; different event loop as an argument.  The 'loop' argument is
-;; optional - if none is passed, or #f is passed, then the default
-;; event loop will be chosen.
+;; objects on which a-sync or compose-a-sync blocks running on the
+;; same event loop can synchronize by one passing a datum to another.
+;; The 'loop' argument specifies the event loop (as constructed by
+;; make-event-loop in the (a-sync event-loop module)) with respect to
+;; which the meeting will be held: it is an error if the meeting-send
+;; or meeting-receive procedures are passed a different event loop as
+;; an argument.  The 'loop' argument is optional - if none is passed,
+;; or #f is passed, then the default event loop will be chosen.
 ;;
 ;; Strictly speaking this procedure can be called in any native OS
 ;; thread, but since it carries out no synchronization of native

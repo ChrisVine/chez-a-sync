@@ -100,9 +100,9 @@ the timeout expires):
   (display ret)(newline))
 </pre></div>
 
-<p>Two &quot;pseudo-threads&quot; (that is two &rsquo;a-sync&rsquo; or &rsquo;compose-a-sync&rsquo; blocks)
-running on the same event loop can intercommunicate by holding
-meetings to exchange a datum (see <a href="meeting.html#meeting">(a-sync meeting)</a>).  A
+<p>&quot;Pseudo-threads&quot; (that is &rsquo;a-sync&rsquo; or &rsquo;compose-a-sync&rsquo; blocks) running
+on the same event loop can intercommunicate by holding meetings to
+exchange a datum (see <a href="meeting.html#meeting">(a-sync meeting)</a>).  A somewhat
 similar result can also be achieved using generators (see the
 await-generator! procedure in the <a href="event-loop.html#event-loop">(a-sync
 event-loop)</a> library file).

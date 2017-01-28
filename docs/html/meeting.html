@@ -137,9 +137,9 @@ meeting object.
 <dl>
 <dt><a name="index-make_002dmeeting"></a>Scheme Procedure: <strong>make-meeting</strong> <em>[loop]</em></dt>
 <dd><p>This procedure makes and returns a meeting object.  Meetings are
-objects on which two a-sync or compose-a-sync blocks running on the
-same event loop can synchronize by one passing a datum to the other.
-The &rsquo;loop&rsquo; argument specifies the event loop (as constructed by
+objects on which a-sync or compose-a-sync blocks running on the same
+event loop can synchronize by one passing a datum to another.  The
+&rsquo;loop&rsquo; argument specifies the event loop (as constructed by
 make-event-loop in the (a-sync event-loop) library file) with respect
 to which the meeting will be held: it is an error if the meeting-send
 or meeting-receive procedures are passed a different event loop as an
@@ -226,11 +226,11 @@ order in which this procedure was invoked.
 	  (meeting-send await resume m1 &quot;Hello from a-sync2&quot;)))
 
 (a-sync (lambda (await resume)
-	  (let next ((count 0))
+	  (let next ([count 0])
 	    (when (&lt; count 2)
 	      (display (meeting-receive await resume m1))
 	      (newline)
-	      (next (1+ count))))))
+	      (next (+ count 1))))))
 (event-loop-run!))
 </pre></div>
 
@@ -253,8 +253,8 @@ m2):
 	  (meeting-send await resume m1 m2 &quot;Hello&quot;)))
 
 (a-sync (lambda (await resume)
-	  (simple-format #t &quot;meeting-send says: ~a~%&quot;
-			 (meeting-receive await resume m2))))
+	  (format #t &quot;meeting-send says: ~a~%&quot;
+		     (meeting-receive await resume m2))))
 (event-loop-run!))
 </pre></div>
 
@@ -318,10 +318,10 @@ this procedure was invoked.
 	  (newline)))
 
 (a-sync (lambda (await resume)
-	  (let next ((count 0))
+	  (let next ([count 0])
 	    (when (&lt; count 2)
 	      (meeting-send await resume m1 count)
-	      (next (1+ count))))))
+	      (next (+ count 1))))))
 (event-loop-run!))
 </pre></div>
 
@@ -344,11 +344,11 @@ a datum.
 	  (meeting-send await resume m2 &quot;m2&quot;)))
 
 (a-sync (lambda (await resume)
-	  (let next ((count 0))
+	  (let next ([count 0])
 	    (when (&lt; count 2)
-	      (simple-format #t &quot;Message received from ~a~%&quot;
-			     (meeting-receive await resume m1 m2))
-	      (next (1+ count))))))
+	      (format #t &quot;Message received from ~a~%&quot;
+			 (meeting-receive await resume m1 m2))
+	      (next (+ count 1))))))
 (event-loop-run!))
 </pre></div>
 

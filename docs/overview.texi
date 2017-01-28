@@ -47,9 +47,9 @@ the timeout expires):
   (display ret)(newline))
 @end example
 
-Two "pseudo-threads" (that is two 'a-sync' or 'compose-a-sync' blocks)
-running on the same event loop can intercommunicate by holding
-meetings to exchange a datum (see @ref{meeting,,(a-sync meeting)}).  A
+"Pseudo-threads" (that is 'a-sync' or 'compose-a-sync' blocks) running
+on the same event loop can intercommunicate by holding meetings to
+exchange a datum (see @ref{meeting,,(a-sync meeting)}).  A somewhat
 similar result can also be achieved using generators (see the
 await-generator! procedure in the @ref{event loop,,(a-sync
 event-loop)} library file).

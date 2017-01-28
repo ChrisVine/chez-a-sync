@@ -72,9 +72,9 @@ timeout expires):
        (event-loop-run! loop)
        (display ret)(newline))
 
-   Two "pseudo-threads" (that is two 'a-sync' or 'compose-a-sync'
-blocks) running on the same event loop can intercommunicate by holding
-meetings to exchange a datum (see *note (a-sync meeting): meeting.).  A
+   "Pseudo-threads" (that is 'a-sync' or 'compose-a-sync' blocks)
+running on the same event loop can intercommunicate by holding meetings
+to exchange a datum (see *note (a-sync meeting): meeting.).  A somewhat
 similar result can also be achieved using generators (see the
 await-generator!  procedure in the *note (a-sync event-loop): event
 loop. library file).
@@ -2262,15 +2262,15 @@ object.
 
  -- Scheme Procedure: make-meeting [loop]
      This procedure makes and returns a meeting object.  Meetings are
-     objects on which two a-sync or compose-a-sync blocks running on the
-     same event loop can synchronize by one passing a datum to the
-     other.  The 'loop' argument specifies the event loop (as
-     constructed by make-event-loop in the (a-sync event-loop) library
-     file) with respect to which the meeting will be held: it is an
-     error if the meeting-send or meeting-receive procedures are passed
-     a different event loop as an argument.  The 'loop' argument is
-     optional - if none is passed, or #f is passed, then the default
-     event loop will be chosen.
+     objects on which a-sync or compose-a-sync blocks running on the
+     same event loop can synchronize by one passing a datum to another.
+     The 'loop' argument specifies the event loop (as constructed by
+     make-event-loop in the (a-sync event-loop) library file) with
+     respect to which the meeting will be held: it is an error if the
+     meeting-send or meeting-receive procedures are passed a different
+     event loop as an argument.  The 'loop' argument is optional - if
+     none is passed, or #f is passed, then the default event loop will
+     be chosen.
 
      Strictly speaking this procedure can be called in any native OS
      thread, but since it carries out no synchronization of native
@@ -2344,11 +2344,11 @@ object.
           	  (meeting-send await resume m1 "Hello from a-sync2")))
 
           (a-sync (lambda (await resume)
-          	  (let next ((count 0))
+          	  (let next ([count 0])
           	    (when (< count 2)
           	      (display (meeting-receive await resume m1))
           	      (newline)
-          	      (next (1+ count))))))
+          	      (next (+ count 1))))))
           (event-loop-run!))
 
      In addition, with version 0.13 of this library, only a single
@@ -2369,8 +2369,8 @@ object.
           	  (meeting-send await resume m1 m2 "Hello")))
 
           (a-sync (lambda (await resume)
-          	  (simple-format #t "meeting-send says: ~a~%"
-          			 (meeting-receive await resume m2))))
+          	  (format #t "meeting-send says: ~a~%"
+          		     (meeting-receive await resume m2))))
           (event-loop-run!))
 
      Once a datum exchange has taken place, the meeting object(s) can be
@@ -2432,10 +2432,10 @@ object.
           	  (newline)))
 
           (a-sync (lambda (await resume)
-          	  (let next ((count 0))
+          	  (let next ([count 0])
           	    (when (< count 2)
           	      (meeting-send await resume m1 count)
-          	      (next (1+ count))))))
+          	      (next (+ count 1))))))
           (event-loop-run!))
 
      In addition, with version 0.13 of this library, only a single
@@ -2456,11 +2456,11 @@ object.
           	  (meeting-send await resume m2 "m2")))
 
           (a-sync (lambda (await resume)
-          	  (let next ((count 0))
+          	  (let next ([count 0])
           	    (when (< count 2)
-          	      (simple-format #t "Message received from ~a~%"
-          			     (meeting-receive await resume m1 m2))
-          	      (next (1+ count))))))
+          	      (format #t "Message received from ~a~%"
+          			 (meeting-receive await resume m1 m2))
+          	      (next (+ count 1))))))
           (event-loop-run!))
 
      Once a datum exchange has taken place, the meeting object(s) can be
@@ -2556,10 +2556,10 @@ exceptions.
 Tag Table:
 Node: Top83
 Node: overview1134
-Node: coroutines4455
-Node: event loop22830
-Node: compose108496
-Node: meeting114718
-Node: try129211
+Node: coroutines4456
+Node: event loop22831
+Node: compose108497
+Node: meeting114719
+Node: try129193
 
 End Tag Table
