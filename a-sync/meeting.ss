@@ -199,11 +199,11 @@
 					(when (not (eq? loop (loop-get m))) 
 					  (error "meeting-send-impl"
 						 "meeting-send passed an event loop object for which the meeting was not constructed"))
+					(when (eq? status 'closed)
+					  (k 'closed))
 					(when (and (eq? status 'unset)
 						   (not (q-empty? (resumptions-get m))))
-					  (k m))
-					(when (eq? status 'closed)
-					  (k 'closed))))
+					  (k m))))
 				    meetings)
 			  #f))])
 	  (cond
@@ -323,10 +323,10 @@
 				    (when (not (eq? loop (loop-get m))) 
 				      (error "meeting-receive-impl"
 					     "meeting-receive passed an event loop object for which the meeting was not constructed"))
-				    (when (eq? status 'set)
-				      (k m))
 				    (when (eq? status 'closed)
-				      (k 'closed))))
+				      (k 'closed))
+				    (when (eq? status 'set)
+				      (k m))))
 				meetings)
 		      #f))])
       (cond
