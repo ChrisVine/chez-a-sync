@@ -172,7 +172,7 @@ Here is an example of such a fan in:
 	      (display (meeting-receive await resume m1))
 	      (newline)
 	      (next (+ count 1))))))
-(event-loop-run!))
+(event-loop-run!)
 @end example
 
 In addition, with version 0.13 of this library, only a single meeting
@@ -196,7 +196,7 @@ m2):
 (a-sync (lambda (await resume)
 	  (format #t "meeting-send says: ~a~%"
 		     (meeting-receive await resume m2))))
-(event-loop-run!))
+(event-loop-run!)
 @end example
 
 Once a datum exchange has taken place, the meeting object(s) can be
@@ -262,7 +262,7 @@ Here is an example of such a fan out:
 	    (when (< count 2)
 	      (meeting-send await resume m1 count)
 	      (next (+ count 1))))))
-(event-loop-run!))
+(event-loop-run!)
 @end example
 
 In addition, with version 0.13 of this library, only a single meeting
@@ -289,7 +289,7 @@ Here is an example of selecting on receive:
 	      (format #t "Message received from ~a~%"
 			 (meeting-receive await resume m1 m2))
 	      (next (+ count 1))))))
-(event-loop-run!))
+(event-loop-run!)
 @end example
 
 Once a datum exchange has taken place, the meeting object(s) can be

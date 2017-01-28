@@ -2349,7 +2349,7 @@ object.
           	      (display (meeting-receive await resume m1))
           	      (newline)
           	      (next (+ count 1))))))
-          (event-loop-run!))
+          (event-loop-run!)
 
      In addition, with version 0.13 of this library, only a single
      meeting object could be passed to this procedure.  From version
@@ -2371,7 +2371,7 @@ object.
           (a-sync (lambda (await resume)
           	  (format #t "meeting-send says: ~a~%"
           		     (meeting-receive await resume m2))))
-          (event-loop-run!))
+          (event-loop-run!)
 
      Once a datum exchange has taken place, the meeting object(s) can be
      reused for making another exchange (provided the meeting objects
@@ -2436,7 +2436,7 @@ object.
           	    (when (< count 2)
           	      (meeting-send await resume m1 count)
           	      (next (+ count 1))))))
-          (event-loop-run!))
+          (event-loop-run!)
 
      In addition, with version 0.13 of this library, only a single
      meeting object could be passed to this procedure.  From version
@@ -2461,7 +2461,7 @@ object.
           	      (format #t "Message received from ~a~%"
           			 (meeting-receive await resume m1 m2))
           	      (next (+ count 1))))))
-          (event-loop-run!))
+          (event-loop-run!)
 
      Once a datum exchange has taken place, the meeting object(s) can be
      reused for making another exchange (provided the meeting objects
@@ -2560,6 +2560,6 @@ Node: coroutines4452
 Node: event loop22827
 Node: compose108493
 Node: meeting114715
-Node: try129189
+Node: try129185
 
 End Tag Table
