@@ -115,8 +115,7 @@ event loop can cause execution of the waiting block to come to an end
 by removing the watch using event-loop-remove-read-watch! or
 event-loop-remove-write-watch!, as the case may be (and another native
 OS thread can do this by posting an event to the event loop which does
-the same).  An example is in the example-server.ss file in the docs
-directory.
+the same).
 </p>
 <p>Apart from these &quot;pseudo-threads&quot;, true parallelism is possible using
 native OS threads, with the await-task-in-thread!,

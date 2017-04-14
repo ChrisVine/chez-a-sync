@@ -88,8 +88,7 @@ event loop can cause execution of the waiting block to come to an end by
 removing the watch using event-loop-remove-read-watch!  or
 event-loop-remove-write-watch!, as the case may be (and another native
 OS thread can do this by posting an event to the event loop which does
-the same).  An example is in the example-server.ss file in the docs
-directory.
+the same).
 
    Apart from these "pseudo-threads", true parallelism is possible using
 native OS threads, with the await-task-in-thread!,
@@ -2868,11 +2867,11 @@ exceptions.
 Tag Table:
 Node: Top83
 Node: overview1229
-Node: coroutines4612
-Node: event loop23115
-Node: thread pool108725
-Node: compose124637
-Node: meeting130976
-Node: try145684
+Node: coroutines4544
+Node: event loop23047
+Node: thread pool108657
+Node: compose124569
+Node: meeting130908
+Node: try145616
 
 End Tag Table
