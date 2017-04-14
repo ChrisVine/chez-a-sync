@@ -19,7 +19,7 @@
 ;; This is an example file for an asynchronous socket server.  It is
 ;; just an echo-bot - it will echo back whatever is sent to it.
 ;;
-;; You can send connect to it with: 'telnet ::1 8000'.  Any number of
+;; You can connect to it with: 'telnet ::1 8000'.  Any number of
 ;; telnet sessions (up to the number of file descriptors permitted by
 ;; the system) can be run concurrently.  When the last telnet client
 ;; has disconnected, the server will finish.
@@ -58,7 +58,7 @@
 		      ;; this a-sync block can bring the execution of
 		      ;; the a-sync block in start-server to an end by
 		      ;; removing the watch established by
-		      ;; await-accept!
+		      ;; await-accept-ipv6-connection!
 		      (event-loop-remove-read-watch! server-sock))))))))
 
 (define (start-server)
