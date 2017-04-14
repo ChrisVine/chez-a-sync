@@ -74,8 +74,8 @@
 (a-sync
  (lambda (await resume)
    (set-ignore-sigpipe)
-   ;; getaddrinfo can block, so call it up with either
-   ;; await-task-in-thread! or await-task-in-event-loop!
+   ;; getaddrinfo can block, so call it up with await-task-in-thread!,
+   ;; await-task-in-event-loop! or await-task-in-thread-pool!
    (let* ([socket (await-task-in-thread! await resume
 					(lambda ()
 					  (connect-to-ipv4-host check-ip "http" 0)))]

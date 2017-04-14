@@ -999,9 +999,7 @@
 ;; This procedure acts as a form of channel through which two
 ;; different event loops may communicate.  It also offers a means by
 ;; which a master event loop (the waiter or default event loop) may
-;; allocate work to worker event loops for execution.  It would be
-;; nice to have a pool of worker event loops for the purpose, but that
-;; is a work for the future.
+;; allocate work to worker event loops for execution.
 ;;
 ;; Depending on the circumstances, it may be desirable to provide
 ;; throttling arguments when constructing the 'worker' event loop, in
@@ -1265,8 +1263,7 @@
 ;; channel through which two different event loops may communicate.
 ;; It also offers a means by which a master event loop (the waiter or
 ;; default event loop) may allocate work to worker event loops for
-;; execution.  It would be nice to have a pool of worker event loops
-;; for the purpose, but that is a work for the future.
+;; execution.
 ;;
 ;; Depending on the circumstances, it may be desirable to provide
 ;; throttling arguments when constructing the 'worker' event loop, in

@@ -12,7 +12,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <link href="index.html#Top" rel="start" title="Top">
 <link href="index.html#Top" rel="up" title="Top">
-<link href="compose.html#compose" rel="next" title="compose">
+<link href="thread-pool.html#thread-pool" rel="next" title="thread pool">
 <link href="coroutines.html#coroutines" rel="prev" title="coroutines">
 <style type="text/css">
 <!--
@@ -49,7 +49,7 @@ ul.no-bullet {list-style: none}
 <a name="event-loop"></a>
 <div class="header">
 <p>
-Next: <a href="compose.html#compose" accesskey="n" rel="next">compose</a>, Previous: <a href="overview.html#overview" accesskey="p" rel="prev">overview</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>
+Next: <a href="thread-pool.html#thread-pool" accesskey="n" rel="next">thread pool</a>, Previous: <a href="overview.html#overview" accesskey="p" rel="prev">overview</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>
 </div>
 <hr>
 <h4 class="node-heading">event loop</h4>
@@ -105,7 +105,7 @@ may be called once in consequence, so in such a case either the
 callback should be ready to handle a possibly closed port or the
 worker thread should post the closing as an event using event-post!.
 </p>
-<p>This library files provides the following procedures:
+<p>This library file provides the following procedures:
 </p>
 <dl>
 <dt><a name="index-set_002ddefault_002devent_002dloop_0021"></a>Scheme Procedure: <strong>set-default-event-loop!</strong> <em>[loop]</em></dt>
@@ -449,8 +449,7 @@ event loop runs (as the case may be).
 <p>This procedure acts as a form of channel through which two different
 event loops may communicate.  It also offers a means by which a master
 event loop (the waiter or default event loop) may allocate work to
-worker event loops for execution.  It would be nice to have a pool of
-worker event loops for the purpose, but that is a work for the future.
+worker event loops for execution.
 </p>
 <p>Depending on the circumstances, it may be desirable to provide
 throttling arguments when constructing the &rsquo;worker&rsquo; event loop, in
@@ -686,8 +685,7 @@ the case may be).
 channel through which two different event loops may communicate.  It
 also offers a means by which a master event loop (the waiter or
 default event loop) may allocate work to worker event loops for
-execution.  It would be nice to have a pool of worker event loops for
-the purpose, but that is a work for the future.
+execution.
 </p>
 <p>Depending on the circumstances, it may be desirable to provide
 throttling arguments when constructing the &rsquo;worker&rsquo; event loop, in
@@ -1686,11 +1684,14 @@ change this if wanted.
 chez-simple-sockets package at
 <a href="https://github.com/ChrisVine/chez-simple-sockets">https://github.com/ChrisVine/chez-simple-sockets</a>.  Examples of
 their use are in the example-client.ss and example-server.ss files in
-the docs directory.
+the docs directory.  The <a href="thread-pool.html#thread-pool">(a-sync thread-pool)</a>
+library file in this package also provides
+<strong>await-task-in-thread-pool!</strong> and
+<strong>await-generator-in-thread-pool!</strong> procedures.
 </p><hr>
 <div class="header">
 <p>
-Next: <a href="compose.html#compose" accesskey="n" rel="next">compose</a>, Previous: <a href="overview.html#overview" accesskey="p" rel="prev">overview</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>
+Next: <a href="thread-pool.html#thread-pool" accesskey="n" rel="next">thread pool</a>, Previous: <a href="overview.html#overview" accesskey="p" rel="prev">overview</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>
 </div>
 
 

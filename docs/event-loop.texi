@@ -1,4 +1,4 @@
-@node event loop,compose,overview,Top
+@node event loop,thread pool,overview,Top
 
 The (a-sync event-loop) library file provides an event loop for
 asynchronous operations.  The event loop does not of itself start any
@@ -51,7 +51,7 @@ may be called once in consequence, so in such a case either the
 callback should be ready to handle a possibly closed port or the
 worker thread should post the closing as an event using event-post!.
 
-This library files provides the following procedures:
+This library file provides the following procedures:
 
 @deffn {Scheme Procedure} set-default-event-loop! [loop]
 The 'loop' (event loop) argument is optional.  This procedure sets the
@@ -378,8 +378,7 @@ event loop runs (as the case may be).
 This procedure acts as a form of channel through which two different
 event loops may communicate.  It also offers a means by which a master
 event loop (the waiter or default event loop) may allocate work to
-worker event loops for execution.  It would be nice to have a pool of
-worker event loops for the purpose, but that is a work for the future.
+worker event loops for execution.
 
 Depending on the circumstances, it may be desirable to provide
 throttling arguments when constructing the 'worker' event loop, in
@@ -611,8 +610,7 @@ This procedure acts, with await-task-in-event-loop!, as a form of
 channel through which two different event loops may communicate.  It
 also offers a means by which a master event loop (the waiter or
 default event loop) may allocate work to worker event loops for
-execution.  It would be nice to have a pool of worker event loops for
-the purpose, but that is a work for the future.
+execution.
 
 Depending on the circumstances, it may be desirable to provide
 throttling arguments when constructing the 'worker' event loop, in
@@ -1596,4 +1594,7 @@ Additional @strong{await-connect-to-ipv4-host!},
 chez-simple-sockets package at
 @uref{https://github.com/ChrisVine/chez-simple-sockets}.  Examples of
 their use are in the example-client.ss and example-server.ss files in
-the docs directory.
+the docs directory.  The @ref{thread pool,,(a-sync thread-pool)}
+library file in this package also provides
+@strong{await-task-in-thread-pool!} and
+@strong{await-generator-in-thread-pool!} procedures.

@@ -25,10 +25,12 @@ strictly for use by "pseudo-threads" which are running on the same
 event loop, and so 'ipso facto' running in the same native OS thread.
 To have other native OS threads communicate with an event-loop, use
 await-task-in-thread!, await-task-in-event-loop!,
-await-generator-in-thread! or await-generator-in-event-loop! (see
-@ref{event loop,,(a-sync event-loop)}).  Having said that, some
-things, such as having one "pseudo-thread" join on another
-"pseudo-thread", are more easily done with meeting objects.
+await-task-in-thread-pool!, await-generator-in-thread!,
+await-generator-in-event-loop! or await-generator-in-thread-pool! (see
+@ref{event loop,,(a-sync event-loop)} and @ref{thread pool,,(a-sync
+thread-pool)}).  Having said that, some things, such as having one
+"pseudo-thread" join on another "pseudo-thread", are more easily done
+with meeting objects.
 
 A "pseudo-thread" enters a meeting by applying meeting-receive (where
 it is to receive a datum at the meeting) or meeting-send (where it is
@@ -206,8 +208,9 @@ not been closed).
 This procedure must be called in the native OS thread in which the
 event loop concerned runs.  To have other native OS threads
 communicate with an event-loop, use await-task-in-thread!,
-await-task-in-event-loop!, await-generator-in-thread! or
-await-generator-in-event-loop!.
+await-task-in-event-loop!, await-task-in-thread-pool!,
+await-generator-in-thread!, await-generator-in-event-loop! or
+await-generator-in-thread-pool!.
 
 This procedure always returns #f unless meeting-close has been applied
 to a meeting object, in which case 'stop-iteration is returned.  Note
@@ -299,8 +302,9 @@ not been closed).
 This procedure must be called in the native OS thread in which the
 event loop concerned runs.  To have other native OS threads
 communicate with an event-loop, use await-task-in-thread!,
-await-task-in-event-loop!, await-generator-in-thread! or
-await-generator-in-event-loop!.
+await-task-in-event-loop!, await-task-in-thread-pool!,
+await-generator-in-thread!, await-generator-in-event-loop! or
+await-generator-in-thread-pool!.
 
 This procedure always returns the datum value supplied by meeting-send
 unless meeting-close has been applied to a meeting object, in which

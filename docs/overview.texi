@@ -67,5 +67,6 @@ directory.
 
 Apart from these "pseudo-threads", true parallelism is possible using
 native OS threads, with the await-task-in-thread!,
-await-task-in-event-loop!, await-generator-in-thread! and
-await-generator-in-event-loop! procedures.
+await-task-in-event-loop!, await-task-in-thread-pool!,
+await-generator-in-thread!, await-generator-in-event-loop! and
+await-generator-in-thread-pool! procedures.

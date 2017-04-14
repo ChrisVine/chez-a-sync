@@ -92,8 +92,8 @@
 ;; This procedure will throw an exception if a 'size' argument of less
 ;; than 1 is given, or if the system is unable to start the number of
 ;; threads given as the 'size' argument.  If unable to start the
-;; number of threads so given, any threads which have in fact been
-;; started will be killed.
+;; number of threads so given, any threads which have in fact started
+;; in the pool will be killed.
 ;;
 ;; This procedure is first available in version 0.16 of this library.
 (define make-thread-pool
@@ -181,9 +181,9 @@
 ;; although it accesses the task number field outside the pool mutex
 ;; and therefore with relaxed memory ordering.  That enables this
 ;; procedure to be applied more efficiently for rate limiting purposes
-;; but it might at any one time be marginally out of date.
+;; but the result might at any one time be marginally out of date.
 ;;
-;; This procedure is first available in version 0.18 of this library.
+;; This procedure is first available in version 0.16 of this library.
 (define (thread-pool-get-num-tasks pool)
   ;; we do not use the thread pool mutex to protect the num-tasks
   ;; record field here for efficiency reasons, as user code may want
@@ -203,7 +203,7 @@
     (num-threads-get pool)))
 
 ;; This procedure returns the current size setting for the thread pool
-;; (namely the number of threads that the pool will run).
+;; (namely the number of threads that the pool runs).
 ;;
 ;; This procedure is thread safe (any thread may call it).
 ;;
@@ -217,6 +217,14 @@
 ;; value of 'delta'.  This procedure does nothing if thread-pool-stop!
 ;; has previously been called.  This procedure is thread safe - any
 ;; thread may call it.
+;;
+;; One use for dynamic sizing of this kind is for a task to increment
+;; the thread number where it is about to enter a call which may block
+;; for some time, with a view to decrementing it later when it has
+;; finished making blocking calls, so as to enable another thread to
+;; keep a core active.  Alternatively, it can be used to reduce thread
+;; usage when a full set of threads is no longer required by the
+;; program.
 ;;
 ;; If 'delta' is positive, this procedure may raise an exception if
 ;; the system is unable to start the required new threads.
@@ -322,7 +330,7 @@
 	      ((= (num-threads-get pool) 0))
 	      (condition-wait (condvar-get pool) mutex)))))))
 
-;; This procedure adds a new task to the thread pool. If one or more
+;; This procedure adds a new task to the thread pool.  If one or more
 ;; threads in the pool are currently blocking and waiting for a task,
 ;; then the task will begin executing immediately in one of the
 ;; threads.  If not, the task will be queued for execution as soon as
