@@ -210,7 +210,7 @@
 ;; This procedure is first available in version 0.16 of this library.
 (define (thread-pool-get-size pool)
   (with-mutex (mutex-get pool)
-    (num-threads-get pool)))
+    (size-get pool)))
 
 ;; This procedure will increase, or if 'delta' is negative reduce, the
 ;; number of threads which the thread pool object will run by the
