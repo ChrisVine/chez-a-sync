@@ -313,7 +313,9 @@
 ;;
 ;; After this procedure has been called, any attempt to add further
 ;; tasks with the thread-pool-add! procedure will fail, and that
-;; procedure will raise a &violation exception.
+;; procedure will raise a &violation exception.  The same exception
+;; will be raised if this procedure is applied to a thread pool to
+;; which this procedure has previously been applied.
 ;;
 ;; This procedure is thread safe (any thread may call it) unless the
 ;; non-blocking setting is #f, in which case no task running on the

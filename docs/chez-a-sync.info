@@ -2208,7 +2208,9 @@ the already accumulated tasks has reduced.
 
      After this procedure has been called, any attempt to add further
      tasks with the thread-pool-add!  procedure will fail, and that
-     procedure will raise a &violation exception.
+     procedure will raise a &violation exception.  The same exception
+     will be raised if this procedure is applied to a thread pool to
+     which this procedure has previously been applied.
 
      This procedure is thread safe (any thread may call it) unless the
      non-blocking setting is #f, in which case no task running on the
@@ -2869,8 +2871,8 @@ Node: overview1229
 Node: coroutines4544
 Node: event loop23047
 Node: thread pool108657
-Node: compose124504
-Node: meeting130843
-Node: try145551
+Node: compose124648
+Node: meeting130987
+Node: try145695
 
 End Tag Table
