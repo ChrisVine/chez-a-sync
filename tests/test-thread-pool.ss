@@ -259,7 +259,7 @@
   (test-result 4 count)
   (print-result))
 
-;; Test 8: await-task-in-thread! without handler
+;; Test 8: await-task-in-thread-pool! without handler
 
 (define main-loop (make-event-loop))
 
@@ -270,7 +270,6 @@
 					       (lambda ()
 						 (+ 5 10)))])
 	      (test-result 15 res)
-	      (test-result 0 (thread-pool-get-num-tasks pool))
 	      (print-result)
 	      (event-loop-quit! main-loop))))
   (event-loop-block! #t main-loop)
@@ -278,7 +277,7 @@
   (event-loop-block! #f main-loop)
   (thread-pool-stop! pool))
 		    
-;; Test 9: await-task-in-thread! with handler
+;; Test 9: await-task-in-thread-pool! with handler
 
 (let ([pool (make-thread-pool 2)])
   (a-sync (lambda (await resume)
@@ -290,7 +289,6 @@
 		      (test-result 'test-exception c)
 		      5))])
 	      (test-result 5 res)
-	      (test-result 0 (thread-pool-get-num-tasks pool))
 	      (print-result)
 	      (event-loop-quit! main-loop))))
   (event-loop-block! #t main-loop)
@@ -315,7 +313,6 @@
 	      (test-result (car lst) 8)
 	      (test-result (length lst) 5)
 	      (test-result res #f)
-	      (test-result 0 (thread-pool-get-num-tasks pool))
 	      (print-result)
 	      (event-loop-block! #f main-loop))))
   (event-loop-block! #t main-loop)
@@ -350,7 +347,6 @@
 	      (test-result (car lst) 100)
 	      (test-result (length lst) 6)
 	      (test-result res 'chez-a-sync-thread-error)
-	      (test-result 0 (thread-pool-get-num-tasks pool))
 	      (print-result)
 	      (event-loop-block! #f main-loop))))
   (event-loop-block! #t main-loop)
@@ -362,7 +358,7 @@
 (event-loop-block! #f main-loop)
 (set-default-event-loop! main-loop)
 
-;; Test 12: await-task-in-thread! without handler
+;; Test 12: await-task-in-thread-pool! without handler
 
 (define main-loop (make-event-loop))
 
@@ -373,7 +369,6 @@
 					       (lambda ()
 						 (+ 5 10)))])
 	      (test-result 15 res)
-	      (test-result 0 (thread-pool-get-num-tasks pool))
 	      (print-result)
 	      (event-loop-quit!))))
   (event-loop-block! #t)
@@ -381,7 +376,7 @@
   (event-loop-block! #f)
   (thread-pool-stop! pool))
 		    
-;; Test 13: await-task-in-thread! with handler
+;; Test 13: await-task-in-thread-pool! with handler
 
 (let ([pool (make-thread-pool 2)])
   (a-sync (lambda (await resume)
@@ -393,7 +388,6 @@
 		      (test-result 'test-exception c)
 		      5))])
 	      (test-result 5 res)
-	      (test-result 0 (thread-pool-get-num-tasks pool))
 	      (print-result)
 	      (event-loop-quit!))))
   (event-loop-block! #t)
@@ -418,7 +412,6 @@
 	      (test-result (car lst) 8)
 	      (test-result (length lst) 5)
 	      (test-result res #f)
-	      (test-result 0 (thread-pool-get-num-tasks pool))
 	      (print-result)
 	      (event-loop-block! #f))))
   (event-loop-block! #t)
@@ -453,7 +446,6 @@
 	      (test-result (car lst) 100)
 	      (test-result (length lst) 6)
 	      (test-result res 'chez-a-sync-thread-error)
-	      (test-result 0 (thread-pool-get-num-tasks pool))
 	      (print-result)
 	      (event-loop-block! #f))))
   (event-loop-block! #t)
