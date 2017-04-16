@@ -76,18 +76,29 @@
 	  (mutable blocking blocking-get blocking-set!)
 	  (mutable stopped stopped-get stopped-set!)))
 
-;; This procedure constructs a thread pool object.  The 'size'
-;; argument specifies the number of threads which will run in the
-;; pool, and must be greater than 0.  The 'non-blocking' argument is
-;; optional and affects the operation of the thread-pool-stop!
-;; procedure.  When set to #f, which is the default, that procedure
-;; will not return until all tasks previously added to the pool have
-;; completed.  If set to #t, the thread-pool-stop! procedure will
-;; return immediately, before all tasks have finished.
+;; This procedure constructs a thread pool object of native OS
+;; threads.  The 'size' argument specifies the number of threads which
+;; will run in the pool, and must be greater than 0.  The
+;; 'non-blocking' argument is optional and affects the operation of
+;; the thread-pool-stop! procedure.  When set to #f, which is the
+;; default, that procedure will not return until all tasks previously
+;; added to the pool have completed.  If set to #t, the
+;; thread-pool-stop! procedure will return immediately, before all
+;; tasks have finished.
 ;;
 ;; The 'size' and 'non-blocking' settings may subsequently be altered
 ;; by applying the thread-pool-change-size! or
 ;; thread-pool-set-non-blocking! procedure to the pool.
+;;
+;; Thread pool objects are usually best kept as top level objects,
+;; because threads in the pool will keep alive until thread-pool-stop!
+;; is called.  If a thread pool is constructed within a local lexical
+;; scope, then either thread-pool-stop! must be applied to the pool
+;; before that scope is exited, or the last task added to the pool
+;; should itself apply thread-pool-stop! to the pool (which it can do
+;; if 'non-blocking' is #t).  Otherwise, the threads in the pool will
+;; remain alive uselessly in blocked condition until the program
+;; terminates, even though the pool may be inaccessible.
 ;;
 ;; This procedure will throw an exception if a 'size' argument of less
 ;; than 1 is given, or if the system is unable to start the number of
