@@ -166,11 +166,15 @@ previously been called.  This procedure is thread safe - any thread
 may call it.
 </p>
 <p>One use for dynamic sizing of this kind is for a task to increment the
-thread number where it is about to enter a call which may block for
-some time, with a view to decrementing it later when it has finished
-making blocking calls, so as to enable another thread to keep a core
-active.  Alternatively, it can be used to reduce thread usage when a
-full set of threads is no longer required by the program.
+thread number where it is about to enter a call which may block
+(non-asynchronously) for some time, with a view to decrementing it
+later when it has finished making blocking calls, so as to enable
+another thread to keep a core active.  A with-thread-pool-increment
+macro is available which will do this for you automatically in an
+exception-safe way (see the documentation on that macro below).
+</p>
+<p>Alternatively, this procedure can be used to reduce thread usage when
+a full set of threads is no longer required by the program.
 </p>
 <p>If &rsquo;delta&rsquo; is positive, this procedure may raise an exception if the
 system is unable to start the required new threads.
@@ -244,6 +248,31 @@ after the thread pool object concerned has been closed by a call to
 thread-pool-stop!.
 </p>
 <p>This procedure is first available in version 0.16 of this library.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-_0028with_002dthread_002dpool_002dincrement"></a>Syntax: <strong>(with-thread-pool-increment</strong> <em>pool body0 body1 ...)</em></dt>
+<dd><p>This macro is intended to be called by a task running on a thread pool
+which is about to make a blocking (non-asynchronous) call.  It will
+increment the number of threads in &rsquo;pool&rsquo; by 1 (by calling
+thread-pool-change-size!) so as to enable a queued task to keep a core
+active, and decrement it again when execution of the body clauses has
+completed.
+</p>
+<p>The (i) increment, (ii) execution of body clauses, and (iii)
+decrement, form the three branches of a dynamic-wind, so the decrement
+automatically occurs if control leaves body execution because of an
+exception or other jump.
+</p>
+<p>As this macro starts a new thread, it may raise an exception if the
+system is unable to start it.  Starting a new thread is also not free
+of overhead and it may be worth profiling a prospective use case to
+see if running a few more threads in the thread pool than the number
+of processors in the system permanently, rather than changing it using
+this macro, and letting the OS&rsquo;s scheduler handle the situation, is a
+better option.
+</p>
+<p>This macro is first available in version 0.16 of this library.
 </p></dd></dl>
 
 <dl>

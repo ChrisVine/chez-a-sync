@@ -2169,11 +2169,14 @@ the already accumulated tasks has reduced.
 
      One use for dynamic sizing of this kind is for a task to increment
      the thread number where it is about to enter a call which may block
-     for some time, with a view to decrementing it later when it has
-     finished making blocking calls, so as to enable another thread to
-     keep a core active.  Alternatively, it can be used to reduce thread
-     usage when a full set of threads is no longer required by the
-     program.
+     (non-asynchronously) for some time, with a view to decrementing it
+     later when it has finished making blocking calls, so as to enable
+     another thread to keep a core active.  A with-thread-pool-increment
+     macro is available which will do this for you automatically in an
+     exception-safe way (see the documentation on that macro below).
+
+     Alternatively, this procedure can be used to reduce thread usage
+     when a full set of threads is no longer required by the program.
 
      If 'delta' is positive, this procedure may raise an exception if
      the system is unable to start the required new threads.
@@ -2239,6 +2242,29 @@ the already accumulated tasks has reduced.
      thread-pool-stop!.
 
      This procedure is first available in version 0.16 of this library.
+
+ -- Syntax: (with-thread-pool-increment pool body0 body1 ...)
+     This macro is intended to be called by a task running on a thread
+     pool which is about to make a blocking (non-asynchronous) call.  It
+     will increment the number of threads in 'pool' by 1 (by calling
+     thread-pool-change-size!)  so as to enable a queued task to keep a
+     core active, and decrement it again when execution of the body
+     clauses has completed.
+
+     The (i) increment, (ii) execution of body clauses, and (iii)
+     decrement, form the three branches of a dynamic-wind, so the
+     decrement automatically occurs if control leaves body execution
+     because of an exception or other jump.
+
+     As this macro starts a new thread, it may raise an exception if the
+     system is unable to start it.  Starting a new thread is also not
+     free of overhead and it may be worth profiling a prospective use
+     case to see if running a few more threads in the thread pool than
+     the number of processors in the system permanently, rather than
+     changing it using this macro, and letting the OS's scheduler handle
+     the situation, is a better option.
+
+     This macro is first available in version 0.16 of this library.
 
  -- Scheme Procedure: await-task-in-thread-pool! await resume [loop]
           pool thunk [handler]
@@ -2871,8 +2897,8 @@ Node: overview1229
 Node: coroutines4544
 Node: event loop23047
 Node: thread pool108657
-Node: compose124648
-Node: meeting130987
-Node: try145695
+Node: compose126077
+Node: meeting132416
+Node: try147124
 
 End Tag Table

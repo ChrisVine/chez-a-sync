@@ -451,3 +451,34 @@
   (event-loop-block! #t)
   (event-loop-run!)
   (thread-pool-stop! pool))
+
+;; Test 16: with-thread-pool-increment
+
+(let ([pool (make-thread-pool 1)]
+      [mutex (make-mutex)]
+      [condvar (make-condition)]
+      [count 0])
+  (thread-pool-add! pool (lambda ()
+			   (with-thread-pool-increment
+			    pool
+			    (sleep (make-time 'time-duration 100000000 0))
+			    (with-mutex mutex
+			      (set! count (1+ count))
+			      (condition-signal condvar)))))
+  (thread-pool-add! pool (lambda ()
+			   (sleep (make-time 'time-duration 100000000 0))
+			   (with-mutex mutex
+			     (set! count (1+ count))
+			     (condition-signal condvar))))
+  (test-result 2 (thread-pool-get-num-tasks pool))
+  ;; allow first task to start and increment max-thread value
+  (sleep (make-time 'time-duration 50000000 0))
+  (test-result 2 (thread-pool-get-size pool))
+  (test-result 2  (thread-pool-get-num-threads pool))
+  (with-mutex mutex
+    (do ()
+	((= count 2))
+      (condition-wait condvar mutex)))
+  (test-result 2 count)
+  (thread-pool-stop! pool)
+  (print-result))
