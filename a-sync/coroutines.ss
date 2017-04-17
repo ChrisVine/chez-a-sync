@@ -71,7 +71,7 @@
       [(send-back)
        (if done
 	   'stop-iteration
-	   ((call/cc
+	   ((call/1cc
 	     (lambda (k)
 	       (set! prompt-cont k)
 	       (if iter-cont
@@ -133,7 +133,7 @@
 	    (case-lambda
 	      [() (resume #f)]
 	      [(arg)
-	       ((call/cc
+	       ((call/1cc
 		 (lambda (kr)
 		   (set! prompt-cont kr)
 		   (ky arg))))]))
@@ -144,7 +144,7 @@
     (case-lambda
       [() (cor #f)]
       [(arg)
-       ((call/cc
+       ((call/1cc
 	 (lambda (k)
 	   (set! prompt-cont k)
 	   ;; any exception must propagate in the context of the

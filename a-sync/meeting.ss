@@ -192,7 +192,7 @@
 	;; meeting's resumptions are empty so nothing is waiting: in
 	;; either case we should also add ourselves to all the
 	;; meetings' queues and wait for a receiver.
-	(let ([meeting (call/cc
+	(let ([meeting (call/1cc
 			(lambda (k)
 			  (for-each (lambda (m)
 				      (let ([status (status-get m)])
@@ -316,7 +316,7 @@
     ;; 'unset for all of them, which means that no sender is waiting
     ;; and we must add ourselves to all the meetings' queues and wait
     ;; for a sender.
-    (let ([meeting (call/cc
+    (let ([meeting (call/1cc
 		    (lambda (k)
 		      (for-each (lambda (m)
 				  (let ([status (status-get m)])

@@ -147,7 +147,7 @@
   (define (object->string obj)
     (call-with-string-output-port
      (lambda (p) (put-datum p obj))))
-  (call/cc
+  (call/1cc
    (lambda (return)
      (let ([mutex (mutex-get pool)])
        (let lp ([task (a-queue-pop! (aq-get pool))])

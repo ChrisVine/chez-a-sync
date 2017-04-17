@@ -1874,7 +1874,7 @@
 		     (not res))
 		 res]
 		[else
-		 (call/cc
+		 (call/1cc
 		  (lambda (k)
 		    (proc res k)
 		    (next (await))))]))])
@@ -2241,7 +2241,7 @@
 		       (not val))
 		   val]
 		  [else
-		   (call/cc
+		   (call/1cc
 		    (lambda (k)
 		      (proc val len k)
 		      (if (< len size)

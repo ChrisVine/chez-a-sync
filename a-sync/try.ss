@@ -74,7 +74,7 @@
   (lambda (x)
     (syntax-case x (except)
       [(try body0 body1 ... (except condition clause0 clause1 ...))
-       #`((call/cc
+       #`((call/1cc
            (lambda (escape)
              (with-exception-handler
               (lambda (c)
