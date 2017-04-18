@@ -2179,7 +2179,15 @@ the already accumulated tasks has reduced.
      when a full set of threads is no longer required by the program.
 
      If 'delta' is positive, this procedure may raise an exception if
-     the system is unable to start the required new threads.
+     the system is unable to start the required new threads.  If such an
+     exception is raised, at least the number of threads which were
+     running before the call to this procedure will remain running, but
+     that number will be less than the value returned by
+     thread-pool-get-size.  The best thing in those circumstances is to
+     apply thread-pool-stop!, which allows the tasks already in the pool
+     to run to completion, then address the cause of the failure to
+     start new threads, and then start another pool with the required
+     number of threads.
 
      This procedure is first available in version 0.16 of this library.
 
@@ -2897,8 +2905,8 @@ Node: overview1229
 Node: coroutines4544
 Node: event loop23047
 Node: thread pool108657
-Node: compose126077
-Node: meeting132416
-Node: try147124
+Node: compose126593
+Node: meeting132932
+Node: try147640
 
 End Tag Table

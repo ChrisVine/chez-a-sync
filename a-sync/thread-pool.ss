@@ -73,6 +73,7 @@
 	  ;; 'num-threads' may be different to 'size' if 'size' has
 	  ;; recently been changed by the user
 	  (mutable num-threads num-threads-get num-threads-set!)
+	  (mutable thread-start thread-start-get thread-start-set!)
 	  (mutable num-tasks num-tasks-get num-tasks-set!)
 	  (mutable blocking blocking-get blocking-set!)
 	  (mutable stopped stopped-get stopped-set!)))
@@ -121,6 +122,7 @@
 				    (make-condition)
 				    (make-a-queue)
 				    size
+				    0
 				    0
 				    0
 				    (not non-blocking)
@@ -172,16 +174,35 @@
 			  "thread-loop"
 			  (string-append "Exception raised by thread pool task with no fail-handler: "
 					 (object->string c)))))]))
-	 ;; cater for a case where the number of threads in the pool
-	 ;; has been reduced by the user
 	 (with-mutex mutex
 	   (num-tasks-set! pool (- (num-tasks-get pool) 1))
+	   ;; cater for a case where the number of threads in the pool
+	   ;; has been reduced by the user
 	   (when (> (num-threads-get pool) (size-get pool))
-	     (num-threads-set! pool (- (num-threads-get pool) 1))
-	     (when (and (stopped-get pool)
-			(blocking-get pool))
-	       (condition-broadcast (condvar-get pool)))
-	     (return #f)))
+	     ;; we don't want a failure to start a new thread in
+	     ;; thread-pool-change-size! to mean that we can decrement
+	     ;; num-threads to less than 1 and extinguish all threads.
+	     ;; If thread-start is set (ie a new thread is in course
+	     ;; of starting) we need to repost a dummy task
+	     ;; incorporating a small wait, which will caused thread
+	     ;; status to be checked again once the new thread has
+	     ;; started.  This is not ideal but the best we can do
+	     ;; without timed waits on condition variables.
+	     (if (> (thread-start-get pool) 0)
+		 (begin
+		   (a-queue-push! (aq-get pool)
+				  (cons (lambda ()
+					  ;; 1 microsecond delay
+					  (sleep (make-time 'time-duration 1000 0)))
+					#f))
+		   (num-tasks-set! pool (+ (num-tasks-get pool) 1)))
+		 (begin
+		   (num-threads-set! pool (- (num-threads-get pool) 1))
+		   (when (and (stopped-get pool)
+			      (blocking-get pool))
+		     (condition-broadcast (condvar-get pool)))
+		   (return #f)))))
+	 ;; we are outside the mutex here
 	 (lp (a-queue-pop! (aq-get pool))))))))
 
 ;; This procedure returns the number of tasks which the thread pool
@@ -239,52 +260,62 @@
 ;; when a full set of threads is no longer required by the program.
 ;;
 ;; If 'delta' is positive, this procedure may raise an exception if
-;; the system is unable to start the required new threads.
+;; the system is unable to start the required new threads.  If such an
+;; exception is raised, at least the number of threads which were
+;; running before the call to this procedure will remain running, but
+;; that number will be less than the value returned by
+;; thread-pool-get-size.  The best thing in those circumstances is to
+;; apply thread-pool-stop!, which allows the tasks already in the pool
+;; to run to completion, then address the cause of the failure to
+;; start new threads, and then start another pool with the required
+;; number of threads.
 ;;
 ;; This procedure is first available in version 0.16 of this library.
 (define (thread-pool-change-size! pool delta)
-  ;; to minimize contention, we want to start any new threads outside
-  ;; the mutex, but do the book-keeping within the mutex
-  (let ([start-threads
-	 (with-mutex (mutex-get pool)
-	   (cond
-	    [(stopped-get pool) #f]
-	    [(< delta 0)
-	     (let* ([cur-size (size-get pool)]
-		    [new-size (max 1 (+ cur-size delta))]
-		    [num-tasks (num-tasks-get pool)]
-		    [push-tasks (let ([diff (- cur-size new-size)])
-				  (if (>= num-tasks diff)
-				      0
-				      (- diff num-tasks)))])
-	       (size-set! pool new-size)
-	       (do ([count 0 (+ count 1)])
-		   ((= count push-tasks))
-		 (a-queue-push! (aq-get pool) (cons (lambda () #f) #f))
-		 (num-tasks-set! pool (+ num-tasks 1))))
-	     #f]
-	    [(> delta 0)
-	     (let* ([cur-size (size-get pool)]
-		    [new-size (+ cur-size delta)]
-		    [start-threads (- new-size cur-size)])
-	       (size-set! pool new-size)
-	       (num-threads-set! pool (+ (num-threads-get pool) start-threads))
-	       start-threads)]
-	    [else #f]))])
-    (when start-threads
-      (do ([count 0 (+ count 1)])
-	  ((= count start-threads))
+  (let ([mutex (mutex-get pool)])
+    ;; to minimize contention, we want to start any new threads
+    ;; outside the mutex, but do the book-keeping within the mutex
+    (let ([start-threads
+	   (with-mutex mutex
+	     (cond
+	      [(stopped-get pool) #f]
+	      [(< delta 0)
+	       (let* ([cur-size (size-get pool)]
+		      [new-size (max 1 (+ cur-size delta))]
+		      [num-tasks (num-tasks-get pool)]
+		      [push-tasks (let ([diff (- cur-size new-size)])
+				    (if (>= num-tasks diff)
+					0
+					(- diff num-tasks)))])
+		 (size-set! pool new-size)
+		 (do ([count 0 (+ count 1)])
+		     ((= count push-tasks))
+		   (a-queue-push! (aq-get pool) (cons (lambda () #f) #f))
+		   (num-tasks-set! pool (+ num-tasks 1))))
+	       #f]
+	      [(> delta 0)
+	       (size-set! pool (+ (size-get pool) delta))
+	       (num-threads-set! pool (+ (num-threads-get pool) delta))
+	       (thread-start-set! pool (+ (thread-start-get pool) 1))
+	       delta]
+	      [else #f]))])
+      (when start-threads
+	(do ([count 0 (+ count 1)])
+	    ((= count start-threads))
 	  (try
 	   (fork-thread (lambda () (thread-loop pool)))
 	   (except c
 		   [else
 		    ;; roll back for any unstarted threads
-		    (with-mutex (mutex-get pool)
+		    (with-mutex mutex
 		      (num-threads-set! pool (+ (- (num-threads-get pool) start-threads) count))
+		      (thread-start-set! pool (- (thread-start-get pool) 1))
 		      (when (and (stopped-get pool)
 				 (blocking-get pool))
 			(condition-broadcast (condvar-get pool)))
-		      (raise c))]))))))
+		      (raise c))])))
+	(with-mutex mutex
+	  (thread-start-set! pool (- (thread-start-get pool) 1)))))))
 
 ;; This procedure returns the current non-blocking status of the
 ;; thread pool.  (See the documentation on the thread-pool-stop!

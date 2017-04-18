@@ -177,7 +177,14 @@ exception-safe way (see the documentation on that macro below).
 a full set of threads is no longer required by the program.
 </p>
 <p>If &rsquo;delta&rsquo; is positive, this procedure may raise an exception if the
-system is unable to start the required new threads.
+system is unable to start the required new threads.  If such an
+exception is raised, at least the number of threads which were running
+before the call to this procedure will remain running, but that number
+will be less than the value returned by thread-pool-get-size.  The
+best thing in those circumstances is to apply thread-pool-stop!, which
+allows the tasks already in the pool to run to completion, then
+address the cause of the failure to start new threads, and then start
+another pool with the required number of threads.
 </p>
 <p>This procedure is first available in version 0.16 of this library.
 </p></dd></dl>
