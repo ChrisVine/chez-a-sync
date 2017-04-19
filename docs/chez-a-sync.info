@@ -2152,6 +2152,18 @@ the already accumulated tasks has reduced.
 
      This procedure is first available in version 0.16 of this library.
 
+ -- Scheme Procedure: thread-pool-get-num-threads pool
+     This procedure returns the number of threads currently running in
+     the thread pool.  It may transiently be greater than the value
+     returned by thread-pool-get-size if the thread pool size has
+     recently been reduced by a call to thread-pool-change-size!.  It
+     may be less than that value if thread-pool-change-size!  has raised
+     an exception on trying to start a new thread.
+
+     This procedure is thread safe (any thread may call it).
+
+     This procedure is first available in version 0.16 of this library.
+
  -- Scheme Procedure: thread-pool-get-size pool
      This procedure returns the current size setting for the thread pool
      (namely the number of threads that the pool runs).
@@ -2179,15 +2191,25 @@ the already accumulated tasks has reduced.
      when a full set of threads is no longer required by the program.
 
      If 'delta' is positive, this procedure may raise an exception if
-     the system is unable to start the required new threads.  If such an
-     exception is raised, at least the number of threads which were
-     running before the call to this procedure will remain running, but
-     that number will be less than the value returned by
-     thread-pool-get-size.  The best thing in those circumstances is to
-     apply thread-pool-stop!, which allows the tasks already in the pool
-     to run to completion, then address the cause of the failure to
-     start new threads, and then start another pool with the required
-     number of threads.
+     the system is unable to start the required new threads.  Because
+     starting new threads can be time consuming, to minimize contention
+     new threads are started outside the pool's mutex, although internal
+     book-keeping is done within the mutex.  One consequence is that if
+     such an exception is raised, less threads than the size of the pool
+     will be running.  The best thing in those circumstances is to apply
+     thread-pool-stop!, which allows the tasks already in the pool to
+     run to completion, then address the cause of the failure to start
+     new threads, and then start another pool with the required number
+     of threads.  However if, concurrently with this thread increasing
+     the size of the pool, another thread reduces that size by an amount
+     equal to or greater than its original size, and the system fails to
+     start any new threads at all, then the pool could have no running
+     threads in it (so that thread-pool-get-num-threads returns 0) even
+     though some tasks previously added to it remain pending.  If the
+     system can start no new threads even though none are running in the
+     pool, it will be significantly broken so it is not usually worth
+     troubling about this - the program is doomed in that event
+     whatever.
 
      This procedure is first available in version 0.16 of this library.
 
@@ -2251,7 +2273,7 @@ the already accumulated tasks has reduced.
 
      This procedure is first available in version 0.16 of this library.
 
- -- Syntax: (with-thread-pool-increment pool body0 body1 ...)
+ -- Syntax: with-thread-pool-increment pool body0 body1 ...
      This macro is intended to be called by a task running on a thread
      pool which is about to make a blocking (non-asynchronous) call.  It
      will increment the number of threads in 'pool' by 1 (by calling
@@ -2905,8 +2927,8 @@ Node: overview1229
 Node: coroutines4544
 Node: event loop23047
 Node: thread pool108657
-Node: compose126593
-Node: meeting132932
-Node: try147640
+Node: compose127901
+Node: meeting134240
+Node: try148948
 
 End Tag Table

@@ -148,6 +148,20 @@ result might at any one time be marginally out of date.
 </p></dd></dl>
 
 <dl>
+<dt><a name="index-thread_002dpool_002dget_002dnum_002dthreads"></a>Scheme Procedure: <strong>thread-pool-get-num-threads</strong> <em>pool</em></dt>
+<dd><p>This procedure returns the number of threads currently running in the
+thread pool.  It may transiently be greater than the value returned by
+thread-pool-get-size if the thread pool size has recently been reduced
+by a call to thread-pool-change-size!.  It may be less than that value
+if thread-pool-change-size! has raised an exception on trying to start
+a new thread.
+</p>
+<p>This procedure is thread safe (any thread may call it).
+</p>
+<p>This procedure is first available in version 0.16 of this library.
+</p></dd></dl>
+
+<dl>
 <dt><a name="index-thread_002dpool_002dget_002dsize"></a>Scheme Procedure: <strong>thread-pool-get-size</strong> <em>pool</em></dt>
 <dd><p>This procedure returns the current size setting for the thread pool
 (namely the number of threads that the pool runs).
@@ -177,14 +191,24 @@ exception-safe way (see the documentation on that macro below).
 a full set of threads is no longer required by the program.
 </p>
 <p>If &rsquo;delta&rsquo; is positive, this procedure may raise an exception if the
-system is unable to start the required new threads.  If such an
-exception is raised, at least the number of threads which were running
-before the call to this procedure will remain running, but that number
-will be less than the value returned by thread-pool-get-size.  The
-best thing in those circumstances is to apply thread-pool-stop!, which
-allows the tasks already in the pool to run to completion, then
-address the cause of the failure to start new threads, and then start
-another pool with the required number of threads.
+system is unable to start the required new threads.  Because starting
+new threads can be time consuming, to minimize contention new threads
+are started outside the pool&rsquo;s mutex, although internal book-keeping
+is done within the mutex.  One consequence is that if such an
+exception is raised, less threads than the size of the pool will be
+running.  The best thing in those circumstances is to apply
+thread-pool-stop!, which allows the tasks already in the pool to run
+to completion, then address the cause of the failure to start new
+threads, and then start another pool with the required number of
+threads.  However if, concurrently with this thread increasing the
+size of the pool, another thread reduces that size by an amount equal
+to or greater than its original size, and the system fails to start
+any new threads at all, then the pool could have no running threads in
+it (so that thread-pool-get-num-threads returns 0) even though some
+tasks previously added to it remain pending.  If the system can start
+no new threads even though none are running in the pool, it will be
+significantly broken so it is not usually worth troubling about this -
+the program is doomed in that event whatever.
 </p>
 <p>This procedure is first available in version 0.16 of this library.
 </p></dd></dl>
@@ -258,7 +282,7 @@ thread-pool-stop!.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-_0028with_002dthread_002dpool_002dincrement"></a>Syntax: <strong>(with-thread-pool-increment</strong> <em>pool body0 body1 ...)</em></dt>
+<dt><a name="index-with_002dthread_002dpool_002dincrement"></a>Syntax: <strong>with-thread-pool-increment</strong> <em>pool body0 body1 ...</em></dt>
 <dd><p>This macro is intended to be called by a task running on a thread pool
 which is about to make a blocking (non-asynchronous) call.  It will
 increment the number of threads in &rsquo;pool&rsquo; by 1 (by calling

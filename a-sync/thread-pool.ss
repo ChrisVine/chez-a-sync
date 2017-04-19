@@ -73,7 +73,6 @@
 	  ;; 'num-threads' may be different to 'size' if 'size' has
 	  ;; recently been changed by the user
 	  (mutable num-threads num-threads-get num-threads-set!)
-	  (mutable thread-start thread-start-get thread-start-set!)
 	  (mutable num-tasks num-tasks-get num-tasks-set!)
 	  (mutable blocking blocking-get blocking-set!)
 	  (mutable stopped stopped-get stopped-set!)))
@@ -122,7 +121,6 @@
 				    (make-condition)
 				    (make-a-queue)
 				    size
-				    0
 				    0
 				    0
 				    (not non-blocking)
@@ -179,29 +177,11 @@
 	   ;; cater for a case where the number of threads in the pool
 	   ;; has been reduced by the user
 	   (when (> (num-threads-get pool) (size-get pool))
-	     ;; we don't want a failure to start a new thread in
-	     ;; thread-pool-change-size! to mean that we can decrement
-	     ;; num-threads to less than 1 and extinguish all threads.
-	     ;; If thread-start is set (ie a new thread is in course
-	     ;; of starting) we need to repost a dummy task
-	     ;; incorporating a small wait, which will caused thread
-	     ;; status to be checked again once the new thread has
-	     ;; started.  This is not ideal but the best we can do
-	     ;; without timed waits on condition variables.
-	     (if (> (thread-start-get pool) 0)
-		 (begin
-		   (a-queue-push! (aq-get pool)
-				  (cons (lambda ()
-					  ;; 1 microsecond delay
-					  (sleep (make-time 'time-duration 1000 0)))
-					#f))
-		   (num-tasks-set! pool (+ (num-tasks-get pool) 1)))
-		 (begin
-		   (num-threads-set! pool (- (num-threads-get pool) 1))
-		   (when (and (stopped-get pool)
-			      (blocking-get pool))
-		     (condition-broadcast (condvar-get pool)))
-		   (return #f)))))
+	     (num-threads-set! pool (- (num-threads-get pool) 1))
+	     (when (and (stopped-get pool)
+			(blocking-get pool))
+	       (condition-broadcast (condvar-get pool)))
+	     (return #f)))
 	 ;; we are outside the mutex here
 	 (lp (a-queue-pop! (aq-get pool))))))))
 
@@ -224,10 +204,16 @@
   ;; ordering, which is sufficient for our purpose.
   (num-tasks-get pool))
 
-;; We do not document this procedure in the info docs or in the wiki,
-;; because it is only exported for use when testings
+;; This procedure returns the number of threads currently running in
+;; the thread pool.  It may transiently be greater than the value
+;; returned by thread-pool-get-size if the thread pool size has
+;; recently been reduced by a call to thread-pool-change-size!.  It
+;; may be less than that value if thread-pool-change-size! has raised
+;; an exception on trying to start a new thread.
 ;;
 ;; This procedure is thread safe (any thread may call it).
+;;
+;; This procedure is first available in version 0.16 of this library.
 (define (thread-pool-get-num-threads pool)
   (with-mutex (mutex-get pool)
     (num-threads-get pool)))
@@ -260,15 +246,25 @@
 ;; when a full set of threads is no longer required by the program.
 ;;
 ;; If 'delta' is positive, this procedure may raise an exception if
-;; the system is unable to start the required new threads.  If such an
-;; exception is raised, at least the number of threads which were
-;; running before the call to this procedure will remain running, but
-;; that number will be less than the value returned by
-;; thread-pool-get-size.  The best thing in those circumstances is to
-;; apply thread-pool-stop!, which allows the tasks already in the pool
-;; to run to completion, then address the cause of the failure to
-;; start new threads, and then start another pool with the required
-;; number of threads.
+;; the system is unable to start the required new threads.  Because
+;; starting new threads can be time consuming, to minimize contention
+;; new threads are started outside the pool's mutex, although internal
+;; book-keeping is done within the mutex.  One consequence is that if
+;; such an exception is raised, less threads than the size of the pool
+;; will be running.  The best thing in those circumstances is to apply
+;; thread-pool-stop!, which allows the tasks already in the pool to
+;; run to completion, then address the cause of the failure to start
+;; new threads, and then start another pool with the required number
+;; of threads.  However if, concurrently with this thread increasing
+;; the size of the pool, another thread reduces that size by an amount
+;; equal to or greater than its original size, and the system fails to
+;; start any new threads at all, then the pool could have no running
+;; threads in it (so that thread-pool-get-num-threads returns 0) even
+;; though some tasks previously added to it remain pending.  If the
+;; system can start no new threads even though none are running in the
+;; pool, it will be significantly broken so it is not usually worth
+;; troubling about this - the program is doomed in that event
+;; whatever.
 ;;
 ;; This procedure is first available in version 0.16 of this library.
 (define (thread-pool-change-size! pool delta)
@@ -296,7 +292,6 @@
 	      [(> delta 0)
 	       (size-set! pool (+ (size-get pool) delta))
 	       (num-threads-set! pool (+ (num-threads-get pool) delta))
-	       (thread-start-set! pool (+ (thread-start-get pool) 1))
 	       delta]
 	      [else #f]))])
       (when start-threads
@@ -309,13 +304,36 @@
 		    ;; roll back for any unstarted threads
 		    (with-mutex mutex
 		      (num-threads-set! pool (+ (- (num-threads-get pool) start-threads) count))
-		      (thread-start-set! pool (- (thread-start-get pool) 1))
+		      ;; We could be down to 0 threads if all of these
+		      ;; unfortunate events have occurred together: (i) in
+		      ;; the period between this calling thread releasing
+		      ;; the mutex acquired on entry to this procedure and
+		      ;; acquiring it again on handling this exception,
+		      ;; another thread tried, concurrently with this
+		      ;; attempted increase, to reduce the size of the pool
+		      ;; by an amount equal to or more than its original
+		      ;; size, (ii) during that period a number of tasks
+		      ;; equal to that original size have finished, and (iii)
+		      ;; the attempt to launch new threads failed with an
+		      ;; exception without launching even one of them.  In
+		      ;; such a case we should be able to launch a rescue
+		      ;; thread because no other threads could be running in
+		      ;; the pool.  If we still cannot launch a thread the
+		      ;; program and/or system must be totally borked anyway
+		      ;; and there is little we can do.
+		      (when (zero? (num-threads-get pool))
+			;; if this fails, all is lost (that is, we may have
+			;; queued tasks in the pool with no thread startable
+			;; to run them)
+			(try 
+			 (fork-thread (lambda () (thread-loop pool)))
+			 (num-threads-set! pool 1)
+			 (except c
+				 [else #f])))
 		      (when (and (stopped-get pool)
 				 (blocking-get pool))
 			(condition-broadcast (condvar-get pool)))
-		      (raise c))])))
-	(with-mutex mutex
-	  (thread-start-set! pool (- (thread-start-get pool) 1)))))))
+		      (raise c))])))))))
 
 ;; This procedure returns the current non-blocking status of the
 ;; thread pool.  (See the documentation on the thread-pool-stop!
