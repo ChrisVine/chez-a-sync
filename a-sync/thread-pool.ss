@@ -204,16 +204,8 @@
   ;; ordering, which is sufficient for our purpose.
   (num-tasks-get pool))
 
-;; This procedure returns the number of threads currently running in
-;; the thread pool.  It may transiently be greater than the value
-;; returned by thread-pool-get-size if the thread pool size has
-;; recently been reduced by a call to thread-pool-change-size!.  It
-;; may be less than that value if thread-pool-change-size! has raised
-;; an exception on trying to start a new thread.
-;;
-;; This procedure is thread safe (any thread may call it).
-;;
-;; This procedure is first available in version 0.16 of this library.
+;; We do not document this procedure in the info docs or in the wiki,
+;; because it is only exported for use when testings
 (define (thread-pool-get-num-threads pool)
   (with-mutex (mutex-get pool)
     (num-threads-get pool)))
@@ -250,21 +242,19 @@
 ;; starting new threads can be time consuming, to minimize contention
 ;; new threads are started outside the pool's mutex, although internal
 ;; book-keeping is done within the mutex.  One consequence is that if
-;; such an exception is raised, less threads than the size of the pool
-;; will be running.  The best thing in those circumstances is to apply
-;; thread-pool-stop!, which allows the tasks already in the pool to
-;; run to completion, then address the cause of the failure to start
-;; new threads, and then start another pool with the required number
-;; of threads.  However if, concurrently with this thread increasing
-;; the size of the pool, another thread reduces that size by an amount
-;; equal to or greater than its original size, and the system fails to
-;; start any new threads at all, then the pool could have no running
-;; threads in it (so that thread-pool-get-num-threads returns 0) even
-;; though some tasks previously added to it remain pending.  If the
-;; system can start no new threads even though none are running in the
-;; pool, it will be significantly broken so it is not usually worth
-;; troubling about this - the program is doomed in that event
-;; whatever.
+;; such an exception is raised while another thread has concurrently
+;; tried to reduce the size of the pool, the size of the pool may be
+;; smaller than it was when this procedure was called.  In certain
+;; circumstances, after an exception where no new threads can be
+;; started, the pool could have no running threads in it (so that
+;; thread-pool-get-size returns 0) even though some tasks previously
+;; added to the pool remain pending.  If the system can start no new
+;; threads even though none are running in the pool, it will be
+;; significantly broken so it is not usually worth troubling about
+;; this - the program is doomed in that event whatever.  However if
+;; that is wrong and the cause of the failure to start any threads can
+;; be addressed, then the thread pool can be brought back into use by
+;; calling this procedure again.
 ;;
 ;; This procedure is first available in version 0.16 of this library.
 (define (thread-pool-change-size! pool delta)
@@ -275,6 +265,10 @@
 	   (with-mutex mutex
 	     (cond
 	      [(stopped-get pool) #f]
+	      ;; if size is 0 because of an exception when trying to
+	      ;; start new threads (see below) and a negative delta is
+	      ;; passed, just do nothing
+	      [(and (zero? (size-get pool)) (< delta 0)) #f]
 	      [(< delta 0)
 	       (let* ([cur-size (size-get pool)]
 		      [new-size (max 1 (+ cur-size delta))]
@@ -330,6 +324,9 @@
 			 (num-threads-set! pool 1)
 			 (except c
 				 [else #f])))
+		      ;; reset size to the actual number of threads
+		      ;; now running
+		      (size-set! pool (num-threads-get pool))
 		      (when (and (stopped-get pool)
 				 (blocking-get pool))
 			(condition-broadcast (condvar-get pool)))
