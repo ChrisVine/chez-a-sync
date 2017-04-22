@@ -49,16 +49,14 @@
   (test-result 4 (thread-pool-get-size pool))
   (test-result #t (thread-pool-get-non-blocking pool))
 
-  (thread-pool-change-size! pool -1)
   (thread-pool-set-non-blocking! pool #f)
-  (test-result 3 (thread-pool-get-size pool))
   (test-result #f (thread-pool-get-non-blocking pool))
 
+  (thread-pool-change-size! pool -1)
+  (test-result 3 (thread-pool-get-size pool))
   (thread-pool-change-size! pool 3)
+  (test-result 6 (thread-pool-get-num-threads pool))
   (test-result 6 (thread-pool-get-size pool))
-  ;; num-threads could be 6 or 7 depending on when the previous change
-  ;; has effect
-  (assert (>= (thread-pool-get-num-threads pool) 6))
 
   (thread-pool-stop! pool)
   (print-result))

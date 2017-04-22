@@ -284,9 +284,22 @@
 		   (num-tasks-set! pool (+ num-tasks 1))))
 	       #f]
 	      [(> delta 0)
-	       (size-set! pool (+ (size-get pool) delta))
-	       (num-threads-set! pool (+ (num-threads-get pool) delta))
-	       delta]
+	       ;; don't return 'delta' directly as the 'start-threads'
+	       ;; value - the pool size cannot be more than
+	       ;; num-threads, but it can be less if the pool size has
+	       ;; recently been reduced but insufficient tasks have
+	       ;; yet finished to reduce num-threads to the pool size.
+	       ;; It is more efficient only to start the number of
+	       ;; threads representing the ones actually still
+	       ;; required.
+	       (let* ([new-size (+ (size-get pool) delta)]
+		      [start-threads (- new-size (num-threads-get pool))])
+		 (size-set! pool new-size)
+		 (if (> start-threads 0)
+		     (begin
+		       (num-threads-set! pool new-size)
+		       start-threads)
+		     #f))]
 	      [else #f]))])
       (when start-threads
 	(do ([count 0 (+ count 1)])
