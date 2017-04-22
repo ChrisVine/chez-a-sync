@@ -343,15 +343,25 @@
   (with-mutex (mutex-get pool)
     (not (blocking-get pool))))
 
-;; This procedure sets the non-blocking status of the thread pool.
-;; (See the documentation on the thread-pool-stop!  procedure for more
-;; information about what that means.)
+;; This procedure sets the non-blocking status of the thread pool.  If
+;; 'val' is #f, the thread-pool-stop procedure will block, if #t it
+;; will not.  (See the documentation on the thread-pool-stop!
+;; procedure for more information about this.)
 ;;
 ;; This procedure is thread safe (any thread may call it).
+;;
+;; This procedure will raise a &violation exception if it is invoked
+;; after the thread pool object concerned has been closed by a call to
+;; thread-pool-stop!.
 ;;
 ;; This procedure is first available in version 0.16 of this library.
 (define (thread-pool-set-non-blocking! pool val)
   (with-mutex (mutex-get pool)
+    (when (stopped-get pool)
+      (raise (condition (make-violation)
+			(make-who-condition "thread-pool-set-non-blocking!")
+			(make-message-condition
+			 "thread-pool-set-non-blocking! applied to a thread pool which has been closed"))))
     (blocking-set! pool (not val))))
 
 ;; This procedure will cause the thread-pool object to stop running
@@ -382,6 +392,13 @@
 			   "thread-pool-stop! applied to a thread pool which has been closed"))))
       (stopped-set! pool #t)
       (let ([thread-count (num-threads-get pool)])
+	;; we could be adding more 'kill-thread callbacks than
+	;; necessary here, because as we are doing this a concurrent
+	;; call to thread-pool-change-size! may have failed to start a
+	;; thread and raised an exception.  However, that doesn't
+	;; matter - we just get left with a redundant callback in 'aq'
+	;; which never gets used and disappears when the pool is
+	;; garbage collected
 	(do ([kill-count 0 (+ kill-count 1)])
 	    ((= kill-count thread-count))
 	  (a-queue-push! (aq-get pool) (cons (lambda () (raise 'kill-thread)) #f)))

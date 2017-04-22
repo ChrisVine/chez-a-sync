@@ -200,7 +200,7 @@ into use by calling this procedure again.
 <dl>
 <dt><a name="index-thread_002dpool_002dget_002dnon_002dblocking"></a>Scheme Procedure: <strong>thread-pool-get-non-blocking</strong> <em>pool</em></dt>
 <dd><p>This procedure returns the current non-blocking status of the thread
-pool.  (See the documentation on the thread-pool-stop!  procedure for
+pool.  (See the documentation on the thread-pool-stop! procedure for
 more information about what that means.)
 </p>
 <p>This procedure is thread safe (any thread may call it).
@@ -210,11 +210,16 @@ more information about what that means.)
 
 <dl>
 <dt><a name="index-thread_002dpool_002dset_002dnon_002dblocking_0021"></a>Scheme Procedure: <strong>thread-pool-set-non-blocking!</strong> <em>pool val</em></dt>
-<dd><p>This procedure sets the non-blocking status of the thread pool.  (See
-the documentation on the thread-pool-stop!  procedure for more
-information about what that means.)
+<dd><p>This procedure sets the non-blocking status of the thread pool.  If
+&rsquo;val&rsquo; is #f, the thread-pool-stop procedure will block, if #t it will
+not.  (See the documentation on the thread-pool-stop! procedure for
+more information about this.)
 </p>
 <p>This procedure is thread safe (any thread may call it).
+</p>
+<p>This procedure will raise a &amp;violation exception if it is invoked
+after the thread pool object concerned has been closed by a call to
+thread-pool-stop!.
 </p>
 <p>This procedure is first available in version 0.16 of this library.
 </p></dd></dl>

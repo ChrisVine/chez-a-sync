@@ -141,7 +141,7 @@ This procedure is first available in version 0.16 of this library.
 
 @deffn {Scheme Procedure} thread-pool-get-non-blocking pool
 This procedure returns the current non-blocking status of the thread
-pool.  (See the documentation on the thread-pool-stop!  procedure for
+pool.  (See the documentation on the thread-pool-stop! procedure for
 more information about what that means.)
 
 This procedure is thread safe (any thread may call it).
@@ -150,11 +150,16 @@ This procedure is first available in version 0.16 of this library.
 @end deffn
 
 @deffn {Scheme Procedure} thread-pool-set-non-blocking! pool val
-This procedure sets the non-blocking status of the thread pool.  (See
-the documentation on the thread-pool-stop!  procedure for more
-information about what that means.)
+This procedure sets the non-blocking status of the thread pool.  If
+'val' is #f, the thread-pool-stop procedure will block, if #t it will
+not.  (See the documentation on the thread-pool-stop! procedure for
+more information about this.)
 
 This procedure is thread safe (any thread may call it).
+
+This procedure will raise a &violation exception if it is invoked
+after the thread pool object concerned has been closed by a call to
+thread-pool-stop!.
 
 This procedure is first available in version 0.16 of this library.
 @end deffn
