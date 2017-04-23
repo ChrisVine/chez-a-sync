@@ -312,22 +312,24 @@
 		    (with-mutex mutex
 		      (num-threads-set! pool (+ (- (num-threads-get pool) start-threads) count))
 		      ;; We could be down to 0 threads if all of these
-		      ;; unfortunate events have occurred together: (i) in
-		      ;; the period between this calling thread releasing
-		      ;; the mutex acquired on entry to this procedure and
-		      ;; acquiring it again on handling this exception,
-		      ;; another thread tried, concurrently with this
-		      ;; attempted increase, to reduce the size of the pool
-		      ;; by an amount equal to or more than its original
-		      ;; size, (ii) during that period a number of tasks
-		      ;; equal to that original size have finished, and (iii)
-		      ;; the attempt to launch new threads failed with an
-		      ;; exception without launching even one of them.  In
-		      ;; such a case we should be able to launch a rescue
-		      ;; thread because no other threads could be running in
-		      ;; the pool.  If we still cannot launch a thread the
-		      ;; program and/or system must be totally borked anyway
-		      ;; and there is little we can do.
+		      ;; unfortunate events have occurred together:
+		      ;; (i) in the period between this calling thread
+		      ;; releasing the mutex acquired on entry to this
+		      ;; procedure and acquiring it again on handling
+		      ;; this exception, another thread tried,
+		      ;; concurrently with this attempted increase, to
+		      ;; reduce the size of the pool by an amount
+		      ;; equal to or more than its original size, (ii)
+		      ;; during that period a number of tasks equal to
+		      ;; that original size have finished, and (iii)
+		      ;; the attempt to launch new threads failed with
+		      ;; an exception without launching even one of
+		      ;; them.  In such a case we should be able to
+		      ;; launch a rescue thread within the mutex
+		      ;; because no other threads could be running in
+		      ;; the pool.  If we still cannot launch a thread
+		      ;; the program and/or system must be totally
+		      ;; borked and there is little we can do.
 		      (when (zero? (num-threads-get pool))
 			;; if this fails, all is lost (that is, we may have
 			;; queued tasks in the pool with no thread startable
