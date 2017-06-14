@@ -49,12 +49,19 @@
 ;; this procedure into a non-continuable exception.
 (define (make-iterator proc . args)
   (define prompt-cont #f)
-  (define iter-cont #f)
   (define done #f)
   (define (prompt-and-null)
     (let ([prompt prompt-cont])
       (set! prompt-cont #f)
       prompt))
+  (define iter-cont (lambda (ignore)
+		      ;; any exception must propagate in the context
+		      ;; of the current call to the iterator, not the
+		      ;; first
+		      (try (apply proc yield args)
+			   (except c (else ((prompt-and-null) (lambda () (raise c))))))
+		      (set! done #t)
+		      ((prompt-and-null) (lambda () 'stop-iteration))))
   (define yield
     (case-lambda
       [() (yield #f)]
@@ -74,16 +81,7 @@
 	   ((call/1cc
 	     (lambda (k)
 	       (set! prompt-cont k)
-	       (if iter-cont
-		   (iter-cont send-back)
-		   (begin
-		     ;; any exception must propagate in the context of
-		     ;; the current call to the iterator, not the
-		     ;; first
-		     (try (apply proc yield args)
-			  (except c (else ((prompt-and-null) (lambda () (raise c))))))
-		     (set! done #t)
-		     ((prompt-and-null) (lambda () 'stop-iteration))))))))]))
+	       (iter-cont send-back)))))]))
   iter)
 
 ;; this procedure takes a generator procedure, namely a procedure
