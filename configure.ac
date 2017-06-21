@@ -35,6 +35,9 @@ dnl set up libtool
 AC_PROG_LIBTOOL
 AC_CONFIG_MACRO_DIR([m4])
 
+dnl check whether to compile scheme files to bytecode
+AC_CHECK_COMPILE_SCHEME
+
 dnl Check for C++ headers.
 AC_LANG_CPLUSPLUS dnl switch to C++
 AC_CHECK_HEADERS([ map ],

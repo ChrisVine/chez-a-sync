@@ -87,3 +87,27 @@ else
  $3
 fi
 ])
+
+AC_DEFUN([AC_CHECK_COMPILE_SCHEME],
+[
+  AC_MSG_CHECKING([whether library is to compile scheme files to bytecode])
+
+  AC_ARG_ENABLE(compile-to-bytecode,
+  [  --enable-compile-to-bytecode  compile scheme files to bytecode [[default=no]]],
+  [
+     if test "x$enableval" = "xyes";  then
+       compile_scheme=true
+       AC_MSG_RESULT([yes])
+     elif test "x$enableval" = "xno";  then
+       compile_scheme=false
+       AC_MSG_RESULT([no])
+     else
+       AC_MSG_ERROR([incorrect bytecode option specified - should be yes or no])
+     fi
+  ],
+  [
+    compile_scheme=false
+    AC_MSG_RESULT([no])
+  ])
+  AM_CONDITIONAL([COMPILE_TO_BYTECODE], [test x$compile_scheme = xtrue])
+])
