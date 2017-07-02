@@ -397,7 +397,11 @@
   (define write-files #f)
   (define write-files-actions #f)
 
-  (with-mutex mutex (_loop-thread-set! el (get-thread-id)))
+  (with-mutex mutex
+    (_loop-thread-set! el (get-thread-id))
+    ;; in case event-loop-quit! was called after this procedure had
+    ;; previously returned
+    (_done-set! el #f))
 
   (try
    (let loop1 ()
