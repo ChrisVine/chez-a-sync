@@ -32,6 +32,7 @@
    event-loop-tasks
    event-loop-block!
    event-loop-quit!
+   event-loop-close!
    event-post!
    timeout-post!
    timeout-remove!
@@ -369,9 +370,13 @@
 ;; different from the thread which called make-event-loop, external
 ;; synchronization is required to ensure visibility.  If this
 ;; procedure has returned, including after a call to event-loop-quit!,
-;; this procedure may be called again to restart the event loop.  If a
-;; callback throws, or something else throws in the implementation,
-;; then this procedure will clean up the event loop as if
+;; this procedure may be called again to restart the event loop,
+;; provided event-loop-close! has not been applied to the loop.  If
+;; event-loop-close! has previously been invoked, this procedure will
+;; raise a &violation exception.
+;;
+;; If something else throws in the implementation or a callback
+;; throws, then this procedure will clean up the event loop as if
 ;; event-loop-quit! had been called, and the exception will be
 ;; rethrown out of this procedure.  This means that if there are
 ;; continuable exceptions, they will be converted into non-continuable
@@ -390,17 +395,22 @@
 (define (_event-loop-run-impl! el)
   (define mutex (_mutex-get el))
   (define q (_q-get el))
-  (define event-in (_event-in-get el))
-  (define event-fd (port-file-descriptor event-in))
+  (define event-in #f)
+  (define event-fd #f)
   (define read-files #f)
   (define read-files-actions #f)
   (define write-files #f)
   (define write-files-actions #f)
 
   (with-mutex mutex
+    (when (eq? (_done-get el) 'closed)
+      (raise (condition (make-violation)
+			(make-who-condition "event-loop-run!")
+			(make-message-condition
+			 "event-loop-run! applied to an event loop which has been closed"))))
+    (set! event-in (_event-in-get el))
+    (set! event-fd (port-file-descriptor event-in))
     (_loop-thread-set! el (get-thread-id))
-    ;; in case event-loop-quit! was called after this procedure had
-    ;; previously returned
     (_done-set! el #f))
 
   (try
@@ -519,27 +529,36 @@
 ;; event-loop-run!  The only things requiring protection by a mutex
 ;; are the q, done-set, event-out, num-tasks and loop-thread fields,
 ;; of the event loop object together with the read-files,
-;; read-files-actions, write-files and write-files-actions fields.
-;; However, for consistency we deal with all operations on the event
-;; pipe below via the mutex.
+;; read-files-actions, write-files and write-files-actions fields and
+;; port closing.  However, for consistency we deal with all operations
+;; on the event pipe below via the mutex.
 (define (_event-loop-reset! el)
   ;; the only foolproof way of vacating a unix pipe is to close it and
   ;; then create another one
   (with-mutex (_mutex-get el)
     (close-port (_event-out-get el))      
     (close-port (_event-in-get el))
-    (let-values ([(in out) (make-pipe (buffer-mode block)
-				      (buffer-mode none))])
-      (set-port-nonblocking! in #t)
-      (set-port-nonblocking! out #t)
-      (_event-in-set! el in)
-      (_event-out-set! el out))
+
+    ;; we can enter this procedure with:
+    ;; - 'done' unset, in which case there has been an exception in
+    ;;   event-loop-run!
+    ;; - 'done' set to 'prepare-to-quit, in which case
+    ;;   event-loop-quit! has been called
+    ;; - 'done' set to 'closed, in which case event-loop-close! has
+    ;;   been called
+    (when (not (eq? (_done-get el) 'closed))
+      (_done-set! el 'quit)
+      (let-values ([(in out) (make-pipe (buffer-mode block)
+					(buffer-mode none))])
+	(set-port-nonblocking! in #t)
+	(set-port-nonblocking! out #t)
+	(_event-in-set! el in)
+	(_event-out-set! el out)))
     (let ((q (_q-get el)))
       (let loop ()
 	(when (not (q-empty? q))
 	  (q-deq! q)
 	  (loop))))
-    (_done-set! el #f)
     (_num-tasks-set! el 0)
     (_loop-thread-set! el #f)
     (_read-files-set! el '())
@@ -585,23 +604,28 @@
 	 (error "event-loop-add-read-watch!"
 		"No default event loop set for call to event-loop-add-read-watch!"))
        (with-mutex (_mutex-get el)
-	 (_read-files-set! el
-			   (cons file
-				 (remp (lambda (elt) (_file-equal? file elt))
-				       (_read-files-get el))))
-	 (hashtable-set! (_read-files-actions-get el)
-			 (_fd-or-port->fd file)
-			 proc)
-	 (_set-poll-caches! el)
-	 ;; if the event pipe is full and an EAGAIN error arises, we
-	 ;; can just swallow it.  The only purpose of writing #\x is
-	 ;; to cause the select procedure to return and reloop to pick
-	 ;; up the new file watch list.
-	 (let ([out (_event-out-get el)])
-	   ;; use put-bytevector-some because it has a defined result
-	   ;; with non-blocking ports
-	   (put-bytevector-some out (make-bytevector 1 1) 0 1)
-	   (flush-output-port out))))]))
+	 ;; given the possible permutations, it is too violent to
+	 ;; throw an exception at this point if the event loop has
+	 ;; been closed: instead defer the exception to the call to
+	 ;; event-loop-run!
+	 (when (not (eq? (_done-get el) 'closed))
+	   (_read-files-set! el
+			     (cons file
+				   (remp (lambda (elt) (_file-equal? file elt))
+					 (_read-files-get el))))
+	   (hashtable-set! (_read-files-actions-get el)
+			   (_fd-or-port->fd file)
+			   proc)
+	   (_set-poll-caches! el)
+	   ;; if the event pipe is full and an EAGAIN error arises, we
+	   ;; can just swallow it.  The only purpose of writing 1 is
+	   ;; to cause the poll procedure to return and reloop to pick
+	   ;; up the new file watch list.
+	   (let ([out (_event-out-get el)])
+	     ;; use put-bytevector-some because it has a defined
+	     ;; result with non-blocking ports
+	     (put-bytevector-some out (make-bytevector 1 1) 0 1)
+	     (flush-output-port out)))))]))
 
 ;; The 'el' (event loop) argument is optional.  This procedure will
 ;; start a write watch in the event loop passed in as an argument, or
@@ -652,23 +676,28 @@
 	 (error "event-loop-add-write-watch!"
 		"No default event loop set for call to event-loop-add-write-watch!"))
        (with-mutex (_mutex-get el)
-	 (_write-files-set! el
-			    (cons file
-				  (remp (lambda (elt) (_file-equal? file elt))
-					(_write-files-get el))))
-	 (hashtable-set! (_write-files-actions-get el)
-			 (_fd-or-port->fd file)
-			 proc)
-	 (_set-poll-caches! el)
-	 ;; if the event pipe is full and an EAGAIN error arises, we
-	 ;; can just swallow it.  The only purpose of writing #\x is
-	 ;; to cause the select procedure to return and reloop to pick
-	 ;; up the new file watch list.
-	 (let ([out (_event-out-get el)])
-	   ;; use put-bytevector-some because it has a defined result
-	   ;; with non-blocking ports
-	   (put-bytevector-some out (make-bytevector 1 1) 0 1)
-	   (flush-output-port out))))]))
+	 ;; given the possible permutations, it is too violent to
+	 ;; throw an exception at this point if the event loop has
+	 ;; been closed: instead defer the exception to the call to
+	 ;; event-loop-run!
+	 (when (not (eq? (_done-get el) 'closed))
+	   (_write-files-set! el
+			      (cons file
+				    (remp (lambda (elt) (_file-equal? file elt))
+					  (_write-files-get el))))
+	   (hashtable-set! (_write-files-actions-get el)
+			   (_fd-or-port->fd file)
+			   proc)
+	   (_set-poll-caches! el)
+	   ;; if the event pipe is full and an EAGAIN error arises, we
+	   ;; can just swallow it.  The only purpose of writing 1 is
+	   ;; to cause the poll procedure to return and reloop to pick
+	   ;; up the new file watch list.
+	   (let ([out (_event-out-get el)])
+	     ;; use put-bytevector-some because it has a defined
+	     ;; result with non-blocking ports
+	     (put-bytevector-some out (make-bytevector 1 1) 0 1)
+	     (flush-output-port out)))))]))
 
 ;; The 'el' (event loop) argument is optional.  This procedure will
 ;; remove a read watch from the event loop passed in as an argument,
@@ -677,6 +706,9 @@
 ;; is thread safe - any thread may remove a watch.  A file descriptor
 ;; and a port with the same underlying file descriptor compare equal
 ;; for the purposes of removal.
+;;
+;; This procedure should not throw an exception unless memory is
+;; exhausted.
 (define event-loop-remove-read-watch!
   (case-lambda
     [(file) (event-loop-remove-read-watch! file #f)]
@@ -686,16 +718,17 @@
 	 (error "event-loop-remove-read-watch!"
 		"No default event loop set for call to event-loop-remove-read-watch!"))
        (with-mutex (_mutex-get el)
-	 (_remove-read-watch-impl! file el)
-	 ;; if the event pipe is full and an EAGAIN error arises, we
-	 ;; can just swallow it.  The only purpose of writing #\x is
-	 ;; to cause the select procedure to return and reloop to pick
-	 ;; up the new file watch list.
-	 (let ([out (_event-out-get el)])
-	   ;; use put-bytevector-some because it has a defined result
-	   ;; with non-blocking ports
-	   (put-bytevector-some out (make-bytevector 1 1) 0 1)
-	   (flush-output-port out))))]))
+	 (when (not (eq? (_done-get el) 'closed))
+	   (_remove-read-watch-impl! file el)
+	   ;; if the event pipe is full and an EAGAIN error arises, we
+	   ;; can just swallow it.  The only purpose of writing 1 is
+	   ;; to cause the poll procedure to return and reloop to pick
+	   ;; up the new file watch list.
+	   (let ([out (_event-out-get el)])
+	     ;; use put-bytevector-some because it has a defined
+	     ;; result with non-blocking ports
+	     (put-bytevector-some out (make-bytevector 1 1) 0 1)
+	     (flush-output-port out)))))]))
 
 ;; The 'el' (event loop) argument is optional.  This procedure will
 ;; remove a write watch from the event loop passed in as an argument,
@@ -704,6 +737,9 @@
 ;; is thread safe - any thread may remove a watch.  A file descriptor
 ;; and a port with the same underlying file descriptor compare equal
 ;; for the purposes of removal.
+;;
+;; This procedure should not throw an exception unless memory is
+;; exhausted.
 (define event-loop-remove-write-watch!
   (case-lambda
     [(file) (event-loop-remove-write-watch! file #f)]
@@ -713,16 +749,17 @@
 	 (error "event-loop-remove-write-watch!"
 		"No default event loop set for call to event-loop-remove-write-watch!"))
        (with-mutex (_mutex-get el)
-	 (_remove-write-watch-impl! file el)
-	 ;; if the event pipe is full and an EAGAIN error arises, we
-	 ;; can just swallow it.  The only purpose of writing #\x is
-	 ;; to cause the select procedure to return and reloop to pick
-	 ;; up the new file watch list.
-	 (let ([out (_event-out-get el)])
-	   ;; use put-bytevector-some because it has a defined result
-	   ;; with non-blocking ports
-	   (put-bytevector-some out (make-bytevector 1 1) 0 1)
-	   (flush-output-port out))))]))
+	 (when (not (eq? (_done-get el) 'closed))
+	   (_remove-write-watch-impl! file el)
+	   ;; if the event pipe is full and an EAGAIN error arises, we
+	   ;; can just swallow it.  The only purpose of writing 1 is
+	   ;; to cause the poll procedure to return and reloop to pick
+	   ;; up the new file watch list.
+	   (let ([out (_event-out-get el)])
+	     ;; use put-bytevector-some because it has a defined
+	     ;; result with non-blocking ports
+	     (put-bytevector-some out (make-bytevector 1 1) 0 1)
+	     (flush-output-port out)))))]))
 
 ;; The 'el' (event loop) argument is optional.  This procedure will
 ;; post a callback for execution in the event loop passed in as an
@@ -734,7 +771,7 @@
 ;; posted from a worker thread, it will normally be necessary to call
 ;; event-loop-block! beforehand.
 ;;
-;; This procedure should not throw an exception unless memory is
+;; This procedure should not raise an exception unless memory is
 ;; exhausted.  If the 'action' callback throws, and the exception is
 ;; not caught locally, it will propagate out of event-loop-run!.
 ;;
@@ -749,15 +786,25 @@
      (let ([el (or el (get-default-event-loop))])
        (when (not el) 
 	 (error "event-post!" "No default event loop set for call to event-post!"))
-       (with-mutex (_mutex-get el)
-	 (q-enq! (_q-get el) action)
-	 (_num-tasks-set! el (+ (_num-tasks-get el) 1))
-	 (let ([out (_event-out-get el)])
-	   ;; use put-bytevector-some because it has a defined result
-	   ;; with non-blocking ports
-	   (put-bytevector-some out (make-bytevector 1 1) 0 1)
-	   (flush-output-port out)))
-       (_check-for-throttle el))]))
+       ;; given the possible permutations, it is too violent to throw
+       ;; an exception at this point if the event loop has been
+       ;; closed: instead defer the exception to the call to
+       ;; event-loop-run!
+       (let ([closed
+	      (with-mutex (_mutex-get el)
+		(if (eq? (_done-get el) 'closed)
+		    #t
+		    (begin
+		      (q-enq! (_q-get el) action)
+		      (_num-tasks-set! el (+ (_num-tasks-get el) 1))
+		      (let ([out (_event-out-get el)])
+			;; use put-bytevector-some because it has a
+			;; defined result with non-blocking ports
+			(put-bytevector-some out (make-bytevector 1 1) 0 1)
+			(flush-output-port out))
+		      #f)))])
+	 ;; _check-for-throttle must be called outside the mutex
+	 (when (not closed) (_check-for-throttle el))))]))
 
 ;; The 'el' (event loop) argument is optional.  This procedure adds a
 ;; timeout to the event loop passed in as an argument, or if none is
@@ -768,7 +815,7 @@
 ;; applied.  It may be called by any thread, and the timeout callback
 ;; will execute in the event loop thread.
 ;;
-;; This procedure should not throw an exception unless memory is
+;; This procedure should not raise an exception unless memory is
 ;; exhausted.  If the 'action' callback throws, and the exception is
 ;; not caught locally, it will propagate out of event-loop-run!.
 (define timeout-post!
@@ -796,6 +843,9 @@
 ;; the timeout with the given tag from executing in the event loop
 ;; passed in as an argument, or if none is passed (or #f is passed),
 ;; in the default event loop.  It may be called by any thread.
+;;
+;; This procedure should not raise an exception unless memory is
+;; exhausted.
 (define timeout-remove!
   (case-lambda
     [(tag) (timeout-remove! tag #f)]
@@ -850,6 +900,9 @@
 ;; call this procedure.  The 'el' (event loop) argument is optional:
 ;; this procedure operates on the event loop passed in as an argument,
 ;; or if none is passed (or #f is passed), on the default event loop.
+;;
+;; This procedure should not throw an exception unless memory is
+;; exhausted.
 (define event-loop-block!
   (case-lambda
     [(val) (event-loop-block! val #f)]
@@ -859,28 +912,37 @@
 	 (error "event-loop-block!"
 		"No default event loop set for call to event-loop-block!"))
        (with-mutex (_mutex-get el)
-	 (let ([old-val (_block-get el)])
-	   (_block-set! el (not (not val)))
-	   (when (and old-val (not val))
-	     ;; if the event pipe is full and EAGAIN arises, that's
-	     ;; not a problem.  The only purpose of writing to the
-	     ;; event pipe is to cause the poll procedure to return
-	     ;; and reloop and then exit the event loop if there are
-	     ;; no further events.
-	     (let ([out (_event-out-get el)])
-	       ;; use put-bytevector-some because it has a defined
-	       ;; result with non-blocking ports
-	       (put-bytevector-some out (make-bytevector 1 1) 0 1)
-	       (flush-output-port out))))))]))
+	 ;; given the possible permutations, it is too violent to
+	 ;; throw an exception at this point if the event loop has
+	 ;; been closed: instead defer the exception to the call to
+	 ;; event-loop-run!
+	 (when (not (eq? (_done-get el) 'closed))
+	   (let ([old-val (_block-get el)])
+	     (_block-set! el (not (not val)))
+	     (when (and old-val (not val))
+	       ;; if the event pipe is full and EAGAIN arises, that's
+	       ;; not a problem.  The only purpose of writing to the
+	       ;; event pipe is to cause the poll procedure to return
+	       ;; and reloop and then exit the event loop if there are
+	       ;; no further events.
+	       (let ([out (_event-out-get el)])
+		 ;; use put-bytevector-some because it has a defined
+		 ;; result with non-blocking ports
+		 (put-bytevector-some out (make-bytevector 1 1) 0 1)
+		 (flush-output-port out)))))))]))
 
 ;; This procedure causes an event loop to unblock.  Any events
 ;; remaining in the event loop will be discarded.  New events may
 ;; subsequently be added after event-loop-run! has unblocked and
 ;; event-loop-run! then called for them.  This is thread safe - any
-;; thread may call this procedure.  The 'el' (event loop) argument is
+;; thread may call this procedure, including any callback or task
+;; running on the event loop.  The 'el' (event loop) argument is
 ;; optional: this procedure operates on the event loop passed in as an
 ;; argument, or if none is passed (or #f is passed), on the default
 ;; event loop.
+;;
+;; This procedure should not throw an exception unless memory is
+;; exhausted.
 (define event-loop-quit!
   (case-lambda
     [() (event-loop-quit! #f)]
@@ -890,15 +952,75 @@
 	 (error "event-loop-quit"
 		"No default event loop set for call to event-loop-quit!"))
        (with-mutex (_mutex-get el)
-	 (_done-set! el #t)
-	 ;; if the event pipe is full and EAGAIN arises, that's not a
-	 ;; problem.  The only purpose of writing to the event pipe is
-	 ;; to cause the poll procedure to return
-	 (let ([out (_event-out-get el)])
-	   ;; use put-bytevector-some because it has a defined
-	   ;; result with non-blocking ports
-	   (put-bytevector-some out (make-bytevector 1 1) 0 1)
-	   (flush-output-port out))))]))
+	 ;; given the possible permutations, it is too violent to
+	 ;; throw an exception at this point if the event loop has
+	 ;; been closed: instead defer the exception to the call to
+	 ;; event-loop-run!
+	 (when (not (eq? (_done-get el) 'closed))
+	   (_done-set! el 'prepare-to-quit)
+	   ;; if the event pipe is full and EAGAIN arises, that's not
+	   ;; a problem.  The only purpose of writing to the event
+	   ;; pipe is to cause the poll procedure to return
+	   (let ([out (_event-out-get el)])
+	     ;; use put-bytevector-some because it has a defined
+	     ;; result with non-blocking ports
+	     (put-bytevector-some out (make-bytevector 1 1) 0 1)
+	     (flush-output-port out)))))]))
+
+;; This procedure closes an event loop.  Like event-loop-quit!, if the
+;; loop is still running it causes the event loop to unblock, and any
+;; events remaining in the event loop will be discarded.  However,
+;; unlike event-loop-quit!, it also closes the internal event pipe
+;; ports, and any subsequent application of event-loop-run! to the
+;; event loop will cause a &violation exception to be raised.
+;;
+;; You might want to call this procedure to ensure that, after an
+;; event loop in a local scope has been finished with, the two
+;; internal event pipe file descriptors used by the loop are released
+;; to the operating system in advance of the garbage collector being
+;; called on it when it becomes inaccessible.
+;;
+;; This is thread safe - any thread may call this procedure, including
+;; any callback or task running on the event loop.  The 'el' (event
+;; loop) argument is optional: this procedure operates on the event
+;; loop passed in as an argument, or if none is passed (or #f is
+;; passed), on the default event loop.
+;;
+;; This procedure should not raise an exception unless memory is
+;; exhausted.
+;;
+;; This procedure is first available in version 0.17 of this library.
+(define event-loop-close!
+  (case-lambda
+    [() (event-loop-close! #f)]
+    [(el)
+     (let ([el (or el (get-default-event-loop))])
+       (when (not el) 
+	 (error "event-loop-close"
+		"No default event loop set for call to event-loop-close!"))
+       (with-mutex (_mutex-get el)
+	 (let ([status (_done-get el)])
+	   (cond
+	    [(eq? status 'closed)
+	     ;; this procedure applied before
+	     #f]
+	    [(eq? status 'quit)
+	     ;; loop no longer running - just close the pipe ports
+	     (_done-set! el 'closed)
+	     (close-port (_event-out-get el))      
+	     (close-port (_event-in-get el))]
+	    [(eq? status 'prepare-to-quit)
+	     ;; loop still running but event-loop-quit! already called
+	     ;; and event-loop-reset! about to execute
+	     (_done-set! el 'closed)]
+	    [else
+	     ;; loop still running normally
+	     (_done-set! el 'closed)
+	     (let ([out (_event-out-get el)])
+	       ;; use put-bytevector-some because it has a defined
+	       ;; result with non-blocking ports
+	       (put-bytevector-some out (make-bytevector 1 1) 0 1)
+	       (flush-output-port out))]))))]))
 
 ;; This is a convenience procedure whose signature is:
 ;;
@@ -935,7 +1057,7 @@
 ;; shouldn't happen unless memory is exhausted or pthread has run out
 ;; of resources.  Exceptions arising during execution of the task, if
 ;; not caught by a handler procedure, will terminate the program.
-;; Exceptions thrown by the handler procedure will propagate out of
+;; Exceptions raised by the handler procedure will propagate out of
 ;; event-loop-run!.
 (define (await-task-in-thread! await resume . rest)
   (match rest
@@ -1285,7 +1407,7 @@
 ;; out of the event-loop-run! procedure called for the 'worker' event
 ;; loop.  Exceptions arising during the execution of 'proc', if not
 ;; caught locally, will propagate out of the event-loop-run! procedure
-;; called for the 'waiter' or default event loop (as the case may be).
+;; called for the 'waiter' or default event loop, as the case may be.
 ;;
 ;; This procedure is first available in version 0.6 of this library.
 (define await-generator-in-event-loop!
@@ -1356,8 +1478,8 @@
 ;; setting up (that is, before the task starts), which shouldn't
 ;; happen unless memory is exhausted.  Exceptions arising during
 ;; execution of the generator, if not caught locally, will propagate
-;; out of await-generator!.  Exceptions raised by 'proc', if not
-;; caught locally, will propagate out of event-loop-run!.
+;; out of event-loop-run!.  Exceptions raised by 'proc', if not caught
+;; locally, will propagate out of event-loop-run!.
 ;;
 ;; This procedure is first available in version 0.6 of this library.
 (define await-generator!
@@ -1439,7 +1561,7 @@
 ;; This procedure must (like the a-sync procedure) be called in the
 ;; same thread as that in which the event loop runs.
 ;;
-;; This procedure should not throw any exceptions unless memory is
+;; This procedure should not raise any exceptions unless memory is
 ;; exhausted.
 ;;
 ;; This procedure is first available in version 0.9 of this library.
@@ -2283,10 +2405,10 @@
 ;; a-sync procedure, it must (like the a-sync procedure) in practice
 ;; be called in the same thread as that in which the event loop runs.
 ;;
-;; This procedure should not throw an exception unless memory is
-;; exhausted.  If 'proc' throws, say because of port errors, and the
-;; exception is not caught locally, it will propagate out of
-;; event-loop-run!.
+;; This procedure should not raise an exception unless memory is
+;; exhausted.  If 'proc' raises an exception, say because of port
+;; errors, and the exception is not caught locally, it will propagate
+;; out of event-loop-run!.
 (define a-sync-write-watch!
   (case-lambda
     [(resume file proc) (a-sync-write-watch! resume file proc #f)]

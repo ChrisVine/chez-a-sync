@@ -604,11 +604,13 @@ the worker thread should post the closing as an event using event-post!.
      event loop will run in the thread which calls this procedure.  If
      this procedure has returned, including after a call to
      event-loop-quit!, this procedure may be called again to restart the
-     event loop.
+     event loop provided event-loop-close!  has not been applied to the
+     loop.  If event-loop-close!  has previously been invoked, this
+     procedure will raise a &violation exception.
 
-     If a callback throws, or something else throws in the
-     implementation, then this procedure will clean up the event loop as
-     if event-loop-quit!  had been called, and the exception will be
+     If something else throws in the implementation or a callback
+     throws, then this procedure will clean up the event loop as if
+     event-loop-quit!  had been called, and the exception will be
      rethrown out of this procedure.  This means that if there are
      continuable exceptions, they will be converted into non-continuable
      ones (but continuable exceptions are usually incompatible with
@@ -694,6 +696,9 @@ the worker thread should post the closing as an event using event-post!.
      and a port with the same underlying file descriptor compare equal
      for the purposes of removal.
 
+     This procedure should not throw an exception unless memory is
+     exhausted.
+
  -- Scheme Procedure: event-loop-remove-write-watch! file [loop]
      The 'loop' (event loop) argument is optional.  This procedure will
      remove a write watch from the event loop passed in as an argument,
@@ -702,6 +707,9 @@ the worker thread should post the closing as an event using event-post!.
      is thread safe - any thread may remove a watch.  A file descriptor
      and a port with the same underlying file descriptor compare equal
      for the purposes of removal.
+
+     This procedure should not throw an exception unless memory is
+     exhausted.
 
  -- Scheme Procedure: event-post! action [loop]
      The 'loop' (event loop) argument is optional.  This procedure will
@@ -714,7 +722,7 @@ the worker thread should post the closing as an event using event-post!.
      posted from a worker thread, it will normally be necessary to call
      event-loop-block!  beforehand.
 
-     This procedure should not throw an exception unless memory is
+     This procedure should not raise an exception unless memory is
      exhausted.  If the 'action' callback throws, and the exception is
      not caught locally, it will propagate out of event-loop-run!.
 
@@ -733,7 +741,7 @@ the worker thread should post the closing as an event using event-post!.
      timeout-remove!  can be applied.  It may be called by any thread,
      and the timeout callback will execute in the event loop thread.
 
-     This procedure should not throw an exception unless memory is
+     This procedure should not raise an exception unless memory is
      exhausted.  If the 'action' callback throws, and the exception is
      not caught locally, it will propagate out of event-loop-run!.
 
@@ -742,6 +750,9 @@ the worker thread should post the closing as an event using event-post!.
      the timeout with the given tag from executing in the event loop
      passed in as an argument, or if none is passed (or #f is passed),
      in the default event loop.  It may be called by any thread.
+
+     This procedure should not raise an exception unless memory is
+     exhausted.
 
  -- Scheme Procedure: event-loop-tasks [loop]
      This procedure returns the number of callbacks posted to an event
@@ -775,6 +786,9 @@ the worker thread should post the closing as an event using event-post!.
      this procedure operates on the event loop passed in as an argument,
      or if none is passed (or #f is passed), on the default event loop.
 
+     This procedure should not throw an exception unless memory is
+     exhausted.
+
  -- Scheme Procedure: event-loop-quit! [loop]
      This procedure causes an event loop to unblock.  Any events
      remaining in the event loop will be discarded.  New events may
@@ -784,6 +798,34 @@ the worker thread should post the closing as an event using event-post!.
      is optional: this procedure operates on the event loop passed in as
      an argument, or if none is passed (or #f is passed), on the default
      event loop.
+
+     This procedure should not throw an exception unless memory is
+     exhausted.
+
+ -- Scheme Procedure: event-loop-close! [loop]
+     This procedure closes an event loop.  Like event-loop-quit!, if the
+     loop is still running it causes the event loop to unblock, and any
+     events remaining in the event loop will be discarded.  However,
+     unlike event-loop-quit!, it also closes the internal event pipe
+     ports, and any subsequent application of event-loop-run!  to the
+     event loop will cause a &violation exception to be raised.
+
+     You might want to call this procedure to ensure that, after an
+     event loop in a local scope has been finished with, the two
+     internal event pipe file descriptors used by the loop are released
+     to the operating system in advance of the garbage collector being
+     called on it when it becomes inaccessible.
+
+     This is thread safe - any thread may call this procedure, including
+     any callback or task running on the event loop.  The 'loop'
+     argument is optional: this procedure operates on the event loop
+     passed in as an argument, or if none is passed (or #f is passed),
+     on the default event loop.
+
+     This procedure should not raise an exception unless memory is
+     exhausted.
+
+     This procedure is first available in version 0.17 of this library.
 
  -- Scheme Procedure: await-task-in-thread! await resume [loop] thunk
           [handler]
@@ -818,7 +860,7 @@ the worker thread should post the closing as an event using event-post!.
      shouldn't happen unless memory is exhausted or pthread has run out
      of resources.  Exceptions arising during execution of the task, if
      not caught by a handler procedure, will terminate the program.
-     Exceptions thrown by the handler procedure will propagate out of
+     Exceptions raised by the handler procedure will propagate out of
      event-loop-run!.
 
      Here is an example of the use of await-task-in-thread!:
@@ -1097,8 +1139,8 @@ the worker thread should post the closing as an event using event-post!.
      out of the event-loop-run!  procedure called for the 'worker' event
      loop.  Exceptions arising during the execution of 'proc', if not
      caught locally, will propagate out of the event-loop-run!
-     procedure called for the 'waiter' or default event loop (as the
-     case may be).
+     procedure called for the 'waiter' or default event loop, as the
+     case may be.
 
      This procedure is first available in version 0.6 of this library.
 
@@ -1170,8 +1212,8 @@ the worker thread should post the closing as an event using event-post!.
      setting up (that is, before the task starts), which shouldn't
      happen unless memory is exhausted.  Exceptions arising during
      execution of the generator, if not caught locally, will propagate
-     out of await-generator!.  Exceptions raised by 'proc', if not
-     caught locally, will propagate out of event-loop-run!.
+     out of event-loop-run!.  Exceptions raised by 'proc', if not caught
+     locally, will propagate out of event-loop-run!.
 
      This procedure is first available in version 0.6 of this library.
 
@@ -1248,7 +1290,7 @@ the worker thread should post the closing as an event using event-post!.
      This procedure must (like the a-sync procedure) be called in the
      same thread as that in which the event loop runs.
 
-     This procedure should not throw any exceptions unless memory is
+     This procedure should not raise any exceptions unless memory is
      exhausted.
 
      This procedure is first available in version 0.9 of this library.
@@ -1786,10 +1828,10 @@ the worker thread should post the closing as an event using event-post!.
      a-sync procedure, it must (like the a-sync procedure) in practice
      be called in the same thread as that in which the event loop runs.
 
-     This procedure should not throw an exception unless memory is
-     exhausted.  If 'proc' throws, say because of port errors, and the
-     exception is not caught locally, it will propagate out of
-     event-loop-run!.
+     This procedure should not raise an exception unless memory is
+     exhausted.  If 'proc' raises an exception, say because of port
+     errors, and the exception is not caught locally, it will propagate
+     out of event-loop-run!.
 
      As an example of how to use a-sync-write-watch!, here is the
      implementation of await-put-bytevector!:
@@ -2917,9 +2959,9 @@ Node: Top83
 Node: overview1229
 Node: coroutines4544
 Node: event loop23047
-Node: thread pool108657
-Node: compose127416
-Node: meeting133755
-Node: try148463
+Node: thread pool110518
+Node: compose129277
+Node: meeting135616
+Node: try150324
 
 End Tag Table
