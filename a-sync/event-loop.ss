@@ -594,7 +594,7 @@
 ;; input-port-ready?, or by using chez scheme's various
 ;; multi-byte/character reading procedures on non-blocking ports).
 ;;
-;; This procedure should not throw an exception unless memory is
+;; This procedure should not raise an exception unless memory is
 ;; exhausted.
 (define event-loop-add-read-watch!
   (case-lambda
@@ -666,7 +666,7 @@
 ;; with a value of 0), or with ports which have been set non-blocking
 ;; so that a partial write is possible without blocking the writer.
 ;;
-;; This procedure should not throw an exception unless memory is
+;; This procedure should not raise an exception unless memory is
 ;; exhausted.
 (define event-loop-add-write-watch!
   (case-lambda
@@ -708,7 +708,7 @@
 ;; and a port with the same underlying file descriptor compare equal
 ;; for the purposes of removal.
 ;;
-;; This procedure should not throw an exception unless memory is
+;; This procedure should not raise an exception unless memory is
 ;; exhausted.
 (define event-loop-remove-read-watch!
   (case-lambda
@@ -739,7 +739,7 @@
 ;; and a port with the same underlying file descriptor compare equal
 ;; for the purposes of removal.
 ;;
-;; This procedure should not throw an exception unless memory is
+;; This procedure should not raise an exception unless memory is
 ;; exhausted.
 (define event-loop-remove-write-watch!
   (case-lambda
@@ -902,7 +902,7 @@
 ;; this procedure operates on the event loop passed in as an argument,
 ;; or if none is passed (or #f is passed), on the default event loop.
 ;;
-;; This procedure should not throw an exception unless memory is
+;; This procedure should not raise an exception unless memory is
 ;; exhausted.
 (define event-loop-block!
   (case-lambda
@@ -932,17 +932,26 @@
 		 (put-bytevector-some out (make-bytevector 1 1) 0 1)
 		 (flush-output-port out)))))))]))
 
-;; This procedure causes an event loop to unblock.  Any events
-;; remaining in the event loop will be discarded.  New events may
-;; subsequently be added after event-loop-run! has unblocked and
-;; event-loop-run! then called for them.  This is thread safe - any
-;; thread may call this procedure, including any callback or task
-;; running on the event loop.  The 'el' (event loop) argument is
-;; optional: this procedure operates on the event loop passed in as an
-;; argument, or if none is passed (or #f is passed), on the default
-;; event loop.
+;; This procedure causes an event loop to unblock.  Any file watches
+;; or events remaining in the event loop will be discarded.  New file
+;; watches and events may subsequently be added after event-loop-run!
+;; has unblocked and event-loop-run! then called for them.  This is
+;; thread safe - any thread may call this procedure, including any
+;; callback or task running on the event loop.  The 'el' (event loop)
+;; argument is optional: this procedure operates on the event loop
+;; passed in as an argument, or if none is passed (or #f is passed),
+;; on the default event loop.
 ;;
-;; This procedure should not throw an exception unless memory is
+;; Note that the discarding of file watches and unexecuted events
+;; remaining in the event loop means that if one of the helper await-*
+;; procedures provided by this library has been called but has not yet
+;; returned, it may fail to complete, as its continuation may
+;; disappear - it will be as if the a-sync block concerned had come to
+;; an end.  It may therefore be best only to call this procedure on an
+;; event loop after all such await-* procedures which are executing
+;; have returned.
+;;
+;; This procedure should not raise an exception unless memory is
 ;; exhausted.
 (define event-loop-quit!
   (case-lambda
@@ -970,10 +979,11 @@
 
 ;; This procedure closes an event loop.  Like event-loop-quit!, if the
 ;; loop is still running it causes the event loop to unblock, and any
-;; events remaining in the event loop will be discarded.  However,
-;; unlike event-loop-quit!, it also closes the internal event pipe
-;; ports, and any subsequent application of event-loop-run! to the
-;; event loop will cause a &violation exception to be raised.
+;; file watches or events remaining in the event loop will be
+;; discarded.  However, unlike event-loop-quit!, it also closes the
+;; internal event pipe ports, and any subsequent application of
+;; event-loop-run! to the event loop will cause a &violation exception
+;; to be thrown.
 ;;
 ;; You might want to call this procedure to ensure that, after an
 ;; event loop in a local scope has been finished with, the two
@@ -986,6 +996,15 @@
 ;; loop) argument is optional: this procedure operates on the event
 ;; loop passed in as an argument, or if none is passed (or #f is
 ;; passed), on the default event loop.
+;;
+;; Note that the discarding of file watches and unexecuted events
+;; remaining in the event loop means that if one of the helper await-*
+;; procedures provided by this library has been called but has not yet
+;; returned, it may fail to complete, as its continuation may
+;; disappear - it will be as if the a-sync block concerned had come to
+;; an end.  It may therefore be best only to call this procedure on an
+;; event loop after all such await-* procedures which are executing
+;; have returned.
 ;;
 ;; This procedure should not raise an exception unless memory is
 ;; exhausted.
