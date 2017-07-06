@@ -536,6 +536,7 @@
   ;; the only foolproof way of vacating a unix pipe is to close it and
   ;; then create another one
   (with-mutex (_mutex-get el)
+    (clear-output-port (_event-out-get el))      
     (close-port (_event-out-get el))      
     (close-port (_event-in-get el))
 
@@ -1007,6 +1008,7 @@
 	    [(eq? status 'quit)
 	     ;; loop no longer running - just close the pipe ports
 	     (_done-set! el 'closed)
+	     (clear-output-port (_event-out-get el))      
 	     (close-port (_event-out-get el))      
 	     (close-port (_event-in-get el))]
 	    [(eq? status 'prepare-to-quit)
