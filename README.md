@@ -54,6 +54,32 @@ scheme binary with the --libdirs option.  Also, run ldconfig after
 installation because a shared support library (libchez-a-sync-0) is
 installed in libdir.
 
+From version 0.17, 'autogen.sh' and 'configure' can be passed the
+configuration option --enable-compile-to-bytecode.  If that option is
+chosen, then 'make' will compile the library's scheme source (*.ss)
+files to scheme object (*.so) files, and 'make install' will install
+those object files to the same directory as the source files.  By
+default this pre-compilation will not be carried out, mainly because
+it has not been tested with Mac OS, but as this default might change
+in future, in writing build scripts it is worth considering calling up
+the --disable-compile-to-bytecode or --enable-compile-to-bytecode
+option explicitly.  If pre-compilation is not carried out, this can be
+done by the user subsequently in the scheme REPL using the
+'compile-library' procedure, but note that order of compilation is
+important.  The ordering is: try.ss, coroutines.ss and event-loop.ss
+first, in that order, followed by compose.ss, meeting.ss and
+thread-pool.ss in any order.  Note also that when invoking the
+'compile-library' procedure, the CHEZSCHEMELIBDIRS environmental
+variable or the --libdirs command-line option must be correctly set to
+cover those source and object files.  Note also that any instance of a
+compiled program is tied to the particular compiled library object
+files against which it was compiled.  If, on running a compiled
+program, you get the message "Exception: compiled program requires
+different compilation instance of ([xxx] [xxx]) from one found in
+[xxx]", then dependency ordering was wrong or libdirs was wrong during
+compilation, or the program is being run against a different set of
+library object files.
+
 Supported operating systems
 ---------------------------
 
