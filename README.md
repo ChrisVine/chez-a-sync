@@ -56,8 +56,8 @@ installed in libdir.
 
 From version 0.17, 'autogen.sh' and 'configure' can be passed the
 configuration option --enable-compile-to-bytecode.  If that option is
-chosen, then 'make' will compile the library's scheme source (*.ss)
-files to scheme object (*.so) files, and 'make install' will install
+chosen, then 'make' will compile the library's scheme source (\*.ss)
+files to scheme object (\*.so) files, and 'make install' will install
 those object files to the same directory as the source files.  By
 default this pre-compilation will not be carried out, mainly because
 it has not been tested with Mac OS, but as this default might change
