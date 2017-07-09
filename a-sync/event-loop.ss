@@ -900,7 +900,8 @@
 ;; non-blocking mode, pass #f).  This is thread safe - any thread may
 ;; call this procedure.  The 'el' (event loop) argument is optional:
 ;; this procedure operates on the event loop passed in as an argument,
-;; or if none is passed (or #f is passed), on the default event loop.
+;; or if none is passed (or #f is passed as the 'el argument), on the
+;; default event loop.
 ;;
 ;; This procedure should not raise an exception unless memory is
 ;; exhausted.
@@ -932,24 +933,25 @@
 		 (put-bytevector-some out (make-bytevector 1 1) 0 1)
 		 (flush-output-port out)))))))]))
 
-;; This procedure causes an event loop to unblock.  Any file watches
-;; or events remaining in the event loop will be discarded.  New file
-;; watches and events may subsequently be added after event-loop-run!
-;; has unblocked and event-loop-run! then called for them.  This is
-;; thread safe - any thread may call this procedure, including any
-;; callback or task running on the event loop.  The 'el' (event loop)
-;; argument is optional: this procedure operates on the event loop
-;; passed in as an argument, or if none is passed (or #f is passed),
-;; on the default event loop.
+;; This procedure causes an event loop to unblock.  Any file watches,
+;; timeouts or posted events remaining in the event loop will be
+;; discarded.  New file watches, timeouts and events may subsequently
+;; be added or posted after event-loop-run! has unblocked and
+;; event-loop-run! then called for them.  This is thread safe - any
+;; thread may call this procedure, including any callback or task
+;; running on the event loop.  The 'el' (event loop) argument is
+;; optional: this procedure operates on the event loop passed in as an
+;; argument, or if none is passed (or #f is passed), on the default
+;; event loop.
 ;;
-;; Note that the discarding of file watches and unexecuted events
-;; remaining in the event loop means that if one of the helper await-*
-;; procedures provided by this library has been called but has not yet
-;; returned, it may fail to complete, as its continuation may
-;; disappear - it will be as if the a-sync block concerned had come to
-;; an end.  It may therefore be best only to call this procedure on an
-;; event loop after all such await-* procedures which are executing
-;; have returned.
+;; Note that the discarding of file watches, timeouts and unexecuted
+;; events remaining in the event loop means that if one of the helper
+;; await-* procedures provided by this library has been called but has
+;; not yet returned, it may fail to complete, as its continuation may
+;; disappear - it will be as if the a-sync or compose-a-sync block
+;; concerned had come to an end.  It may therefore be best only to
+;; call this procedure on an event loop after all such await-*
+;; procedures which are executing have returned.
 ;;
 ;; This procedure should not raise an exception unless memory is
 ;; exhausted.
@@ -979,17 +981,17 @@
 
 ;; This procedure closes an event loop.  Like event-loop-quit!, if the
 ;; loop is still running it causes the event loop to unblock, and any
-;; file watches or events remaining in the event loop will be
-;; discarded.  However, unlike event-loop-quit!, it also closes the
-;; internal event pipe ports, and any subsequent application of
-;; event-loop-run! to the event loop will cause a &violation exception
-;; to be thrown.
+;; file watches, timeouts or posted events remaining in the event loop
+;; will be discarded.  However, unlike event-loop-quit!, it also
+;; closes the internal event pipe ports, and any subsequent
+;; application of event-loop-run! to the event loop will cause a
+;; &violation exception to be raised.
 ;;
 ;; You might want to call this procedure to ensure that, after an
 ;; event loop in a local scope has been finished with, the two
 ;; internal event pipe file descriptors used by the loop are released
-;; to the operating system in advance of the garbage collector being
-;; called on it when it becomes inaccessible.
+;; to the operating system in advance of the garbage collector
+;; releasing them when the event loop object becomes inaccessible.
 ;;
 ;; This is thread safe - any thread may call this procedure, including
 ;; any callback or task running on the event loop.  The 'el' (event
@@ -997,14 +999,14 @@
 ;; loop passed in as an argument, or if none is passed (or #f is
 ;; passed), on the default event loop.
 ;;
-;; Note that the discarding of file watches and unexecuted events
-;; remaining in the event loop means that if one of the helper await-*
-;; procedures provided by this library has been called but has not yet
-;; returned, it may fail to complete, as its continuation may
-;; disappear - it will be as if the a-sync block concerned had come to
-;; an end.  It may therefore be best only to call this procedure on an
-;; event loop after all such await-* procedures which are executing
-;; have returned.
+;; Note that the discarding of file watches, timeouts and unexecuted
+;; events remaining in the event loop means that if one of the helper
+;; await-* procedures provided by this library has been called but has
+;; not yet returned, it may fail to complete, as its continuation may
+;; disappear - it will be as if the a-sync or compose-a-sync block
+;; concerned had come to an end.  It may therefore be best only to
+;; call this procedure on an event loop after all such await-*
+;; procedures which are executing have returned.
 ;;
 ;; This procedure should not raise an exception unless memory is
 ;; exhausted.
