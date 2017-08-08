@@ -36,7 +36,7 @@
 ;; invoked again, the iterator will resume computation at the point
 ;; where it last left off (the yield procedure returning the value, if
 ;; any, passed to the iterator on resuming), following which yield may
-;; be invoked again, and so on.  When the generator procedure has
+;; be applied again, and so on.  When the generator procedure has
 ;; executed to the end, the iterator returns 'stop-iteration.  This
 ;; procedure has some resemblance to call/ec, except that (i) instead
 ;; of executing the passed procedure immediately, it returns an
