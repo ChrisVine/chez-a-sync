@@ -1,11 +1,11 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
-<!-- Created by GNU Texinfo 6.3, http://www.gnu.org/software/texinfo/ -->
+<!-- Created by GNU Texinfo 6.4, http://www.gnu.org/software/texinfo/ -->
 <head>
-<title>chez-a-sync: coroutines</title>
+<title>coroutines (chez-a-sync)</title>
 
-<meta name="description" content="chez-a-sync: coroutines">
-<meta name="keywords" content="chez-a-sync: coroutines">
+<meta name="description" content="coroutines (chez-a-sync)">
+<meta name="keywords" content="coroutines (chez-a-sync)">
 <meta name="resource-type" content="document">
 <meta name="distribution" content="global">
 <meta name="Generator" content="makeinfo">
@@ -69,9 +69,10 @@ argument comprising the yield procedure is called, which will cause
 the iterator to suspend computation and instead return the value
 passed to yield, if any (yield is a procedure taking no or one
 argument).  If invoked again, the iterator will resume computation at
-the point where it last left off (returning the value, if any, passed
-to the iterator on resuming).  When the generator procedure has
-executed to the end, the iterator returns &rsquo;stop-iteration.  This
+the point where it last left off (the yield procedure returning the
+value, if any, passed to the iterator on resuming), following which
+yield may be invoked again, and so on.  When the generator procedure
+has executed to the end, the iterator returns &rsquo;stop-iteration.  This
 procedure has some resemblance to call/ec, except that (i) instead of
 executing the passed procedure immediately, it returns an iterator
 which will do so, (ii) it is resumable, and (iii) the procedure to be

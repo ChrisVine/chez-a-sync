@@ -1,4 +1,4 @@
-This is chez-a-sync.info, produced by makeinfo version 6.3 from
+This is chez-a-sync.info, produced by makeinfo version 6.4 from
 chez-a-sync.texi.
 
 
@@ -113,16 +113,17 @@ The (a-sync coroutines) library file provides the following procedures:
      suspend computation and instead return the value passed to yield,
      if any (yield is a procedure taking no or one argument).  If
      invoked again, the iterator will resume computation at the point
-     where it last left off (returning the value, if any, passed to the
-     iterator on resuming).  When the generator procedure has executed
-     to the end, the iterator returns 'stop-iteration.  This procedure
-     has some resemblance to call/ec, except that (i) instead of
-     executing the passed procedure immediately, it returns an iterator
-     which will do so, (ii) it is resumable, and (iii) the procedure to
-     be executed can receive starting arguments in addition to the
-     yield/break argument, to provide an alternative to binding them
-     with a lambda closure.  It is similar to ECMAScript generators and
-     python generators.
+     where it last left off (the yield procedure returning the value, if
+     any, passed to the iterator on resuming), following which yield may
+     be invoked again, and so on.  When the generator procedure has
+     executed to the end, the iterator returns 'stop-iteration.  This
+     procedure has some resemblance to call/ec, except that (i) instead
+     of executing the passed procedure immediately, it returns an
+     iterator which will do so, (ii) it is resumable, and (iii) the
+     procedure to be executed can receive starting arguments in addition
+     to the yield/break argument, to provide an alternative to binding
+     them with a lambda closure.  It is similar to ECMAScript generators
+     and python generators.
 
      If 'proc' raises a continuable exception, it will be converted by
      this procedure into a non-continuable exception.
@@ -2979,10 +2980,10 @@ Tag Table:
 Node: Top83
 Node: overview1229
 Node: coroutines4544
-Node: event loop23047
-Node: thread pool111805
-Node: compose130564
-Node: meeting136903
-Node: try151611
+Node: event loop23127
+Node: thread pool111885
+Node: compose130644
+Node: meeting136983
+Node: try151691
 
 End Tag Table

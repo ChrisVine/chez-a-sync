@@ -34,16 +34,17 @@
 ;; suspend computation and instead return the value passed to yield,
 ;; if any (yield is a procedure taking no or one argument).  If
 ;; invoked again, the iterator will resume computation at the point
-;; where it last left off (returning the value, if any, passed to the
-;; iterator on resuming).  When the generator procedure has executed
-;; to the end, the iterator returns 'stop-iteration.  This procedure
-;; has some resemblance to call/ec, except that (i) instead of
-;; executing the passed procedure immediately, it returns an iterator
-;; which will do so, (ii) it is resumable, and (iii) the procedure to
-;; be executed can receive starting arguments in addition to the
-;; yield/break argument, to provide an alternative to binding them
-;; with a lambda closure.  It is similar to ECMAScript generators and
-;; python generators.
+;; where it last left off (the yield procedure returning the value, if
+;; any, passed to the iterator on resuming), following which yield may
+;; be invoked again, and so on.  When the generator procedure has
+;; executed to the end, the iterator returns 'stop-iteration.  This
+;; procedure has some resemblance to call/ec, except that (i) instead
+;; of executing the passed procedure immediately, it returns an
+;; iterator which will do so, (ii) it is resumable, and (iii) the
+;; procedure to be executed can receive starting arguments in addition
+;; to the yield/break argument, to provide an alternative to binding
+;; them with a lambda closure.  It is similar to ECMAScript generators
+;; and python generators.
 ;;
 ;; If 'proc' raises a continuable exception, it will be converted by
 ;; this procedure into a non-continuable exception.
