@@ -2505,9 +2505,10 @@
 ;;
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up (that is, before the first call to 'await' is made), say
-;; because a regular file is passed to this procedure, memory is
-;; exhausted or a write exception is encountered.  With versions of
-;; this library before 0.11, any exceptions because of write errors
+;; because a regular file is passed to this procedure or memory is
+;; exhausted.  In addition, any write error will cause a
+;; &i/o-write-error exception to be raised by this procedure.  With
+;; versions of this library before 0.11, such write exceptions arising
 ;; after the first write would propagate out of event-loop-run! and
 ;; could not be caught locally.  Having write exceptions (say, because
 ;; of EPIPE) interfering with anything using the event loop in this
@@ -2613,16 +2614,17 @@
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up (that is, before the first call to 'await' is made), say
 ;; because a regular file is passed to this procedure, memory is
-;; exhausted, a conversion error arises or a write exception is
-;; encountered.  With versions of this library before 0.11, any
-;; exceptions because of write errors after the first write would
-;; propagate out of event-loop-run! and could not be caught locally.
-;; Having write exceptions (say, because of EPIPE) interfering with
-;; anything using the event loop in this way was not a good approach,
-;; so from version 0.11 of this library all write exceptions will
-;; propagate in the first instance out of this procedure so that they
-;; may be caught locally, say by putting a 'try' block around the call
-;; to this procedure.
+;; exhausted or a conversion error arises.  In addition, any write
+;; error will cause a &i/o-write-error exception to be raised by this
+;; procedure.  With versions of this library before 0.11, such write
+;; exceptions arising after the first write would propagate out of
+;; event-loop-run! and could not be caught locally.  Having write
+;; exceptions (say, because of EPIPE) interfering with anything using
+;; the event loop in this way was not a good approach, so from version
+;; 0.11 of this library all write exceptions will propagate in the
+;; first instance out of this procedure so that they may be caught
+;; locally, say by putting a 'try' block around the call to this
+;; procedure.
 ;;
 ;; This procedure is first available in version 0.7 of this library.
 (define await-put-string!

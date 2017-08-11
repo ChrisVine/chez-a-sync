@@ -1944,9 +1944,10 @@ the worker thread should post the closing as an event using event-post!.
 
      Exceptions may propagate out of this procedure if they arise while
      setting up (that is, before the first call to 'await' is made), say
-     because a regular file is passed to this procedure, memory is
-     exhausted or a write exception is encountered.  With versions of
-     this library before 0.11, any exceptions because of write errors
+     because a regular file is passed to this procedure or memory is
+     exhausted.  In addition, any write error will cause a
+     &i/o-write-error exception to be raised by this procedure.  With
+     versions of this library before 0.11, such write exceptions arising
      after the first write would propagate out of event-loop-run!  and
      could not be caught locally.  Having write exceptions (say, because
      of EPIPE) interfering with anything using the event loop in this
@@ -2031,16 +2032,17 @@ the worker thread should post the closing as an event using event-post!.
      Exceptions may propagate out of this procedure if they arise while
      setting up (that is, before the first call to 'await' is made), say
      because a regular file is passed to this procedure, memory is
-     exhausted, a conversion error arises or a write exception is
-     encountered.  With versions of this library before 0.11, any
-     exceptions because of write errors after the first write would
-     propagate out of event-loop-run!  and could not be caught locally.
-     Having write exceptions (say, because of EPIPE) interfering with
-     anything using the event loop in this way was not a good approach,
-     so from version 0.11 of this library all write exceptions will
-     propagate in the first instance out of this procedure so that they
-     may be caught locally, say by putting a 'try' block around the call
-     to this procedure.
+     exhausted or a conversion error arises.  In addition, any write
+     error will cause a &i/o-write-error exception to be raised by this
+     procedure.  With versions of this library before 0.11, such write
+     exceptions arising after the first write would propagate out of
+     event-loop-run!  and could not be caught locally.  Having write
+     exceptions (say, because of EPIPE) interfering with anything using
+     the event loop in this way was not a good approach, so from version
+     0.11 of this library all write exceptions will propagate in the
+     first instance out of this procedure so that they may be caught
+     locally, say by putting a 'try' block around the call to this
+     procedure.
 
      Here is how EPIPE might be tested for, using the 'try' form from
      the *note (a-sync try): try. library file (with linux and BSDs, the
@@ -2981,9 +2983,9 @@ Node: Top83
 Node: overview1229
 Node: coroutines4544
 Node: event loop23127
-Node: thread pool111885
-Node: compose130644
-Node: meeting136983
-Node: try151691
+Node: thread pool112014
+Node: compose130773
+Node: meeting137112
+Node: try151820
 
 End Tag Table
