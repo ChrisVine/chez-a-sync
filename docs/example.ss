@@ -70,18 +70,16 @@
 (display "\nBeginning timeout\n")
 (compose-a-sync ([ret-timeout (await-timeout! 1000 (lambda ()
                                                      "Timeout ended\n"))]
-		 ;; the return value here can be ignored - this is easier
-		 ;; than starting another compose-a-sync block for
-		 ;; await-task-in-thread!
-		 [ignore1 ((no-await (display ret-timeout)))]
+		 ;; the return value here can be ignored
+		 [ignore ((no-await (display ret-timeout)))]
 		 [ret-task (await-task-in-thread! (lambda ()
 						    (sleep (make-time 'time-duration 0 1))
 						    (display "In worker thread, work done\n")
 						    "Hello via async\n"))]
 		 ;; ditto
-		 [ignore2 ((no-await (display ret-task)
-				     (display "Enter a line of text at the keyboard\n")
-				     (system "stty --file=/dev/tty cbreak")))]
+		 [ignore ((no-await (display ret-task)
+				    (display "Enter a line of text at the keyboard\n")
+				    (system "stty --file=/dev/tty cbreak")))]
 		 [ret-getline (await-getline! (open-input-file "/dev/tty"))])
 		;; body clauses begin here
 		((no-await (format #t
