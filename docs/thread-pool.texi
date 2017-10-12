@@ -258,8 +258,8 @@ This procedure calls 'await' and must (like the a-sync procedure) be
 called in the same thread as that in which the 'loop' or default event
 loop runs (as the case may be).
 
-This procedure calls event-post! in the 'loop' event loop, which could
-be subject to throttling (see the documentation for the
+This procedure calls event-post! in the 'loop' or default event loop,
+which could be subject to throttling (see the documentation for the
 make-event-loop procedure for further information).
 
 Exceptions may propagate out of this procedure if they arise while
@@ -321,8 +321,8 @@ exception.  This procedure must (like the a-sync procedure) be called
 in the same thread as that in which the 'loop' or default event loop
 runs (as the case may be).
 
-This procedure calls event-post! in both the 'loop' event loop, which
-could be subject to throttling (see the documentation for the
+This procedure calls event-post! in the 'loop' or default event loop,
+which could be subject to throttling (see the documentation for the
 make-event-loop procedure for further information).
 
 Exceptions may propagate out of this procedure if they arise while

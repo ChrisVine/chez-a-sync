@@ -1,4 +1,4 @@
-This is chez-a-sync.info, produced by makeinfo version 6.4 from
+This is chez-a-sync.info, produced by makeinfo version 6.5 from
 chez-a-sync.texi.
 
 
@@ -2382,9 +2382,9 @@ the already accumulated tasks has reduced.
      be called in the same thread as that in which the 'loop' or default
      event loop runs (as the case may be).
 
-     This procedure calls event-post!  in the 'loop' event loop, which
-     could be subject to throttling (see the documentation for the
-     make-event-loop procedure for further information).
+     This procedure calls event-post!  in the 'loop' or default event
+     loop, which could be subject to throttling (see the documentation
+     for the make-event-loop procedure for further information).
 
      Exceptions may propagate out of this procedure if they arise while
      setting up, which shouldn't happen unless the thread pool given by
@@ -2446,9 +2446,9 @@ the already accumulated tasks has reduced.
      called in the same thread as that in which the 'loop' or default
      event loop runs (as the case may be).
 
-     This procedure calls event-post!  in both the 'loop' event loop,
-     which could be subject to throttling (see the documentation for the
-     make-event-loop procedure for further information).
+     This procedure calls event-post!  in the 'loop' or default event
+     loop, which could be subject to throttling (see the documentation
+     for the make-event-loop procedure for further information).
 
      Exceptions may propagate out of this procedure if they arise while
      setting up, which shouldn't happen unless the thread loop given by
@@ -2984,8 +2984,8 @@ Node: overview1229
 Node: coroutines4544
 Node: event loop23127
 Node: thread pool112014
-Node: compose130773
-Node: meeting137112
-Node: try151820
+Node: compose130790
+Node: meeting137129
+Node: try151837
 
 End Tag Table

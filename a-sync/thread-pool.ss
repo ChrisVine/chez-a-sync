@@ -528,9 +528,9 @@
 ;; be called in the same thread as that in which the 'loop' or default
 ;; event loop runs (as the case may be).
 ;;
-;; This procedure calls event-post! in the 'loop' event loop, which
-;; could be subject to throttling (see the documentation for the
-;; make-event-loop procedure for further information).
+;; This procedure calls event-post! in the 'loop' or default event
+;; loop, which could be subject to throttling (see the documentation
+;; for the make-event-loop procedure for further information).
 ;;
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up, which shouldn't happen unless the thread pool given by
@@ -618,9 +618,9 @@
 ;; called in the same thread as that in which the 'loop' or default
 ;; event loop runs (as the case may be).
 ;;
-;; This procedure calls event-post! in both the 'loop' event loop,
-;; which could be subject to throttling (see the documentation for the
-;; make-event-loop procedure for further information).
+;; This procedure calls event-post! in the 'loop' or default event
+;; loop, which could be subject to throttling (see the documentation
+;; for the make-event-loop procedure for further information).
 ;;
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up, which shouldn't happen unless the thread loop given by
