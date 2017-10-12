@@ -10,7 +10,7 @@ It also provides a coroutines interface (coroutines.ss) which
 provides await semantics on such events, so as to avoid inversion of
 control (aka "callback hell").
 
-The package has been tested with chez-scheme-9.4.
+The package has been tested with Chez Scheme versions 9.4 and 9.5.
 
 See the documentation mentioned below for further details, and the
 docs/example.ss file.
