@@ -1,11 +1,9 @@
-chez-a-sync is (like chez scheme 9.4) released under the Apache 2.0
-license, as set out below.  (Much of the code is similar to code
-released in the guile-a-sync library which is covered by the LGPL v3,
-and to that extent it is dual-licensed by me, Chris Vine, the author.)
-The pattern matcher in the a-sync/helper/match.ss file has been
-released by its authors under the MIT license as set out therein.
+chez-a-sync is (like chez scheme 9.4/9.5) released under the Apache
+2.0 license, as set out below.  The pattern matcher in the
+a-sync/helper/match.ss file has been released by its authors under the
+MIT license as set out therein.
 
-Chris Vine, 2016
+Chris Vine, 2017
 
 ===========================================================================
 
