@@ -22,10 +22,12 @@ SUFFIXES: .ss .so
 # scheme's dependency requirements.
 try.so: try.ss
 coroutines.so: coroutines.ss try.so
-event-loop.so: event-loop.ss try.so coroutines.so
+event-loop.so: event-loop.ss try.so coroutines.so helper/poll.ss helper/pipe.ss \
+	       helper/queue.ss helper/errno.ss helper/match.ss helper/unix-write.ss
 compose.so: compose.ss coroutines.so
-meeting.so: meeting.ss event-loop.so
-thread-pool.so: thread-pool.ss try.so coroutines.so event-loop.so
+meeting.so: meeting.ss event-loop.so helper/queue.ss helper/queue.ss
+thread-pool.so: thread-pool.ss try.so coroutines.so event-loop.so \
+		helper/queue.ss helper/match.ss
 
 # make sure that timestamps on object files are after that of source
 # files
