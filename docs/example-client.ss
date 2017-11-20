@@ -1,6 +1,6 @@
 #!/usr/bin/env scheme-script
 
-;; Copyright (C) 2016 Chris Vine
+;; Copyright (C) 2016 and 2017 Chris Vine
 ;; 
 ;; This file is licensed under the Apache License, Version 2.0 (the
 ;; "License"); you may not use this file except in compliance with the
@@ -38,21 +38,20 @@
 (define check-ip "myip.dnsdynamic.org")
 
 (define (await-read-response await resume sockport)
+  (define header-done #f)
   (define header "")
   (define body "")
   (await-geteveryline! await resume sockport
 		       (lambda (line)
-			 (cond
-			  [(not (string=? body ""))
-			   (set! body (string-append body "\n" line))]
-			  [(string=? line "")
-			   (set! body (string (integer->char 0)))] ;; marker
-			  [else
-			   (set! header (if (string=? header "")
-					    line
-					    (string-append header "\n" line)))])))
-  ;; get rid of marker (with \n) in body
-  (set! body (substring body 2 (string-length body)))
+			 (if header-done
+			     (if (string=? body "")
+				 (set! body line)
+				 (set! body (string-append body "\n" line)))
+			     (if (string=? line "")
+				 (set! header-done #t)
+				 (if (string=? header "")
+				     (set! header line)
+				     (set! header (string-append header "\n" line)))))))
   (values header body))
 
 (define (await-send-get-request await resume host path sockport)
