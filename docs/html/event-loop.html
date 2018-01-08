@@ -185,6 +185,10 @@ event-loop-close! has not been applied to the loop.  If
 event-loop-close! has previously been invoked, this procedure will
 raise a &amp;violation exception.
 </p>
+<p>From version 0.18, this procedure will also raise a &amp;violation
+exception if it is applied to an event loop which is currently running
+(prior to version 0.18, doing so would fail in a less helpful way).
+</p>
 <p>If something else throws in the implementation or a callback throws,
 then this procedure will clean up the event loop as if
 event-loop-quit! had been called, and the exception will be rethrown

@@ -609,6 +609,11 @@ the worker thread should post the closing as an event using event-post!.
      loop.  If event-loop-close!  has previously been invoked, this
      procedure will raise a &violation exception.
 
+     From version 0.18, this procedure will also raise a &violation
+     exception if it is applied to an event loop which is currently
+     running (prior to version 0.18, doing so would fail in a less
+     helpful way).
+
      If something else throws in the implementation or a callback
      throws, then this procedure will clean up the event loop as if
      event-loop-quit!  had been called, and the exception will be
@@ -2983,9 +2988,9 @@ Node: Top83
 Node: overview1229
 Node: coroutines4544
 Node: event loop23127
-Node: thread pool112014
-Node: compose130790
-Node: meeting137129
-Node: try151837
+Node: thread pool112237
+Node: compose131013
+Node: meeting137352
+Node: try152060
 
 End Tag Table
