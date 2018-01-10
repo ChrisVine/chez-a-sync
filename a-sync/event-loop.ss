@@ -439,7 +439,8 @@
      (with-mutex mutex
        (set! read-files (_read-files-get el))
        (set! write-files (_write-files-get el))
-       (set! set-poll-caches (_poll-caches-flag-get el)))
+       (set! set-poll-caches (_poll-caches-flag-get el))
+       (_poll-caches-flag-set! el #f))
 
      ;; no mutex is required - we only call _set-poll-caches! in the
      ;; event loop thread
