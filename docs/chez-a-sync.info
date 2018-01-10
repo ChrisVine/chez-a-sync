@@ -521,19 +521,20 @@ await-put-bytevector!  and await-put-string!  procedures.
 
    Where a file watch on a file descriptor or port has been added with
 event-loop-add-read-watch!  or event-loop-add-write-watch!, the event
-loop should be treated as owning the status of the port concerned until
-it has subsequently been removed with event-loop-remove-read-watch!  or
+loop should be treated as owning the port concerned until it has
+subsequently been removed with event-loop-remove-read-watch!  or
 event-loop-remove-write-watch!.  This is because, if the port concerned
 is closed (say by calling close-port, close-input-port or
 close-output-port) before its watch has been removed from the event
 loop, and the underlying file descriptor value is then reused by the
 operating system, there may be a phantom watch on the new descriptor
 with an associated attempted read or write on a closed port.  Also note
-that if a worker thread other than the event loop thread removes the
-watch and immediately follows it with a close of the port concerned, the
-file watch callback may be called once in consequence, so in such a case
-either the callback should be ready to handle a possibly closed port or
-the worker thread should post the closing as an event using event-post!.
+that, where a watch on a port has just been removed, it is usually
+undesirable to close the port in a different thread than the event loop
+thread because there is no easy way of synchronizing the threads at that
+point.  If it is necessary for a worker thread to close a port after
+removing the watch, one approach is for the thread to post the closing
+as an event using event-post!.
 
    This library file provides the following procedures:
 
@@ -2988,9 +2989,9 @@ Node: Top83
 Node: overview1229
 Node: coroutines4544
 Node: event loop23127
-Node: thread pool112237
-Node: compose131013
-Node: meeting137352
-Node: try152060
+Node: thread pool112246
+Node: compose131022
+Node: meeting137361
+Node: try152069
 
 End Tag Table
