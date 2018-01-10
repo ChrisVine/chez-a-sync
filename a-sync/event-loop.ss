@@ -403,9 +403,7 @@
   (define event-in #f)
   (define event-fd #f)
   (define read-files #f)
-  (define read-files-actions #f)
   (define write-files #f)
-  (define write-files-actions #f)
 
   (with-mutex mutex
     (case (_mode-get el)
@@ -432,13 +430,12 @@
      ;; individual timeout item vectors, as we only do this in the
      ;; event loop thread
      (_process-timeouts el)
-     ;; we must assign these under a mutex so that we get a
-     ;; consistent view on each run
+     ;; we must assign these under a mutex so that we get a consistent
+     ;; view of them on each run: the lists themselves are not mutated
+     ;; (their associated actions may be)
      (with-mutex mutex
        (set! read-files (_read-files-get el))
-       (set! read-files-actions (_read-files-actions-get el))
-       (set! write-files (_write-files-get el))
-       (set! write-files-actions (_write-files-actions-get el)))
+       (set! write-files (_write-files-get el)))
 
      (when (not (and (null? read-files)
 		     (null? write-files)
@@ -457,41 +454,38 @@
 	 (for-each (lambda (elt)
 		     (let ([action
 			    ;; we only poll for POLLPRI on read descriptors
-			    (hashtable-ref read-files-actions
-					   (_fd-or-port->fd elt)
-					   #f)])
-		       (if action
-			   (when (not (action 'excpt))
-			     (with-mutex mutex (_remove-read-watch-impl! elt el)))
-			   (error "_event-loop-run-impl"
-				  "No action in event loop for read file: " `(,elt)))))
+			    (with-mutex mutex
+			      (hashtable-ref (_read-files-actions-get el)
+					     (_fd-or-port->fd elt)
+					     #f))])
+		       ;; if the action has been concurrently removed, ignore it
+		       (when (and action (not (action 'excpt)))
+			 (with-mutex mutex (_remove-read-watch-impl! elt el)))))
 		   (caddr res))
 	 ;; this deals with POLLIN, POLLHUP, POLLERR and POLLNVAL
 	 ;; events on read file descriptors
 	 (for-each (lambda (elt)
 		     (let ([action
-			    (hashtable-ref read-files-actions
-					   (_fd-or-port->fd elt)
-					   #f)])
-		       (if action
-			   (when (not (action 'in))
-			     (with-mutex mutex (_remove-read-watch-impl! elt el)))
-			   (error "_event-loop-run-impl"
-				  "No action in event loop for read file: " `(,elt)))))
+			    (with-mutex mutex
+			      (hashtable-ref (_read-files-actions-get el)
+					     (_fd-or-port->fd elt)
+					     #f))])
+		       ;; if the action has been concurrently removed, ignore it
+		       (when (and action (not (action 'in)))
+			 (with-mutex mutex (_remove-read-watch-impl! elt el)))))
 		   (remv event-fd (car res)))
 	 ;; this deals with POLLIN, POLLHUP, POLLERR and POLLNVAL
 	 ;; events on write file descriptors (although I don't think
 	 ;; POLLHUP can occur with these)
 	 (for-each (lambda (elt)
 		     (let ([action
-			    (hashtable-ref write-files-actions
-					   (_fd-or-port->fd elt)
-					   #f)])
-		       (if action
-			   (when (not (action 'out))
-			     (with-mutex mutex (_remove-write-watch-impl! elt el)))
-			   (error "_event-loop-run-impl"
-				  "No action in event loop for write file: " `(,elt)))))
+			    (with-mutex mutex
+			      (hashtable-ref (_write-files-actions-get el)
+					     (_fd-or-port->fd elt)
+					     #f))])
+		       ;; if the action has been concurrently removed, ignore it
+		       (when (and action (not (action 'out)))
+			 (with-mutex mutex (_remove-write-watch-impl! elt el)))))
 		   (cadr res))
 	 ;; the strategy with posted events is first to empty the
 	 ;; event pipe (the only purpose of which is to cause the
