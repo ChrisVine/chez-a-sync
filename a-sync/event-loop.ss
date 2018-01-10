@@ -135,7 +135,9 @@
 	  (mutable write-ports-hash _write-ports-hash-get _write-ports-hash-set!)
 	  (mutable out-read-bv _out-read-bv-get _out-read-bv-set!)
 	  (mutable out-write-bv _out-write-bv-get _out-write-bv-set!)
-	  (mutable out-except-bv _out-except-bv-get _out-except-bv-set!)))
+	  (mutable out-except-bv _out-except-bv-get _out-except-bv-set!)
+	  ;; flags whether the poll caches need to be refreshed
+	  (mutable poll-caches-flag _poll-caches-flag-get _poll-caches-flag-set!)))
 	  
 ;; This procedure constructs an event loop object.  From version 0.4,
 ;; this procedure optionally takes two throttling arguments for
@@ -194,8 +196,9 @@
 				    throttle-delay
 				    #f
 				    ;; placeholders for poll caches:
-				    #f #f #f #f #f #f #f)])
-	 (_set-poll-caches! ret)
+				    #f #f #f #f #f #f #f
+				    #f)])
+	 (_set-poll-caches! ret '() '())
 	 ret))]))
 
 ;; timeouts are kept as an unsorted list of timeout items.  Each
@@ -303,7 +306,7 @@
 			     (_read-files-get el)))
   (hashtable-delete! (_read-files-actions-get el)
 		     (_fd-or-port->fd file))
-  (_set-poll-caches! el))
+  (_poll-caches-flag-set! el #t))
 
 ;; This should be called holding the event loop mutex.  This removes a
 ;; given write file watch and its action from an event loop object.  A
@@ -315,7 +318,7 @@
 			      (_write-files-get el)))
   (hashtable-delete! (_write-files-actions-get el)
 		     (_fd-or-port->fd file))
-  (_set-poll-caches! el))
+  (_poll-caches-flag-set! el #t))
 
 ;; this procedure is only called by event-post!, and tests for the
 ;; number of tasks pending which have been added with that procedure,
@@ -338,30 +341,29 @@
 ;; call.  The purpose of the caches is to avoid reconstructing the
 ;; poll table and recalculating other values every time poll is called
 ;; (this is one advantage of poll over select).  It should be called
-;; whenever a read or write file watch is added or removed.
-(define (_set-poll-caches! el)
-  (let ([read-files (_read-files-get el)]
-	[write-files (_write-files-get el)])
-    ;; allow for out-read-bv to contain an additional item for event-in
-    (let ([read-length (+ 1 (length read-files))]
-	  [write-length (length write-files)])
-      (_out-read-bv-set! el (make-bytevector (* 4 (+ 1 read-length))))
-      (_out-write-bv-set! el (make-bytevector (* 4 (+ 1 write-length))))
-      (_out-except-bv-set! el (make-bytevector (* 4 (+ 1 (exact (truncate (/ read-length 2)))))))
-      (_read-ports-hash-set! el (port-and-fd-list->port-hash read-files))
-      (_write-ports-hash-set! el (port-and-fd-list->port-hash write-files))
-      (let ([read-fds (cons (port-file-descriptor (_event-in-get el))
-			    (port-and-fd-list->fdlist read-files))]
-	    [write-fds (port-and-fd-list->fdlist write-files)])
-	(let* ([poll-table (make-bytevector
-			    (* (a-sync-sizeof-pollfd)
-			       (+ read-length write-length)))]
-	       [poll-table-size (a-sync-make-poll-table
-				 (fdlist->bytevector read-fds)
-				 (fdlist->bytevector write-fds)
-				 poll-table)])
-	  (_poll-table-set! el poll-table)
-	  (_poll-table-size-set! el poll-table-size))))))
+;; whenever a read or write file watch is added or removed, and only
+;; called in the event loop thread.
+(define (_set-poll-caches! el read-files write-files)
+  ;; allow for out-read-bv to contain an additional item for event-in
+  (let ([read-length (+ 1 (length read-files))]
+	[write-length (length write-files)])
+    (_out-read-bv-set! el (make-bytevector (* 4 (+ 1 read-length))))
+    (_out-write-bv-set! el (make-bytevector (* 4 (+ 1 write-length))))
+    (_out-except-bv-set! el (make-bytevector (* 4 (+ 1 (exact (truncate (/ read-length 2)))))))
+    (_read-ports-hash-set! el (port-and-fd-list->port-hash read-files))
+    (_write-ports-hash-set! el (port-and-fd-list->port-hash write-files))
+    (let ([read-fds (cons (port-file-descriptor (_event-in-get el))
+			  (port-and-fd-list->fdlist read-files))]
+	  [write-fds (port-and-fd-list->fdlist write-files)])
+      (let* ([poll-table (make-bytevector
+			  (* (a-sync-sizeof-pollfd)
+			     (+ read-length write-length)))]
+	     [poll-table-size (a-sync-make-poll-table
+			       (fdlist->bytevector read-fds)
+			       (fdlist->bytevector write-fds)
+			       poll-table)])
+	(_poll-table-set! el poll-table)
+	(_poll-table-size-set! el poll-table-size)))))
 
 ;; the 'el' (event loop) argument is optional.  This procedure starts
 ;; the event loop passed in as an argument, or if none is passed (or
@@ -404,6 +406,7 @@
   (define event-fd #f)
   (define read-files #f)
   (define write-files #f)
+  (define set-poll-caches #f)
 
   (with-mutex mutex
     (case (_mode-get el)
@@ -435,7 +438,13 @@
      ;; (their associated actions may be)
      (with-mutex mutex
        (set! read-files (_read-files-get el))
-       (set! write-files (_write-files-get el)))
+       (set! write-files (_write-files-get el))
+       (set! set-poll-caches (_poll-caches-flag-get el)))
+
+     ;; no mutex is required - we only call _set-poll-caches! in the
+     ;; event loop thread
+     (when set-poll-caches
+       (_set-poll-caches! el read-files write-files))
 
      (when (not (and (null? read-files)
 		     (null? write-files)
@@ -580,7 +589,7 @@
   (hashtable-clear! (_write-files-actions-get el))
   (_timeouts-set! el '())
   (_current-timeout-set! el #f)
-  (_set-poll-caches! el))
+  (_set-poll-caches! el '() '()))
 
 ;; The 'el' (event loop) argument is optional.  This procedure will
 ;; start a read watch in the event loop passed in as an argument, or
@@ -629,7 +638,7 @@
 	   (hashtable-set! (_read-files-actions-get el)
 			   (_fd-or-port->fd file)
 			   proc)
-	   (_set-poll-caches! el)
+	   (_poll-caches-flag-set! el #t)
 	   ;; if the event pipe is full and an EAGAIN error arises, we
 	   ;; can just swallow it.  The only purpose of writing 1 is
 	   ;; to cause the poll procedure to return and reloop to pick
@@ -701,7 +710,7 @@
 	   (hashtable-set! (_write-files-actions-get el)
 			   (_fd-or-port->fd file)
 			   proc)
-	   (_set-poll-caches! el)
+	   (_poll-caches-flag-set! el #t)
 	   ;; if the event pipe is full and an EAGAIN error arises, we
 	   ;; can just swallow it.  The only purpose of writing 1 is
 	   ;; to cause the poll procedure to return and reloop to pick
