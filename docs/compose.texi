@@ -30,16 +30,17 @@ must be at least one expression comprising the application of a
 
 As in the case of let*, each 'compose-a-sync'-capable procedure
 initializing a binding can see the values of the initializations made
-prior to it.  Unlike let*, compose-a-sync blocks cannot be nested
-within other compose-a-sync blocks.  Furthermore, within a
-compose-a-sync block, the result obtained from a
-'compose-a-sync'-capable procedure cannot be passed directly as an
-argument to another 'compose-a-sync'-capable procedure: the
-intermediate result must be stored as the value of a binding in the
-compose-a-sync block.
+prior to it.  Unlike let*, a compose-a-sync block cannot be nested
+within another compose-a-sync block unless the nested block is placed
+within a 'no-await' expression or is within a callback or other
+procedure.  Furthermore, within a compose-a-sync block, the result
+obtained from a 'compose-a-sync'-capable procedure cannot be passed
+directly as an argument to another 'compose-a-sync'-capable procedure:
+the intermediate result must be stored as the value of a binding in
+the compose-a-sync block.
 
 A 'compose-a-sync'-capable procedure is one which takes an 'await' and
-'yield' procedure from a-sync as its first and second arguments, and
+'resume' procedure from a-sync as its first and second arguments, and
 (if the optional 'loop' argument of this macro is used) takes the
 event loop as its third argument, followed by such further arguments
 as it requires.  All of the await-task!, await-task-in-thread!,

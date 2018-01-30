@@ -2319,10 +2319,10 @@ the already accumulated tasks has reduced.
      a thunk.  If one or more threads in the pool are currently blocking
      and waiting for a task, then the task will begin executing
      immediately in one of the threads.  If not, the task will be queued
-     for execution as soon as a thread becomes available.  Tasks will be
-     executed in the order in which they are added to the thread pool
-     object.  This procedure is thread safe (any thread may call it,
-     including any task running on the thread pool object).
+     for execution as soon as a thread becomes available.  Tasks will
+     begin execution in the order in which they are added to the thread
+     pool object.  This procedure is thread safe (any thread may call
+     it, including any task running on the thread pool object).
 
      An optional handler procedure may be passed to 'fail-handler' which
      will be invoked if the task raises an exception.  If a task raises
@@ -2518,16 +2518,17 @@ coroutines): coroutines. library file.
 
      As in the case of let*, each 'compose-a-sync'-capable procedure
      initializing a binding can see the values of the initializations
-     made prior to it.  Unlike let*, compose-a-sync blocks cannot be
-     nested within other compose-a-sync blocks.  Furthermore, within a
-     compose-a-sync block, the result obtained from a
-     'compose-a-sync'-capable procedure cannot be passed directly as an
-     argument to another 'compose-a-sync'-capable procedure: the
-     intermediate result must be stored as the value of a binding in the
-     compose-a-sync block.
+     made prior to it.  Unlike let*, a compose-a-sync block cannot be
+     nested within another compose-a-sync block unless the nested block
+     is placed within a 'no-await' expression or is within a callback or
+     other procedure.  Furthermore, within a compose-a-sync block, the
+     result obtained from a 'compose-a-sync'-capable procedure cannot be
+     passed directly as an argument to another 'compose-a-sync'-capable
+     procedure: the intermediate result must be stored as the value of a
+     binding in the compose-a-sync block.
 
      A 'compose-a-sync'-capable procedure is one which takes an 'await'
-     and 'yield' procedure from a-sync as its first and second
+     and 'resume' procedure from a-sync as its first and second
      arguments, and (if the optional 'loop' argument of this macro is
      used) takes the event loop as its third argument, followed by such
      further arguments as it requires.  All of the await-task!,
@@ -2990,8 +2991,8 @@ Node: overview1229
 Node: coroutines4544
 Node: event loop23127
 Node: thread pool112246
-Node: compose131022
-Node: meeting137361
-Node: try152069
+Node: compose131026
+Node: meeting137481
+Node: try152189
 
 End Tag Table

@@ -426,10 +426,10 @@
 ;; a thunk.  If one or more threads in the pool are currently blocking
 ;; and waiting for a task, then the task will begin executing
 ;; immediately in one of the threads.  If not, the task will be queued
-;; for execution as soon as a thread becomes available.  Tasks will be
-;; executed in the order in which they are added to the thread pool
-;; object.  This procedure is thread safe (any thread may call it,
-;; including any task running on the thread pool object).
+;; for execution as soon as a thread becomes available.  Tasks will
+;; begin execution in the order in which they are added to the thread
+;; pool object.  This procedure is thread safe (any thread may call
+;; it, including any task running on the thread pool object).
 ;;
 ;; An optional handler procedure may be passed to 'fail-handler' which
 ;; will be invoked if the task raises an exception.  If a task raises
