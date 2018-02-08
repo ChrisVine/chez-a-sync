@@ -484,7 +484,7 @@
 		       (when (and action (not (action 'in)))
 			 (with-mutex mutex (_remove-read-watch-impl! elt el)))))
 		   (remv event-fd (car res)))
-	 ;; this deals with POLLIN, POLLHUP, POLLERR and POLLNVAL
+	 ;; this deals with POLLOUT, POLLHUP, POLLERR and POLLNVAL
 	 ;; events on write file descriptors (although I don't think
 	 ;; POLLHUP can occur with these)
 	 (for-each (lambda (elt)
