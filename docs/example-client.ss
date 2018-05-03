@@ -1,6 +1,6 @@
 #!/usr/bin/env scheme-script
 
-;; Copyright (C) 2016 and 2017 Chris Vine
+;; Copyright (C) 2016 to 2018 Chris Vine
 ;; 
 ;; This file is licensed under the Apache License, Version 2.0 (the
 ;; "License"); you may not use this file except in compliance with the
@@ -59,11 +59,11 @@
 		     (string-append "GET " path " HTTP/1.1\nHost: " host "\nConnection: close\n\n")))
 
 (define (make-sockport codec socket)
-  (let ([sockport (open-fd-input/output-port socket
-					     (buffer-mode block)
-					     (make-transcoder codec 'crlf))])
-    ;; make the output port unbuffered
-    (set-textual-port-output-size! sockport 0)
+  ;; we can construct a port for input only as await-put-string! does
+  ;; not use the port's output buffers
+  (let ([sockport (open-fd-input-port socket
+				      (buffer-mode block)
+				      (make-transcoder codec 'crlf))])
     ;; and make the socket non-blocking
     (set-port-nonblocking! sockport #t)
     sockport))
@@ -84,8 +84,6 @@
        (display body)
        (newline))
      (event-loop-block! #f)
-     ;; we must call clear-input-port before applying close-port
-     (clear-input-port sockport)
      (close-port sockport))))
 
 (event-loop-block! #t)

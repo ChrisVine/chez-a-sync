@@ -1932,12 +1932,22 @@ as an event using event-post!.
      (ii) the 'clear-input-port' procedure should be applied to the port
      to reset input buffer pointers, and (iii) anything in the output
      buffer should then be flushed.  Thereafter the await-get*, c-write
-     and await-put* procedures may be used for the port.  If using a
-     binary port constructed by 'open-fd-output-port' with buffering on
-     or a textual port constructed by that procedure with or without
-     buffering, and the port has previously been used for output by a
-     procedure other than c-write or an await-put* procedure, then it
-     should be flushed before this procedure is called.
+     and await-put* procedures may be used for the port (but one
+     remaining point to watch out for is that clear-input-port must
+     normally be called before an input/output port representing a
+     socket is closed, otherwise the exception mentioned above might
+     arise by virtue of an implicit flush).  If using a binary port
+     constructed by 'open-fd-output-port' with buffering on or a textual
+     port constructed by that procedure with or without buffering, and
+     the port has previously been used for output by a procedure other
+     than c-write or an await-put* procedure, then it should be flushed
+     before this procedure is called.
+
+     But the best thing with a socket is to carry out all writing to the
+     socket port using this procedure or the await-put-string!
+     procedure from the outset, in which case all is good.  This can be
+     enforced by constructing the socket port with open-fd-input-port
+     rather than open-fd-input/output-port.
 
      This procedure will raise a &i/o-write-error exception if passed a
      regular file with a file position pointer (prior to version 0.11 a
@@ -2021,10 +2031,20 @@ as an event using event-post!.
      applied to the port to reset input buffer pointers, and (iii)
      anything in the output buffer should then be flushed.  Thereafter
      the await-get*, c-write and await-put* procedures may be used for
-     the port.  If using a port constructed by 'open-fd-output-port'
-     which has previously been used for output by a procedure other than
-     c-write or an await-put* procedure, then it should be flushed
-     before this procedure is called.
+     the port (but one remaining point to watch out for is that
+     clear-input-port must normally be called before an input/output
+     port representing a socket is closed, otherwise the exception
+     mentioned above might arise by virtue of an implicit flush).  If
+     using a port constructed by 'open-fd-output-port' which has
+     previously been used for output by a procedure other than c-write
+     or an await-put* procedure, then it should be flushed before this
+     procedure is called.
+
+     But the best thing with a socket is to carry out all writing to the
+     socket port using this procedure or the await-put-bytevector!
+     procedure from the outset, in which case all is good.  This can be
+     enforced by constructing the socket port with open-fd-input rather
+     than open-fd-input/output-port.
 
      This procedure will raise a &i/o-write-error exception if passed a
      regular file with a file position pointer (prior to version 0.11 a
@@ -2990,9 +3010,9 @@ Node: Top83
 Node: overview1229
 Node: coroutines4544
 Node: event loop23127
-Node: thread pool112246
-Node: compose131026
-Node: meeting137481
-Node: try152189
+Node: thread pool113403
+Node: compose132183
+Node: meeting138638
+Node: try153346
 
 End Tag Table

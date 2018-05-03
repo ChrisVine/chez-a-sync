@@ -1,6 +1,6 @@
 #!/usr/bin/env scheme-script
 
-;; Copyright (C) 2016 Chris Vine
+;; Copyright (C) 2016 and 2018 Chris Vine
 ;; 
 ;; This file is licensed under the Apache License, Version 2.0 (the
 ;; "License"); you may not use this file except in compliance with the
@@ -49,9 +49,6 @@
 		    (await-put-string! await resume port (string-append "echo: " line "\n"))
 		    (next (await-getline! await resume port)))
 		  (begin
-		    ;; we must call clear-input-port before applying
-		    ;; close-port
-		    (clear-input-port port)
 		    (close-port port)
 		    (set! count (- count 1))
 		    (when (zero? count)
@@ -64,11 +61,13 @@
 	    (let loop ()
 	      (let* ([vec (make-bytevector 16)]
 		     [accept (await-accept-ipv6-connection! await resume server-sock vec)]
-		     [port (open-fd-input/output-port accept
-						      (buffer-mode block)
-						      (make-transcoder (utf-8-codec) 'crlf))])
+		     ;; we can construct a port for input only as
+		     ;; await-put-string! does not use the port's
+		     ;; output buffers
+		     [port (open-fd-input-port accept
+					       (buffer-mode block)
+					       (make-transcoder (utf-8-codec) 'crlf))])
 		(set! count (+ count 1))
-		(set-textual-port-output-buffer! port "")
 		(await-put-string! await resume port
 				   (string-append
 				    "Hello.  Please send some text and I will echo it back\n"
