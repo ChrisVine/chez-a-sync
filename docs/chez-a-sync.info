@@ -2128,8 +2128,9 @@ as an event using event-post!.
      Setting a buffer mode of 'none' is ineffective for textual ports.
 
    Additional *await-connect-to-ipv4-host!*,
-*await-connect-to-ipv6-host!*, *await-accept-ipv4-connection!*  and
-*await-accept-ipv6-connection!*  procedures are provided by the
+*await-connect-to-ipv6-host!*, *await-connect-to-unix-host!*,
+*await-accept-ipv4-connection!*, *await-accept-ipv6-connection!*  and
+*await-accept-unix-connection!*  procedures are provided by the
 chez-simple-sockets package at
 <https://github.com/ChrisVine/chez-simple-sockets>.  Examples of their
 use are in the example-client.ss and example-server.ss files in the docs
@@ -2995,9 +2996,9 @@ Node: Top83
 Node: overview1229
 Node: coroutines4544
 Node: event loop23127
-Node: thread pool112202
-Node: compose130982
-Node: meeting137437
-Node: try152145
+Node: thread pool112266
+Node: compose131046
+Node: meeting137501
+Node: try152209
 
 End Tag Table

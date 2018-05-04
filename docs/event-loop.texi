@@ -1663,8 +1663,10 @@ Setting a buffer mode of 'none' is ineffective for textual ports.
 
 Additional @strong{await-connect-to-ipv4-host!},
 @strong{await-connect-to-ipv6-host!},
-@strong{await-accept-ipv4-connection!} and
-@strong{await-accept-ipv6-connection!}  procedures are provided by the
+@strong{await-connect-to-unix-host!},
+@strong{await-accept-ipv4-connection!},
+@strong{await-accept-ipv6-connection!} and
+@strong{await-accept-unix-connection!} procedures are provided by the
 chez-simple-sockets package at
 @uref{https://github.com/ChrisVine/chez-simple-sockets}.  Examples of
 their use are in the example-client.ss and example-server.ss files in
