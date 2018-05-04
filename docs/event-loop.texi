@@ -1439,48 +1439,39 @@ operates on the event loop passed in as an argument, or if none is
 passed (or #f is passed), on the default event loop.
 
 'port' must be a non-blocking port, and may be a binary port or a
-textual port.  It should be unbuffered for output (say by applying the
-set-binary-port-output-size! or set-textual-port-output-size!
-procedure to the port with a value of 0).  Having buffering on for
-input ports is generally desirable, but this leads to a complication
-with input-output ports for non-seekable devices (say for sockets)
-constructed with 'open-fd-input/output-port' with input buffering on,
-because if a read on the port were to be followed by a write (which
-includes a flush), an exception will occur when attempting a seek when
-moving from reading to writing.  (Seeking when moving from reading to
-writing is necessary for buffered input-output ports for seekable
-files, but not for ports for files, such as sockets, which have no
-file position pointer and so are not seekable.)  In addition chez
-scheme does not in fact fully implement no buffering on textual ports,
-probably in order to support multi-byte encodings.
+textual port.
 
-To deal with this, this procedure by-passes the port's output buffer
-and sends the output to the underlying file descriptor directly.
-Accordingly, if using a binary port constructed by
-'open-fd-input/output-port' which has had buffering on, or if using a
-textual port constructed by that procedure with or without buffering,
-and the port has previously been used for output by a procedure other
-than c-write or an await-put* procedure, the following approach should
-be adopted: (i) the port should be drained of input and any bytes
-drained dealt with appropriately, (ii) the 'clear-input-port'
-procedure should be applied to the port to reset input buffer
-pointers, and (iii) anything in the output buffer should then be
-flushed.  Thereafter the await-get*, c-write and await-put* procedures
-may be used for the port (but one remaining point to watch out for is
-that clear-input-port must normally be called before an input/output
-port representing a socket is closed, otherwise the exception
-mentioned above might arise by virtue of an implicit flush).  If using
-a binary port constructed by 'open-fd-output-port' with buffering on
-or a textual port constructed by that procedure with or without
-buffering, and the port has previously been used for output by a
-procedure other than c-write or an await-put* procedure, then it
-should be flushed before this procedure is called.
+This procedure bypasses any output buffering in 'port' entirely, and
+sends the output to the underlying file descriptor directly.  This is
+to enable this procedure to be used conveniently with sockets: in chez
+scheme ports can be constructed from file descriptors using the
+open-fd-input-port, open-fd-output-port and open-fd-input/output-port
+procedures, and the last of those would be useful for sockets except
+that chez scheme's port implementation has the infortunate feature
+that a port opened and used for both reading and writing via the
+port's buffers must be seekable (that is to say, its underlying file
+descriptor must have a file position pointer).  For ports representing
+non-seekable read/write file descriptors such as sockets, this means
+that with any port other than a non-buffered binary port, an exception
+will arise if attempting to write to the port using R6RS procedures
+after it has previously been read from, unless an intervening call is
+made to clear-input-port between the last read and the first next
+write.
 
-But the best thing with a socket is to carry out all writing to the
-socket port using this procedure or the await-put-string! procedure
-from the outset, in which case all is good.  This can be enforced by
-constructing the socket port with open-fd-input-port rather than
-open-fd-input/output-port.
+The fact that this procedure bypasses any output buffers enabled in
+'port' means that any buffered output port which has previously been
+used for writing using chez scheme's R6RS write procedures must be
+flushed before this procedure is called; but the best thing is to
+carry out all writing to the port using this procedure or the
+await-put-string! procedure, in which case all is good.  In the case
+of a socket port, this can be enforced by constructing the socket port
+with open-fd-input-port rather than open-fd-input/output-port.
+
+One remaining point to watch out for is that clear-input-port must
+normally be called before an unseekable input/output port such as a
+socket port (that is, one which is unseekable and has been constructed
+with open-fd-input/output-port) is closed or otherwise flushed for
+output, otherwise the exception mentioned above might arise.
 
 This procedure will raise a &i/o-write-error exception if passed a
 regular file with a file position pointer (prior to version 0.11 a
@@ -1539,45 +1530,39 @@ using await-put-bytevector!.  The 'loop' argument is optional: this
 procedure operates on the event loop passed in as an argument, or if
 none is passed (or #f is passed), on the default event loop.
 
-'port' must be a non-blocking textual port.  It should be unbuffered
-for output (say by applying the set-textual-port-output-size!
-procedure to the port with a value of 0), but if using a port
-constructed with 'open-fd-output-port' or 'open-fd-input/output-port',
-chez scheme does not in fact fully implement no buffering on textual
-ports, probably in order to support multi-byte encodings.  As
-explained in relation to await-put-bytevector!, this means that if a
-read were to be followed by a write (which includes a flush) on a
-textual port constructed by 'open-fd-input/output-port' for a
-non-seekable device, an exception will occur when attempting a seek
-when moving from reading to writing.  (Seeking when moving from
-reading to writing is necessary for buffered input-output ports for
-seekable files, but not for ports for files, such as sockets, which
-have no file position pointer and so are not seekable.)
+'port' must be a non-blocking textual port.
 
-To deal with this, this procedure by-passes the port's output buffer
-and sends the output to the underlying file descriptor directly.
-Accordingly, if using a port for a socket constructed by
-'open-fd-input/output-port' which has previously been used for output
-by a procedure other than c-write or an await-put* procedure, the
-following approach should be adopted: (i) the port should be drained
-of input and any characters drained dealt with appropriately, (ii) the
-'clear-input-port' procedure should be applied to the port to reset
-input buffer pointers, and (iii) anything in the output buffer should
-then be flushed.  Thereafter the await-get*, c-write and await-put*
-procedures may be used for the port (but one remaining point to watch
-out for is that clear-input-port must normally be called before an
-input/output port representing a socket is closed, otherwise the
-exception mentioned above might arise by virtue of an implicit flush).
-If using a port constructed by 'open-fd-output-port' which has
-previously been used for output by a procedure other than c-write or
-an await-put* procedure, then it should be flushed before this
-procedure is called.
+This procedure bypasses any output buffering in 'port' entirely, and
+sends the output to the underlying file descriptor directly.  This is
+to enable this procedure to be used conveniently with sockets: in chez
+scheme ports can be constructed from file descriptors using the
+open-fd-input-port, open-fd-output-port and open-fd-input/output-port
+procedures, and the last of those would be useful for sockets except
+that chez scheme's port implementation has the infortunate feature
+that a port opened and used for both reading and writing via the
+port's buffers must be seekable (that is to say, its underlying file
+descriptor must have a file position pointer).  For ports representing
+non-seekable read/write file descriptors such as sockets, this means
+that with any port other than a non-buffered binary port, an exception
+will arise if attempting to write to the port using R6RS procedures
+after it has previously been read from, unless an intervening call is
+made to clear-input-port between the last read and the first next
+write.
 
-But the best thing with a socket is to carry out all writing to the
-socket port using this procedure or the await-put-bytevector!
-procedure from the outset, in which case all is good.  This can be
-enforced by constructing the socket port with open-fd-input rather
-than open-fd-input/output-port.
+The fact that this procedure bypasses any output buffers enabled in
+'port' means that any textual output port which has previously been
+used for writing using chez scheme's R6RS write procedures must be
+flushed before this procedure is called; but the best thing is to
+carry out all writing to the port using this procedure or the
+await-put-bytevector! procedure, in which case all is good.  In the
+case of a socket port, this can be enforced by constructing the socket
+port with open-fd-input-port rather than open-fd-input/output-port.
+
+One remaining point to watch out for is that clear-input-port must
+normally be called before an unseekable input/output port such as a
+socket port (that is, one which is unseekable and has been constructed
+with open-fd-input/output-port) is closed or otherwise flushed for
+output, otherwise the exception mentioned above might arise.
 
 This procedure will raise a &i/o-write-error exception if passed a
 regular file with a file position pointer (prior to version 0.11 a
