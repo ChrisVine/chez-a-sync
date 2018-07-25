@@ -1,4 +1,4 @@
-;; Copyright (C) 2016 Chris Vine
+;; Copyright (C) 2016 and 2018 Chris Vine
 ;; 
 ;; This file is licensed under the Apache License, Version 2.0 (the
 ;; "License"); you may not use this file except in compliance with the
@@ -17,6 +17,10 @@
 				       (u8* u8*)
 				       int))
 
+(define a-sync-set-cloexec (foreign-procedure "a_sync_set_cloexec"
+					      (int)
+					      void))
+
 ;; this procedure returns two values, first a port for the read end of
 ;; a unix pipe, and second a port for its write end.  If creating the
 ;; pipe gives rise to an error, a scheme exception of type &serious
@@ -25,7 +29,8 @@
 ;; will be unbuffered).  The transcoder argument is also optional: if
 ;; provided the ports will be textual ports, otherwise they will be
 ;; binary ports.  The ports are initially in blocking mode - use
-;; set-blocking-mode! to change this.
+;; set-blocking-mode! to change that.  They also initially do not have
+;; FD_CLOEXEC set: use set-cloexec! below to change that.
 (define make-pipe
   (case-lambda
     [() (make-pipe (buffer-mode block) (buffer-mode none) #f)]
@@ -45,3 +50,13 @@
 	       [out (open-fd-output-port (bytevector-s32-native-ref write-bv 0)
 					 write-b-mode transcoder)])
 	   (values in out))))]))
+
+;; this procedure sets FD_CLOEXEC on the file descriptor underlying
+;; 'port'.  It is mainly intended for use with pipes returned by
+;; make-pipe, but can be used with any port.  It returns an
+;; unspecified value - it will always succeed unless 'port' has been
+;; closed.  It will not throw an exception.
+;;
+;; This procedure is first available in version 0.20 of this library.
+(define (set-cloexec! port)
+  (a-sync-set-cloexec (port-file-descriptor port)))

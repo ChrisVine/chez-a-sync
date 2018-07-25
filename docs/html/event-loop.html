@@ -1747,9 +1747,23 @@ read port will be block buffered and the write port will be
 unbuffered).  The transcoder argument is also optional: if provided
 the ports will be textual ports, otherwise they will be binary ports.
 The ports are initially in blocking mode - use set-blocking-mode! to
-change this if wanted.
+change this if wanted.  They also initially do not have FD_CLOEXEC
+set: use set-cloexec! below to change that.
 </p>
 <p>Setting a buffer mode of &rsquo;none&rsquo; is ineffective for textual ports.
+</p></dd></dl>
+
+<dl>
+<dt><a name="index-set_002dcloexec_0021"></a>Scheme Procedure: <strong>set-cloexec!</strong> <em>port</em></dt>
+<dd><p>This procedure sets FD_CLOEXEC on the file descriptor underlying
+&rsquo;port&rsquo;.  It is mainly intended for use with pipes returned by
+make-pipe, but can be used with any port.  It is used internally by
+the event-loop implementation, and is exported (along with make-pipe)
+as part of the event-loop library in case it is useful to users.  It
+returns an unspecified value - it will always succeed unless &rsquo;port&rsquo;
+has been closed.  It will not throw an exception.
+</p>
+<p>This procedure is first available in version 0.20 of this library.
 </p></dd></dl>
 
 <p>Additional <strong>await-connect-to-ipv4-host!</strong>,

@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2016 Chris Vine
+ Copyright (C) 2016 and 2018 Chris Vine
  
  This file is licensed under the Apache License, Version 2.0 (the
  "License"); you may not use this file except in compliance with the
@@ -28,6 +28,10 @@ int a_sync_pipe(int32_t* readfd, int32_t* writefd) {
   *readfd = fds[0];
   *writefd = fds[1];
   return res;
+}
+
+void a_sync_set_cloexec(int fd) {
+  fcntl(fd, F_SETFD, fcntl(fd, F_GETFD) | FD_CLOEXEC);
 }
 
 } // extern "C"

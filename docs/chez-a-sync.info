@@ -2123,9 +2123,21 @@ as an event using event-post!.
      will be unbuffered).  The transcoder argument is also optional: if
      provided the ports will be textual ports, otherwise they will be
      binary ports.  The ports are initially in blocking mode - use
-     set-blocking-mode!  to change this if wanted.
+     set-blocking-mode!  to change this if wanted.  They also initially
+     do not have FD_CLOEXEC set: use set-cloexec!  below to change that.
 
      Setting a buffer mode of 'none' is ineffective for textual ports.
+
+ -- Scheme Procedure: set-cloexec! port
+     This procedure sets FD_CLOEXEC on the file descriptor underlying
+     'port'.  It is mainly intended for use with pipes returned by
+     make-pipe, but can be used with any port.  It is used internally by
+     the event-loop implementation, and is exported (along with
+     make-pipe) as part of the event-loop library in case it is useful
+     to users.  It returns an unspecified value - it will always succeed
+     unless 'port' has been closed.  It will not throw an exception.
+
+     This procedure is first available in version 0.20 of this library.
 
    Additional *await-connect-to-ipv4-host!*,
 *await-connect-to-ipv6-host!*, *await-connect-to-unix-host!*,
@@ -2996,9 +3008,9 @@ Node: Top83
 Node: overview1229
 Node: coroutines4544
 Node: event loop23127
-Node: thread pool112266
-Node: compose131046
-Node: meeting137501
-Node: try152209
+Node: thread pool112961
+Node: compose131741
+Node: meeting138196
+Node: try152904
 
 End Tag Table
