@@ -179,8 +179,8 @@
        ;; thread is running in the program and it might exec
        ;; concurrently with the creation of the event loop in this
        ;; thread, but that doesn't really matter - having a child
-       ;; process sharing the descriptor for an unnamed pipe it has no
-       ;; access to isn't really a problem in such cases.
+       ;; process sharing the descriptor for an unnamed pipe which
+       ;; contains no meaningful information isn't really a problem.
        (set-cloexec! in)
        (set-cloexec! out)
        ;; the write end of the pipe needs to be set non-blocking so
@@ -586,8 +586,8 @@
       ;; thread is running in the program and it might exec
       ;; concurrently with the resetting of the event loop in this
       ;; thread, but that doesn't really matter - having a child
-      ;; process sharing the descriptor for an unnamed pipe it has no
-      ;; access to isn't really a problem in such cases.
+      ;; process sharing the descriptor for an unnamed pipe which
+      ;; contains no meaningful information isn't really a problem.
       (set-cloexec! in)
       (set-cloexec! out)
       (set-port-nonblocking! in #t)
