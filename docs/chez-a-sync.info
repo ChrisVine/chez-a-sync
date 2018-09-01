@@ -2135,7 +2135,7 @@ as an event using event-post!.
      the event-loop implementation, and is exported (along with
      make-pipe) as part of the event-loop library in case it is useful
      to users.  It returns an unspecified value - it will always succeed
-     unless 'port' has been closed.  It will not throw an exception.
+     unless 'port' has been closed.
 
      This procedure is first available in version 0.20 of this library.
 
@@ -3008,9 +3008,9 @@ Node: Top83
 Node: overview1235
 Node: coroutines4550
 Node: event loop23133
-Node: thread pool112967
-Node: compose131747
-Node: meeting138202
-Node: try152910
+Node: thread pool112934
+Node: compose131714
+Node: meeting138169
+Node: try152877
 
 End Tag Table

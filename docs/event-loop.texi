@@ -1669,7 +1669,7 @@ make-pipe, but can be used with any port.  It is used internally by
 the event-loop implementation, and is exported (along with make-pipe)
 as part of the event-loop library in case it is useful to users.  It
 returns an unspecified value - it will always succeed unless 'port'
-has been closed.  It will not throw an exception.
+has been closed.
 
 This procedure is first available in version 0.20 of this library.
 @end deffn

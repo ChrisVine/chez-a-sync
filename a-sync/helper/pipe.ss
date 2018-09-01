@@ -55,7 +55,7 @@
 ;; 'port'.  It is mainly intended for use with pipes returned by
 ;; make-pipe, but can be used with any port.  It returns an
 ;; unspecified value - it will always succeed unless 'port' has been
-;; closed.  It will not throw an exception.
+;; closed.
 ;;
 ;; This procedure is first available in version 0.20 of this library.
 (define (set-cloexec! port)
