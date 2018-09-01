@@ -23,7 +23,7 @@ General overview
 Library files
 * coroutines::     (a-sync coroutines) library file - provides coroutines for await semantics on asynchronous events
 * event loop::     (a-sync event-loop) library file - provides an event loop for asynchronous events
-* thread pool::    (a-sync thread-pool) module - provides a thread pool with asychonous procedures
+* thread pool::    (a-sync thread-pool) library file - provides a thread pool with asychonous procedures
 * compose::        (a-sync compose) library file - provides the compose-a-sync macro interface for the a-sync coroutine
 * meeting::        (a-sync meeting) library file - provides for synchronization between a-sync or compose-a-sync blocks
 * try::            (a-sync try) library file - provides the try macro interface for dealing with exceptions
