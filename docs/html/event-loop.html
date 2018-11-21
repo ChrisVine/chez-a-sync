@@ -1746,8 +1746,8 @@ raised.  The buffer mode arguments are optional (if not specified the
 read port will be block buffered and the write port will be
 unbuffered).  The transcoder argument is also optional: if provided
 the ports will be textual ports, otherwise they will be binary ports.
-The ports are initially in blocking mode - use set-blocking-mode! to
-change this if wanted.  They also initially do not have FD_CLOEXEC
+The ports are initially in blocking mode - use set-port-nonblocking!
+to change this if wanted.  They also initially do not have FD_CLOEXEC
 set: use set-cloexec! below to change that.
 </p>
 <p>Setting a buffer mode of &rsquo;none&rsquo; is ineffective for textual ports.

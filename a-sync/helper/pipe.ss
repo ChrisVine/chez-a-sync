@@ -29,8 +29,8 @@
 ;; will be unbuffered).  The transcoder argument is also optional: if
 ;; provided the ports will be textual ports, otherwise they will be
 ;; binary ports.  The ports are initially in blocking mode - use
-;; set-blocking-mode! to change that.  They also initially do not have
-;; FD_CLOEXEC set: use set-cloexec! below to change that.
+;; set-port-nonblocking! to change that.  They also initially do not
+;; have FD_CLOEXEC set: use set-cloexec! below to change that.
 (define make-pipe
   (case-lambda
     [() (make-pipe (buffer-mode block) (buffer-mode none) #f)]
