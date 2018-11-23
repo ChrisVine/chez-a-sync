@@ -62,6 +62,7 @@
 
 ;; Test 2: await-task-in-thread! without handler
 
+(event-loop-block! #t main-loop)
 (a-sync (lambda (await resume)
 	  (let ((res
 	  	 (await-task-in-thread! await resume main-loop
@@ -69,13 +70,13 @@
 	  				  (+ 5 10)))))
 	    (test-result 15 res)
 	    (print-result)
-	    (event-loop-quit! main-loop))))
-(event-loop-block! #t main-loop)
+	    (event-loop-quit! main-loop)
+	    (event-loop-block! #f main-loop))))
 (event-loop-run! main-loop)
-(event-loop-block! #f main-loop)
   
 ;; Test 3: await-task-in-thread! with handler
 
+(event-loop-block! #t main-loop)
 (a-sync (lambda (await resume)
 	  (let ((res
 	  	 (await-task-in-thread!
@@ -86,10 +87,9 @@
 		    5))))
 	    (test-result 5 res)
 	    (print-result)
-	    (event-loop-quit! main-loop))))
-(event-loop-block! #t main-loop)
+	    (event-loop-quit! main-loop)
+	    (event-loop-block! #f main-loop))))
 (event-loop-run! main-loop)
-(event-loop-block! #f main-loop)
 
 ;; Test 4: await-task-in-event-loop!
 
@@ -146,6 +146,7 @@
 
 (let ()
   (define lst '())
+  (event-loop-block! #t main-loop)
   (a-sync (lambda (await resume)
 	    (let ([res
 		   (await-generator-in-thread! await resume main-loop
@@ -161,13 +162,13 @@
 	      (test-result res #f)
 	      (print-result)
 	      (event-loop-block! #f main-loop))))
-  (event-loop-block! #t main-loop)
   (event-loop-run! main-loop))
 
 ;; Test 8: await-generator-in-thread! with handler
 
 (let ()
   (define lst '())
+  (event-loop-block! #t main-loop)
   (a-sync (lambda (await resume)
 	    (let ([res
 		   (await-generator-in-thread! await resume main-loop
@@ -194,7 +195,6 @@
 	      (test-result res 'chez-a-sync-thread-error)
 	      (print-result)
 	      (event-loop-block! #f main-loop))))
-  (event-loop-block! #t main-loop)
   (event-loop-run! main-loop))
 
 ;; Test 9: await-generator-in-event-loop!
@@ -223,7 +223,6 @@
 	    (test-result (length lst) 5)
 	    (print-result)
 	    (event-loop-block! #f main-loop)))
-  (event-loop-block! #t main-loop)
   (event-loop-run! main-loop))
 
 ;; Test 10: await-timeout!
@@ -544,6 +543,7 @@
                                   (make-transcoder (latin-1-codec)))])
   (define res #f)
   (set-port-nonblocking! out #t)
+  (event-loop-block! #t main-loop)
   (a-sync (lambda (await resume)
 	    (a-sync (lambda (await resume)
 		      (set! res (await-task-in-thread! await resume main-loop
@@ -552,7 +552,6 @@
 		      (event-loop-block! #f main-loop)))
 	    (await-put-string! await resume main-loop out (string #\a #\b #\c))
 	    (close-port out)))
-  (event-loop-block! #t main-loop)
   (event-loop-run! main-loop)
   (test-result (string-length res) 3)
   (test-result (string-ref res 0) #\a)
@@ -563,12 +562,13 @@
 
 ;; Test 21: compose-a-sync and no-await
 
+(event-loop-block! #t main-loop)
 (compose-a-sync main-loop ((res (await-task-in-thread! (lambda ()
 							 (+ 5 10)))))
 	      ((no-await (test-result 15 res)
 			 (print-result)
-			 (event-loop-quit! main-loop))))
-(event-loop-block! #t main-loop)
+			 (event-loop-quit! main-loop)
+			 (event-loop-block! #f main-loop))))
 (event-loop-run! main-loop)
 
 ;;;;;;;;;; now the same tests with a default event loop ;;;;;;;;;;
@@ -592,6 +592,7 @@
 ;; set a new default event loop
 (set-default-event-loop!)
 
+(event-loop-block! #t)
 (a-sync (lambda (await resume)
 	  (let ((res
 	  	 (await-task-in-thread! await resume
@@ -599,13 +600,13 @@
 	  				  (+ 5 10)))))
 	    (test-result 15 res)
 	    (print-result)
-	    (event-loop-quit!))))
-(event-loop-block! #t)
+	    (event-loop-quit!)
+	    (event-loop-block! #f))))
 (event-loop-run!)
-(event-loop-block! #f)
   
 ;; Test 24: await-task-in-thread! without handler (explicit loop argument)
 
+(event-loop-block! #t)
 (a-sync (lambda (await resume)
 	  (let ((res
 	  	 (await-task-in-thread! await resume #f
@@ -613,13 +614,13 @@
 	  				  (+ 5 10)))))
 	    (test-result 15 res)
 	    (print-result)
-	    (event-loop-quit!))))
-(event-loop-block! #t)
+	    (event-loop-quit!)
+	    (event-loop-block! #f))))
 (event-loop-run!)
-(event-loop-block! #f)
   
 ;; Test 25: await-task-in-thread! with handler
 
+(event-loop-block! #t)
 (a-sync (lambda (await resume)
 	  (let ((res
 	  	 (await-task-in-thread!
@@ -630,10 +631,9 @@
 		    5))))
 	    (test-result 5 res)
 	    (print-result)
-	    (event-loop-quit!))))
-(event-loop-block! #t)
+	    (event-loop-quit!)
+	    (event-loop-block! #f))))
 (event-loop-run!)
-(event-loop-block! #f)
 
 ;; Test 26: await-task-in-event-loop!
 
@@ -690,6 +690,7 @@
 
 (let ()
   (define lst '())
+  (event-loop-block! #t)
   (a-sync (lambda (await resume)
 	    (let ([res
 		   (await-generator-in-thread! await resume
@@ -705,13 +706,13 @@
 	      (test-result res #f)
 	      (print-result)
 	      (event-loop-block! #f))))
-  (event-loop-block! #t)
   (event-loop-run!))
 
 ;; Test 30: await-generator-in-thread! without handler (explicit loop argument)
 
 (let ()
   (define lst '())
+  (event-loop-block! #t)
   (a-sync (lambda (await resume)
 	    (let ([res
 		   (await-generator-in-thread! await resume #f
@@ -727,13 +728,13 @@
 	      (test-result res #f)
 	      (print-result)
 	      (event-loop-block! #f))))
-  (event-loop-block! #t)
   (event-loop-run!))
 
 ;; Test 31: await-generator-in-thread! with handler
 
 (let ()
   (define lst '())
+  (event-loop-block! #t)
   (a-sync (lambda (await resume)
 	    (let ([res
 		   (await-generator-in-thread! await resume
@@ -760,7 +761,6 @@
 	      (test-result res 'chez-a-sync-thread-error)
 	      (print-result)
 	      (event-loop-block! #f))))
-  (event-loop-block! #t)
   (event-loop-run!))
 
 ;; Test 32: await-generator-in-event-loop!
@@ -789,7 +789,6 @@
 	    (test-result (length lst) 5)
 	    (print-result)
 	    (event-loop-block! #f)))
-  (event-loop-block! #t)
   (event-loop-run!))
 
 ;; Test 33: await-timeout!
@@ -1097,6 +1096,7 @@
                                   (make-transcoder (latin-1-codec)))])
   (define res #f)
   (set-port-nonblocking! out #t)
+  (event-loop-block! #t)
   (a-sync (lambda (await resume)
 	    (a-sync (lambda (await resume)
 		      (set! res (await-task-in-thread! await resume
@@ -1105,7 +1105,6 @@
 		      (event-loop-block! #f)))
 	    (await-put-string! await resume out (string #\a #\b #\c))
 	    (close-port out)))
-  (event-loop-block! #t)
   (event-loop-run!)
   (test-result (string-length res) 3)
   (test-result (string-ref res 0) #\a)
@@ -1116,10 +1115,11 @@
 
 ;; Test 44: compose-a-sync and no-await
 
+(event-loop-block! #t)
 (compose-a-sync ((res (await-task-in-thread! (lambda ()
 					       (+ 5 10)))))
 	      ((no-await (test-result 15 res)
 			 (print-result)
-			 (event-loop-quit!))))
-(event-loop-block! #t)
+			 (event-loop-quit!)
+			 (event-loop-block! #f))))
 (event-loop-run!)

@@ -972,16 +972,22 @@
 		 (put-bytevector-some out (make-bytevector 1 1) 0 1)
 		 (flush-output-port out)))))))]))
 
-;; This procedure causes an event loop to unblock.  Any file watches,
-;; timeouts or posted events remaining in the event loop will be
-;; discarded.  New file watches, timeouts and events may subsequently
-;; be added or posted after event-loop-run! has unblocked and
-;; event-loop-run! then called for them.  This is thread safe - any
-;; thread may call this procedure, including any callback or task
-;; running on the event loop.  The 'el' (event loop) argument is
-;; optional: this procedure operates on the event loop passed in as an
-;; argument, or if none is passed (or #f is passed), on the default
-;; event loop.
+;; This procedure causes an event loop to end and event-loop-run! to
+;; return.  Any file watches, timeouts or posted events remaining in
+;; the event loop will be discarded.  New file watches, timeouts and
+;; events may subsequently be added or posted after event-loop-run!
+;; has returned, and event-loop-run! then called for them.  This is
+;; thread safe - any thread may call this procedure, including any
+;; callback or task running on the event loop.  The 'el' (event loop)
+;; argument is optional: this procedure operates on the event loop
+;; passed in as an argument, or if none is passed (or #f is passed),
+;; on the default event loop.  Applying this procedure to an event
+;; loop does not changing the blocking status of the loop as may
+;; previously have been set by event-loop-block!, should
+;; event-loop-run! be applied to it again.
+;;
+;; Applying this procedure to an event loop has no effect if the event
+;; loop is not actually running.
 ;;
 ;; Note that the discarding of file watches, timeouts and unexecuted
 ;; events remaining in the event loop means that if one of the helper

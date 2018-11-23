@@ -337,14 +337,14 @@ system exception to arise) or memory is exhausted.
 </p><div class="example">
 <pre class="example">(set-default-event-loop!) ;; if none has yet been set
 (let ([pool (make-thread-pool 4)])
+  (event-loop-block! #t) ;; because the task runs in another thread
   (a-sync (lambda (await resume)
 	    (format #t &quot;1 + 1 is ~a\n&quot;
 		    (await-task-in-thread-pool! await resume
 						pool
 						(lambda ()
 						  (+ 1 1))))
-	    (event-loop-quit!))))
-(event-loop-block! #t) ;; because the task runs in another thread
+	    (event-loop-block! #f))))
 (event-loop-run!)
 </pre></div>
 <p>This procedure is first available in version 0.16 of this library.
@@ -402,6 +402,7 @@ be).
 </p><div class="example">
 <pre class="example">(set-default-event-loop!) ;; if none has yet been set
 (let ([pool (make-thread-pool 4)])
+  (event-loop-block! #t) ;; because the generator runs in another thread
   (a-sync (lambda (await resume)
 	    (await-generator-in-thread-pool! await resume
 					     pool
@@ -414,7 +415,6 @@ be).
 					       (display val)
 					       (newline)))
 	    (event-loop-block! #f))))
-(event-loop-block! #t) ;; because the generator runs in another thread
 (event-loop-run!)
 </pre></div>
 <p>This procedure is first available in version 0.16 of this library.

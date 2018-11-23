@@ -319,15 +319,21 @@ exhausted.
 @end deffn
 
 @deffn {Scheme Procedure} event-loop-quit! [loop]
-This procedure causes an event loop to unblock.  Any file watches,
-timeouts or posted events remaining in the event loop will be
-discarded.  New file watches, timeouts and events may subsequently be
-added or posted after event-loop-run! has unblocked and
-event-loop-run! then called for them.  This is thread safe - any
-thread may call this procedure, including any callback or task running
-on the event loop.  The 'loop' argument is optional: this procedure
-operates on the event loop passed in as an argument, or if none is
-passed (or #f is passed), on the default event loop.
+This procedure causes an event loop to end and event-loop-run! to
+return.  Any file watches, timeouts or posted events remaining in the
+event loop will be discarded.  New file watches, timeouts and events
+may subsequently be added or posted after event-loop-run! has
+returned, and event-loop-run! then called for them.  This is thread
+safe - any thread may call this procedure, including any callback or
+task running on the event loop.  The 'loop' argument is optional: this
+procedure operates on the event loop passed in as an argument, or if
+none is passed (or #f is passed), on the default event loop.  Applying
+this procedure to an event loop does not change the blocking status of
+the loop as may previously have been set by event-loop-block!, should
+event-loop-run! be applied to it again.
+
+Applying this procedure to an event loop has no effect if the event
+loop is not actually running.
 
 Note that the discarding of file watches, timeouts and unexecuted
 events remaining in the event loop means that if one of the helper
@@ -415,13 +421,13 @@ the handler procedure will propagate out of event-loop-run!.
 Here is an example of the use of await-task-in-thread!:
 @example
 (set-default-event-loop!) ;; if none has yet been set
+(event-loop-block! #t) ;; because the task runs in another thread
 (a-sync (lambda (await resume)
 	  (format #t "1 + 1 is ~A\n"
 		  (await-task-in-thread! await resume
 					 (lambda ()
 					   (+ 1 1))))
-	  (event-loop-quit!)))
-(event-loop-block! #t) ;; because the task runs in another thread
+	  (event-loop-block! #f)))
 (event-loop-run!)
 @end example
 @end deffn
@@ -635,6 +641,7 @@ This procedure is first available in version 0.6 of this library.
 Here is an example of the use of await-generator-in-thread!:
 @example
 (set-default-event-loop!) ;; if none has yet been set
+(event-loop-block! #t) ;; because the generator runs in another thread
 (a-sync (lambda (await resume)
           (await-generator-in-thread! await resume
 				      (lambda (yield)
@@ -646,7 +653,6 @@ Here is an example of the use of await-generator-in-thread!:
 					(display val)
 					(newline)))
 	  (event-loop-block! #f)))
-(event-loop-block! #t) ;; because the generator runs in another thread
 (event-loop-run!)
 @end example
 @end deffn

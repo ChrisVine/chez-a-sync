@@ -388,15 +388,21 @@ exhausted.
 
 <dl>
 <dt><a name="index-event_002dloop_002dquit_0021"></a>Scheme Procedure: <strong>event-loop-quit!</strong> <em>[loop]</em></dt>
-<dd><p>This procedure causes an event loop to unblock.  Any file watches,
-timeouts or posted events remaining in the event loop will be
-discarded.  New file watches, timeouts and events may subsequently be
-added or posted after event-loop-run! has unblocked and
-event-loop-run! then called for them.  This is thread safe - any
-thread may call this procedure, including any callback or task running
-on the event loop.  The &rsquo;loop&rsquo; argument is optional: this procedure
-operates on the event loop passed in as an argument, or if none is
-passed (or #f is passed), on the default event loop.
+<dd><p>This procedure causes an event loop to end and event-loop-run! to
+return.  Any file watches, timeouts or posted events remaining in the
+event loop will be discarded.  New file watches, timeouts and events
+may subsequently be added or posted after event-loop-run! has
+returned, and event-loop-run! then called for them.  This is thread
+safe - any thread may call this procedure, including any callback or
+task running on the event loop.  The &rsquo;loop&rsquo; argument is optional: this
+procedure operates on the event loop passed in as an argument, or if
+none is passed (or #f is passed), on the default event loop.  Applying
+this procedure to an event loop does not change the blocking status of
+the loop as may previously have been set by event-loop-block!, should
+event-loop-run! be applied to it again.
+</p>
+<p>Applying this procedure to an event loop has no effect if the event
+loop is not actually running.
 </p>
 <p>Note that the discarding of file watches, timeouts and unexecuted
 events remaining in the event loop means that if one of the helper
@@ -486,13 +492,13 @@ the handler procedure will propagate out of event-loop-run!.
 <p>Here is an example of the use of await-task-in-thread!:
 </p><div class="example">
 <pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(event-loop-block! #t) ;; because the task runs in another thread
 (a-sync (lambda (await resume)
 	  (format #t &quot;1 + 1 is ~A\n&quot;
 		  (await-task-in-thread! await resume
 					 (lambda ()
 					   (+ 1 1))))
-	  (event-loop-quit!)))
-(event-loop-block! #t) ;; because the task runs in another thread
+	  (event-loop-block! #f)))
 (event-loop-run!)
 </pre></div>
 </dd></dl>
@@ -710,6 +716,7 @@ propagate out of event-loop-run!.
 <p>Here is an example of the use of await-generator-in-thread!:
 </p><div class="example">
 <pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(event-loop-block! #t) ;; because the generator runs in another thread
 (a-sync (lambda (await resume)
           (await-generator-in-thread! await resume
 				      (lambda (yield)
@@ -721,7 +728,6 @@ propagate out of event-loop-run!.
 					(display val)
 					(newline)))
 	  (event-loop-block! #f)))
-(event-loop-block! #t) ;; because the generator runs in another thread
 (event-loop-run!)
 </pre></div>
 </dd></dl>

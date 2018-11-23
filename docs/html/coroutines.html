@@ -293,6 +293,7 @@ consecutively:
 </p>
 <div class="example">
 <pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(event-loop-block! #t) ;; worker thread in operation
 (a-sync (lambda (await resume)
 	  ;; executing task in event loop thread
 	  (let loop ([count 0])
@@ -322,7 +323,6 @@ consecutively:
 		(display res)(newline)
 		(loop))))
 	  (event-loop-block! #f)))
-(event-loop-block! #t) ;; worker thread in operation
 (event-loop-run!)
 </pre></div>
 
@@ -371,6 +371,7 @@ summing of 1 and 1 will finish before the timeout)
 </p>
 <div class="example">
 <pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(event-loop-block! #t) ;; worker thread in operation
 (a-sync (lambda (await resume)
 	  (await-generator! await resume
 			    (lambda (yield)
@@ -391,7 +392,6 @@ summing of 1 and 1 will finish before the timeout)
 					(display val)
 					(newline)))
 	  (event-loop-block! #f)))
-(event-loop-block! #t) ;; worker thread in operation
 (event-loop-run!)
 </pre></div>
 
@@ -430,6 +430,7 @@ summing of 1 and 1 will finish before the timeout)
 </p>
 <div class="example">
 <pre class="example">(set-default-event-loop!) ;; if none has yet been set
+(event-loop-block! #t) ;; worker thread in operation
 (compose-a-sync ()
 		(await-generator! (lambda (yield)
 				    (let loop ([count 0])
@@ -448,7 +449,6 @@ summing of 1 and 1 will finish before the timeout)
 					      (display val)
 					      (newline)))
 		((no-await (event-loop-block! #f))))
-(event-loop-block! #t) ;; worker thread in operation
 (event-loop-run!)
 </pre></div>
 
