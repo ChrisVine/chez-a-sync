@@ -1007,7 +1007,7 @@
 	 ;; throw an exception at this point if the event loop has
 	 ;; been closed: instead defer the exception to the call to
 	 ;; event-loop-run!
-	 (let ((mode (_mode-get el)))
+	 (let ([mode (_mode-get el)])
 	   (when (and mode (not (eq? mode 'closed)))
 	     (_mode-set! el 'prepare-to-quit)
 	     ;; if the event pipe is full and EAGAIN arises, that's
