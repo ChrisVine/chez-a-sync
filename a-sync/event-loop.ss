@@ -1007,16 +1007,17 @@
 	 ;; throw an exception at this point if the event loop has
 	 ;; been closed: instead defer the exception to the call to
 	 ;; event-loop-run!
-	 (when (not (eq? (_mode-get el) 'closed))
-	   (_mode-set! el 'prepare-to-quit)
-	   ;; if the event pipe is full and EAGAIN arises, that's not
-	   ;; a problem.  The only purpose of writing to the event
-	   ;; pipe is to cause the poll procedure to return
-	   (let ([out (_event-out-get el)])
-	     ;; use put-bytevector-some because it has a defined
-	     ;; result with non-blocking ports
-	     (put-bytevector-some out (make-bytevector 1 1) 0 1)
-	     (flush-output-port out)))))]))
+	 (let ((mode (_mode-get el)))
+	   (when (and mode (not (eq? mode 'closed)))
+	     (_mode-set! el 'prepare-to-quit)
+	     ;; if the event pipe is full and EAGAIN arises, that's
+	     ;; not a problem.  The only purpose of writing to the
+	     ;; event pipe is to cause the poll procedure to return
+	     (let ([out (_event-out-get el)])
+	       ;; use put-bytevector-some because it has a defined
+	       ;; result with non-blocking ports
+	       (put-bytevector-some out (make-bytevector 1 1) 0 1)
+	       (flush-output-port out))))))]))
 
 ;; This procedure closes an event loop.  Like event-loop-quit!, if the
 ;; loop is still running it causes the event loop to unblock, and any
