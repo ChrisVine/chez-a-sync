@@ -69,6 +69,7 @@
     sockport))
 
 (set-default-event-loop!)
+(event-loop-block! #t)  ;; we invoke await-task-in-thread!
 
 (a-sync
  (lambda (await resume)
@@ -86,5 +87,4 @@
      (event-loop-block! #f)
      (close-port sockport))))
 
-(event-loop-block! #t)
 (event-loop-run!)
