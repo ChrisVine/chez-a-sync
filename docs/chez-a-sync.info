@@ -1899,8 +1899,8 @@ as an event using event-post!.
  -- Scheme Procedure: await-put-bytevector! await resume [loop] port bv
      This is a convenience procedure for use in an event loop, which
      will start a write watch on 'port' for writing the contents of a
-     bytevector 'bv' to the port.  It calls 'await' while waiting for
-     output to become available.  Provided 'port' is a non-blocking
+     bytevector 'bv' to the port.  It calls 'await' if it has to wait
+     for output to become available.  Provided 'port' is a non-blocking
      port, the event loop will not be blocked by this procedure even if
      only individual bytes can be written at any one time.  It is
      intended to be called within a waitable procedure invoked by a-sync
@@ -1982,6 +1982,12 @@ as an event using event-post!.
           			... do something to cater for EPIPE ...]))))
           (event-loop-run!)
 
+     Unlike the other await-* procedures in this library file,
+     await-put-bytevector!  and await-put-string!  will not call 'await'
+     if all the contents of the bytevector/string can be written
+     immediately: instead, after writing this procedure would return
+     straight away without invoking the event loop.
+
      This procedure is first available in version 0.8 of this library.
 
      An example of the use of await-put-string!, which is implemented
@@ -1991,7 +1997,7 @@ as an event using event-post!.
  -- Scheme Procedure: await-put-string! await resume [loop] port text
      This is a convenience procedure for use in an event loop, which
      will start a write watch on 'port' for writing a string 'text' to
-     the port.  It calls 'await' while waiting for output to become
+     the port.  It calls 'await' if it has to wait for output to become
      available.  Provided 'port' is a non-blocking port, the event loop
      will not be blocked by this procedure even if only individual
      characters or part characters can be written at any one time.  It
@@ -2073,6 +2079,12 @@ as an event using event-post!.
           			     (= (cadr (condition-irritants c)) 32))
           			... do something to cater for EPIPE ...]))))
           (event-loop-run!)
+
+     Unlike the other await-* procedures in this library file,
+     await-put-bytevector!  and await-put-string!  will not call 'await'
+     if all the contents of the bytevector/string can be written
+     immediately: instead, after writing this procedure would return
+     straight away without invoking the event loop.
 
      This procedure is first available in version 0.7 of this library.
 
@@ -3016,9 +3028,9 @@ Node: Top83
 Node: overview1235
 Node: coroutines4550
 Node: event loop23133
-Node: thread pool113293
-Node: compose132081
-Node: meeting138536
-Node: try153244
+Node: thread pool113947
+Node: compose132735
+Node: meeting139190
+Node: try153898
 
 End Tag Table

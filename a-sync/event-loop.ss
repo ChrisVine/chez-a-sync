@@ -982,7 +982,7 @@
 ;; argument is optional: this procedure operates on the event loop
 ;; passed in as an argument, or if none is passed (or #f is passed),
 ;; on the default event loop.  Applying this procedure to an event
-;; loop does not changing the blocking status of the loop as may
+;; loop does not change the blocking status of the loop as may
 ;; previously have been set by event-loop-block!, should
 ;; event-loop-run! be applied to it again.
 ;;
@@ -2493,8 +2493,8 @@
 ;;   (await-put-bytevector! await resume [loop] port text)
 ;;
 ;; This procedure will start a write watch on 'port' for writing the
-;; contents of a bytevector 'bv' to the port.  It calls 'await' while
-;; waiting for output to become available.  Provided 'port' is a
+;; contents of a bytevector 'bv' to the port.  It calls 'await' if it
+;; has to wait for output to become available.  Provided 'port' is a
 ;; non-blocking port, the event loop will not be blocked by this
 ;; procedure even if only individual bytes can be written at any one
 ;; time.  It is intended to be called within a waitable procedure
@@ -2564,6 +2564,12 @@
 ;; this procedure so that they may be caught locally, say by putting a
 ;; 'try' block around the call to this procedure.
 ;;
+;; Unlike the other await-* procedures in this library file,
+;; await-put-bytevector! and await-put-string! will not call 'await'
+;; if all the contents of the bytevector/string can be written
+;; immediately: instead, after writing this procedure would return
+;; straight away without invoking the event loop.
+;;
 ;; This procedure is first available in version 0.8 of this library.
 (define await-put-bytevector!
   (case-lambda
@@ -2606,7 +2612,7 @@
 ;;   (await-put-string! await resume [loop] port text)
 ;;
 ;; This procedure will start a write watch on 'port' for writing a
-;; string 'text' to the port.  It calls 'await' while waiting for
+;; string 'text' to the port.  It calls 'await' if it has to wait for
 ;; output to become available.  Provided 'port' is a non-blocking
 ;; port, the event loop will not be blocked by this procedure even if
 ;; only individual characters or part characters can be written at any
@@ -2676,6 +2682,12 @@
 ;; first instance out of this procedure so that they may be caught
 ;; locally, say by putting a 'try' block around the call to this
 ;; procedure.
+;;
+;; Unlike the other await-* procedures in this library file,
+;; await-put-bytevector! and await-put-string! will not call 'await'
+;; if all the contents of the bytevector/string can be written
+;; immediately: instead, after writing this procedure would return
+;; straight away without invoking the event loop.
 ;;
 ;; This procedure is first available in version 0.7 of this library.
 (define await-put-string!

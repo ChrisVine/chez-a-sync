@@ -1522,15 +1522,15 @@ implementation of await-put-bytevector!:
 <dt><a name="index-await_002dput_002dbytevector_0021"></a>Scheme Procedure: <strong>await-put-bytevector!</strong> <em>await resume [loop] port bv</em></dt>
 <dd><p>This is a convenience procedure for use in an event loop, which will
 start a write watch on &rsquo;port&rsquo; for writing the contents of a bytevector
-&rsquo;bv&rsquo; to the port.  It calls &rsquo;await&rsquo; while waiting for output to become
-available.  Provided &rsquo;port&rsquo; is a non-blocking port, the event loop
-will not be blocked by this procedure even if only individual bytes
-can be written at any one time.  It is intended to be called within a
-waitable procedure invoked by a-sync (which supplies the &rsquo;await&rsquo; and
-&rsquo;resume&rsquo; arguments), and this procedure is implemented using
-a-sync-write-watch!.  The &rsquo;loop&rsquo; argument is optional: this procedure
-operates on the event loop passed in as an argument, or if none is
-passed (or #f is passed), on the default event loop.
+&rsquo;bv&rsquo; to the port.  It calls &rsquo;await&rsquo; if it has to wait for output to
+become available.  Provided &rsquo;port&rsquo; is a non-blocking port, the event
+loop will not be blocked by this procedure even if only individual
+bytes can be written at any one time.  It is intended to be called
+within a waitable procedure invoked by a-sync (which supplies the
+&rsquo;await&rsquo; and &rsquo;resume&rsquo; arguments), and this procedure is implemented
+using a-sync-write-watch!.  The &rsquo;loop&rsquo; argument is optional: this
+procedure operates on the event loop passed in as an argument, or if
+none is passed (or #f is passed), on the default event loop.
 </p>
 <p>&rsquo;port&rsquo; must be a non-blocking port, and may be a binary port or a
 textual port.
@@ -1604,6 +1604,12 @@ of EPIPE is 32):
 (event-loop-run!)
 </pre></div>
 
+<p>Unlike the other await-* procedures in this library file,
+await-put-bytevector! and await-put-string! will not call &rsquo;await&rsquo; if
+all the contents of the bytevector/string can be written immediately:
+instead, after writing this procedure would return straight away
+without invoking the event loop.
+</p>
 <p>This procedure is first available in version 0.8 of this library.
 </p>
 <p>An example of the use of await-put-string!, which is implemented using
@@ -1615,7 +1621,7 @@ example-server.ss files in the docs directory.
 <dt><a name="index-await_002dput_002dstring_0021"></a>Scheme Procedure: <strong>await-put-string!</strong> <em>await resume [loop] port text</em></dt>
 <dd><p>This is a convenience procedure for use in an event loop, which will
 start a write watch on &rsquo;port&rsquo; for writing a string &rsquo;text&rsquo; to the port.
-It calls &rsquo;await&rsquo; while waiting for output to become available.
+It calls &rsquo;await&rsquo; if it has to wait for output to become available.
 Provided &rsquo;port&rsquo; is a non-blocking port, the event loop will not be
 blocked by this procedure even if only individual characters or part
 characters can be written at any one time.  It is intended to be
@@ -1696,6 +1702,12 @@ of EPIPE is 32):
 (event-loop-run!)
 </pre></div>
 
+<p>Unlike the other await-* procedures in this library file,
+await-put-bytevector! and await-put-string! will not call &rsquo;await&rsquo; if
+all the contents of the bytevector/string can be written immediately:
+instead, after writing this procedure would return straight away
+without invoking the event loop.
+</p>
 <p>This procedure is first available in version 0.7 of this library.
 </p>
 <p>An example of the use of this procedure can be found in the
