@@ -25,7 +25,7 @@ necessary to set up autotools.  This can be done with:
 
 or on a 64-bit system, probably:
 
-  /autogen.sh --prefix=/usr --libdir=/usr/lib64
+  ./autogen.sh --prefix=/usr --libdir=/usr/lib64
 
 This generates a configure script and installs libtool.  Subsequent
 configuration can be done just with
