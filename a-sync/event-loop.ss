@@ -1405,30 +1405,34 @@
 	    "Wrong number of arguments passed to await-generator-in-thread!" await resume x))))
 
 (define (_await-generator-in-thread-impl! await resume loop generator proc handler)
-  (if handler
-      (fork-thread
-       (lambda ()
-	 (try
-	  (let ([iter (make-iterator generator)])
-	    (let next ([res (iter)])
-	      (event-post! (lambda () (resume res))
-			   loop)
-	      (when (not (eq? res 'stop-iteration))
-		(next (iter)))))
-	  (except c
-		  [else
-		   (event-post! (lambda ()
-				  (handler c)
-				  (resume 'chez-a-sync-thread-error))
-				loop)]))))
-      (fork-thread
-       (lambda ()
-	 (let ([iter (make-iterator generator)])
-	   (let next ([res (iter)])
-	     (event-post! (lambda () (resume res))
-			  loop)
-	     (when (not (eq? res 'stop-iteration))
-	       (next (iter))))))))
+  (let ([loop (or loop (get-default-event-loop))])
+    (when (not loop) 
+      (error "_await-generator-in-thread-impl!"
+	     "No default event loop set for call to await-generator-in-thread!"))
+    (if handler
+	(fork-thread
+	 (lambda ()
+	   (try
+	    (let ([iter (make-iterator generator)])
+	      (let next ([res (iter)])
+		(event-post! (lambda () (resume res))
+			     loop)
+		(when (not (eq? res 'stop-iteration))
+		  (next (iter)))))
+	    (except c
+		    [else
+		     (event-post! (lambda ()
+				    (handler c)
+				    (resume 'chez-a-sync-thread-error))
+				  loop)]))))
+	(fork-thread
+	 (lambda ()
+	   (let ([iter (make-iterator generator)])
+	     (let next ([res (iter)])
+	       (event-post! (lambda () (resume res))
+			    loop)
+	       (when (not (eq? res 'stop-iteration))
+		 (next (iter)))))))))
   (let next ([res (await)])
     (cond
      [(eq? res 'stop-iteration)
