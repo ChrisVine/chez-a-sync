@@ -18,6 +18,13 @@
   (export try except)
   (import (chezscheme))
 
+;; Normally if you have an auxiliary keyword (here 'except') you need
+;; to define it separately with define-syntax in order to export it:
+;; see https://cisco.github.io/ChezScheme/csug9.5/use.html#./use:s14 .
+;; Here however we do not need to do so because chezscheme already has
+;; an 'except' identifier which we can rebind as an auxiliary keyword:
+;; see https://cisco.github.io/ChezScheme/csug9.5/syntax.html#./syntax:s20
+
 ;; Try is a macro used in the implementation of the event loop
 ;; provided by this library, and is exported in case it is useful to
 ;; users.  It has the syntax:
