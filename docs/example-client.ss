@@ -18,7 +18,7 @@
 
 ;; This is an example file for using asynchronous reads and writes on
 ;; sockets.  It will provide the caller's IPv4 internet address from
-;; myip.dnsdynamic.org.  Normally if you wanted to do this from a
+;; checkip.dyndns.com.  Normally if you wanted to do this from a
 ;; utility script, you would do it synchronously with blocking
 ;; operations.  However in a program using an event loop, you would
 ;; need to do it asynchronously.  This does so.
@@ -35,7 +35,7 @@
 	(simple-sockets a-sync)
 	(chezscheme))
 
-(define check-ip "myip.dnsdynamic.org")
+(define check-ip "checkip.dyndns.com")
 
 (define (await-read-response await resume sockport)
   (define header-done #f)
