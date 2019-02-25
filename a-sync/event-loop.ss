@@ -261,10 +261,10 @@
   (let ([current-timeout (_current-timeout-get el)])
     (when (and current-timeout
 	       (<= (_time-remaining (vector-ref current-timeout 0)) 0))
-      (if ((vector-ref current-timeout 3))
-	  (vector-set! current-timeout 0
-		       (_get-abstime (vector-ref current-timeout 2)))
-	  (_timeouts-set! el (_filter-timeout (_timeouts-get el) (vector-ref current-timeout 1))))
+      (let ([repeat-time (_get-abstime (vector-ref current-timeout 2))])
+	(if ((vector-ref current-timeout 3))
+	    (vector-set! current-timeout 0 repeat-time)
+	    (_timeouts-set! el (_filter-timeout (_timeouts-get el) (vector-ref current-timeout 1)))))
       (_current-timeout-set! el (_next-timeout (_timeouts-get el))))))
 
 ;; this returns a list of timeouts, with the tagged timeout removed
