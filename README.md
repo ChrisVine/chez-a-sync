@@ -92,6 +92,12 @@ required.
 This package also requires chez scheme to have been compiled with the
 --threads option.
 
+Sockets
+-------
+
+A companion socket library which uses chez-a-sync us at
+https://github.com/ChrisVine/chez-simple-sockets .
+
 Documentation
 -------------
 
