@@ -1,6 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
-<!-- Created by GNU Texinfo 6.5, http://www.gnu.org/software/texinfo/ -->
+<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>coroutines (chez-a-sync)</title>
@@ -10,31 +10,22 @@
 <meta name="resource-type" content="document">
 <meta name="distribution" content="global">
 <meta name="Generator" content="makeinfo">
-<link href="index.html#Top" rel="start" title="Top">
-<link href="index.html#Top" rel="up" title="Top">
-<link href="event-loop.html#event-loop" rel="next" title="event loop">
-<link href="overview.html#overview" rel="prev" title="overview">
+<link href="index.html" rel="start" title="Top">
+<link href="index.html" rel="up" title="Top">
+<link href="event-loop.html" rel="next" title="event loop">
+<link href="overview.html" rel="prev" title="overview">
 <style type="text/css">
 <!--
 a.summary-letter {text-decoration: none}
 blockquote.indentedblock {margin-right: 0em}
-blockquote.smallindentedblock {margin-right: 0em; font-size: smaller}
-blockquote.smallquotation {font-size: smaller}
 div.display {margin-left: 3.2em}
 div.example {margin-left: 3.2em}
 div.lisp {margin-left: 3.2em}
-div.smalldisplay {margin-left: 3.2em}
-div.smallexample {margin-left: 3.2em}
-div.smalllisp {margin-left: 3.2em}
 kbd {font-style: oblique}
 pre.display {font-family: inherit}
 pre.format {font-family: inherit}
 pre.menu-comment {font-family: serif}
 pre.menu-preformatted {font-family: serif}
-pre.smalldisplay {font-family: inherit; font-size: smaller}
-pre.smallexample {font-size: smaller}
-pre.smallformat {font-family: inherit; font-size: smaller}
-pre.smalllisp {font-size: smaller}
 span.nolinebreak {white-space: nowrap}
 span.roman {font-family: initial; font-weight: normal}
 span.sansserif {font-family: sans-serif; font-weight: normal}
@@ -46,10 +37,9 @@ ul.no-bullet {list-style: none}
 </head>
 
 <body lang="en">
-<a name="coroutines"></a>
-<div class="header">
+<span id="coroutines"></span><div class="header">
 <p>
-Next: <a href="event-loop.html#event-loop" accesskey="n" rel="next">event loop</a>, Previous: <a href="overview.html#overview" accesskey="p" rel="prev">overview</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>
+Next: <a href="event-loop.html" accesskey="n" rel="next">event loop</a>, Previous: <a href="overview.html" accesskey="p" rel="prev">overview</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; </p>
 </div>
 <hr>
 <h4 class="node-heading">coroutines</h4>
@@ -58,7 +48,7 @@ Next: <a href="event-loop.html#event-loop" accesskey="n" rel="next">event loop</
 procedures:
 </p>
 <dl>
-<dt><a name="index-make_002diterator"></a>Scheme Procedure: <strong>make-iterator</strong> <em>proc . args</em></dt>
+<dt id="index-make_002diterator">Scheme Procedure: <strong>make-iterator</strong> <em>proc . args</em></dt>
 <dd><p>This procedure takes a generator procedure, namely a procedure which
 has a &rsquo;yield&rsquo; parameter for its first or only argument, followed by
 such other arguments (other than the one for the &rsquo;yield&rsquo; parameter) as
@@ -86,7 +76,7 @@ procedure into a non-continuable exception.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-make_002dcoroutine"></a>Scheme Procedure: <strong>make-coroutine</strong> <em>proc . args</em></dt>
+<dt id="index-make_002dcoroutine">Scheme Procedure: <strong>make-coroutine</strong> <em>proc . args</em></dt>
 <dd><p>This procedure takes a generator procedure, namely a procedure which
 has a &rsquo;yield&rsquo; parameter for its first or only argument, followed by
 such other arguments (other than the one for the &rsquo;yield&rsquo; parameter) as
@@ -118,7 +108,7 @@ procedure into a non-continuable exception.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-a_002dsync"></a>Scheme Procedure: <strong>a-sync</strong> <em>waitable . args</em></dt>
+<dt id="index-a_002dsync">Scheme Procedure: <strong>a-sync</strong> <em>waitable . args</em></dt>
 <dd><p>a-sync takes a waitable procedure (namely a procedure which takes
 &rsquo;await&rsquo; as its first parameter, which is a yield procedure obtained by
 a call to make-iterator, and &rsquo;resume&rsquo; as its second parameter, which
@@ -192,14 +182,14 @@ responsibility of the waitable procedure to terminate the watch or
 timeout repetitions).  That way, there can never be a case where the
 callback has been removed from the event loop by returning false but
 the waitable procedure still thinks it has a call to &rsquo;await&rsquo; to be
-made.  The <a href="event-loop.html#event-loop">(a-sync event-loop)</a> library file has
+made.  The <a href="event-loop.html">(a-sync event-loop)</a> library file has
 await-task!, await-task-in-thread!, await-task-in-event-loop!,
 await-yield!, await-generator!, await-generator-in-thread!,
 await-generator-in-event-loop!, await-timeout!, await-sleep!,
 a-sync-read-watch!, await-getline!, await-geteveryline!,
 await-getsomelines!, await-getblock!, await-geteveryblock!,
 await-getsomeblocks!, a-sync-write-watch!, await-put-bytevector! and
-await-put-string! convenience procedures, and the <a href="thread-pool.html#thread-pool">(a-sync thread-pool)</a> library file has
+await-put-string! convenience procedures, and the <a href="thread-pool.html">(a-sync thread-pool)</a> library file has
 await-task-in-thread-pool! and await-generator-in-thread-pool!
 procedures, which will correctly set this up for you automatically.
 If those convenience procedures are used, exceptions should always be
@@ -327,7 +317,7 @@ consecutively:
 </pre></div>
 
 <p>Or better, for many use cases when composing on the event loop from
-the <a href="event-loop.html#event-loop">event-loop</a> library file, you can use the await
+the <a href="event-loop.html">event-loop</a> library file, you can use the await
 helper procedures, as follows (in this example the two asynchronous
 operations run consecutively):
 </p>
@@ -395,7 +385,7 @@ summing of 1 and 1 will finish before the timeout)
 (event-loop-run!)
 </pre></div>
 
-<p>Or the compose-a-sync macro in the <a href="compose.html#compose">compose</a> library file
+<p>Or the compose-a-sync macro in the <a href="compose.html">compose</a> library file
 can be used so that these examples are constructed as follows (in this
 first case the two asynchronous operations run consecutively)
 </p>
@@ -453,12 +443,12 @@ summing of 1 and 1 will finish before the timeout)
 </pre></div>
 
 <p>For a further overview of the operation of &rsquo;a-sync&rsquo;, see the
-<a href="overview.html#overview">general overview</a>
+<a href="overview.html">general overview</a>
 </p></dd></dl>
 <hr>
 <div class="header">
 <p>
-Next: <a href="event-loop.html#event-loop" accesskey="n" rel="next">event loop</a>, Previous: <a href="overview.html#overview" accesskey="p" rel="prev">overview</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>
+Next: <a href="event-loop.html" accesskey="n" rel="next">event loop</a>, Previous: <a href="overview.html" accesskey="p" rel="prev">overview</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; </p>
 </div>
 
 

@@ -1,6 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
-<!-- Created by GNU Texinfo 6.5, http://www.gnu.org/software/texinfo/ -->
+<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>meeting (chez-a-sync)</title>
@@ -10,31 +10,22 @@
 <meta name="resource-type" content="document">
 <meta name="distribution" content="global">
 <meta name="Generator" content="makeinfo">
-<link href="index.html#Top" rel="start" title="Top">
-<link href="index.html#Top" rel="up" title="Top">
-<link href="try.html#try" rel="next" title="try">
-<link href="compose.html#compose" rel="prev" title="compose">
+<link href="index.html" rel="start" title="Top">
+<link href="index.html" rel="up" title="Top">
+<link href="try.html" rel="next" title="try">
+<link href="compose.html" rel="prev" title="compose">
 <style type="text/css">
 <!--
 a.summary-letter {text-decoration: none}
 blockquote.indentedblock {margin-right: 0em}
-blockquote.smallindentedblock {margin-right: 0em; font-size: smaller}
-blockquote.smallquotation {font-size: smaller}
 div.display {margin-left: 3.2em}
 div.example {margin-left: 3.2em}
 div.lisp {margin-left: 3.2em}
-div.smalldisplay {margin-left: 3.2em}
-div.smallexample {margin-left: 3.2em}
-div.smalllisp {margin-left: 3.2em}
 kbd {font-style: oblique}
 pre.display {font-family: inherit}
 pre.format {font-family: inherit}
 pre.menu-comment {font-family: serif}
 pre.menu-preformatted {font-family: serif}
-pre.smalldisplay {font-family: inherit; font-size: smaller}
-pre.smallexample {font-size: smaller}
-pre.smallformat {font-family: inherit; font-size: smaller}
-pre.smalllisp {font-size: smaller}
 span.nolinebreak {white-space: nowrap}
 span.roman {font-family: initial; font-weight: normal}
 span.sansserif {font-family: sans-serif; font-weight: normal}
@@ -46,17 +37,16 @@ ul.no-bullet {list-style: none}
 </head>
 
 <body lang="en">
-<a name="meeting"></a>
-<div class="header">
+<span id="meeting"></span><div class="header">
 <p>
-Next: <a href="try.html#try" accesskey="n" rel="next">try</a>, Previous: <a href="compose.html#compose" accesskey="p" rel="prev">compose</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>
+Next: <a href="try.html" accesskey="n" rel="next">try</a>, Previous: <a href="compose.html" accesskey="p" rel="prev">compose</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; </p>
 </div>
 <hr>
 <h4 class="node-heading">meeting</h4>
 
-<p>As explained in the <a href="overview.html#overview">general overview</a>, each &rsquo;a-sync&rsquo;
-block (see <a href="coroutines.html#coroutines">(a-sync coroutines)</a>) or &rsquo;compose-a-sync&rsquo;
-block (see <a href="compose.html#compose">(a-sync compose)</a>) is a separate unit of
+<p>As explained in the <a href="overview.html">general overview</a>, each &rsquo;a-sync&rsquo;
+block (see <a href="coroutines.html">(a-sync coroutines)</a>) or &rsquo;compose-a-sync&rsquo;
+block (see <a href="compose.html">(a-sync compose)</a>) is a separate unit of
 computation which appears within itself to proceed sequentially but
 which also appears to execute concurrently with other &rsquo;a-sync&rsquo; or
 &rsquo;compose-a-sync&rsquo; blocks running on the same event loop.  Each &rsquo;a-sync&rsquo;
@@ -81,7 +71,7 @@ To have other native OS threads communicate with an event-loop, use
 await-task-in-thread!, await-task-in-event-loop!,
 await-task-in-thread-pool!, await-generator-in-thread!,
 await-generator-in-event-loop! or await-generator-in-thread-pool! (see
-<a href="event-loop.html#event-loop">(a-sync event-loop)</a> and <a href="thread-pool.html#thread-pool">(a-sync
+<a href="event-loop.html">(a-sync event-loop)</a> and <a href="thread-pool.html">(a-sync
 thread-pool)</a>).  Having said that, some things, such as having one
 &quot;pseudo-thread&quot; join on another &quot;pseudo-thread&quot;, are more easily done
 with meeting objects.
@@ -137,7 +127,7 @@ meeting object.
 <p>The (a-sync meeting) library file provides the following procedures:
 </p>
 <dl>
-<dt><a name="index-make_002dmeeting"></a>Scheme Procedure: <strong>make-meeting</strong> <em>[loop]</em></dt>
+<dt id="index-make_002dmeeting">Scheme Procedure: <strong>make-meeting</strong> <em>[loop]</em></dt>
 <dd><p>This procedure makes and returns a meeting object.  Meetings are
 objects on which a-sync or compose-a-sync blocks running on the same
 event loop can synchronize by one passing a datum to another.  The
@@ -159,7 +149,7 @@ thread of that event loop.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-meeting_003f"></a>Scheme Procedure: <strong>meeting?</strong> <em>obj</em></dt>
+<dt id="index-meeting_003f">Scheme Procedure: <strong>meeting?</strong> <em>obj</em></dt>
 <dd><p>This procedure indicates whether &rsquo;obj&rsquo; is a meeting object constructed
 by make-meeting.
 </p>
@@ -167,7 +157,7 @@ by make-meeting.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-meeting_002dclose"></a>Scheme Procedure: <strong>meeting-close</strong> <em>meeting</em></dt>
+<dt id="index-meeting_002dclose">Scheme Procedure: <strong>meeting-close</strong> <em>meeting</em></dt>
 <dd><p>This closes a meeting object.  It&rsquo;s purpose is to wake up any
 &quot;pseudo-thread&quot; (that is, any a-sync or compose-a-sync block) waiting
 in meeting-send or meeting-receive by causing either procedure to
@@ -181,7 +171,7 @@ applied.  It is not needed in order to release resources.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-meeting_002dready_003f"></a>Scheme Procedure: <strong>meeting-ready?</strong> <em>meeting</em></dt>
+<dt id="index-meeting_002dready_003f">Scheme Procedure: <strong>meeting-ready?</strong> <em>meeting</em></dt>
 <dd><p>This indicates whether applying message-send or message-receive (as
 the case may be) to the meeting object &rsquo;meeting&rsquo; will return
 immediately: in other words, this procedure will return #t if another
@@ -192,7 +182,7 @@ meeting object has been closed, otherwise #f.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-meeting_002dsend"></a>Scheme Procedure: <strong>meeting-send</strong> <em>await resume [loop] m0 [m1 ...] datum</em></dt>
+<dt id="index-meeting_002dsend">Scheme Procedure: <strong>meeting-send</strong> <em>await resume [loop] m0 [m1 ...] datum</em></dt>
 <dd><p>This sends a datum to a receiver which is running on the same event
 loop as the sender, via one or more meeting objects &rsquo;m0 m1 ...&rsquo;.  If
 no receiver is waiting for the datum, this procedure waits until a
@@ -283,7 +273,7 @@ is selecting on more than one meeting object.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-meeting_002dreceive"></a>Scheme Procedure: <strong>meeting-receive</strong> <em>await resume [loop] m0 [m1 ...]</em></dt>
+<dt id="index-meeting_002dreceive">Scheme Procedure: <strong>meeting-receive</strong> <em>await resume [loop] m0 [m1 ...]</em></dt>
 <dd><p>This receives a datum from a sender running on the same event loop as
 the receiver, via one or more meeting objects &rsquo;m0 m1 ...&rsquo;.  If no
 sender is waiting to pass the datum, this procedure waits until a
@@ -380,7 +370,7 @@ more than one meeting object.
 <hr>
 <div class="header">
 <p>
-Next: <a href="try.html#try" accesskey="n" rel="next">try</a>, Previous: <a href="compose.html#compose" accesskey="p" rel="prev">compose</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>
+Next: <a href="try.html" accesskey="n" rel="next">try</a>, Previous: <a href="compose.html" accesskey="p" rel="prev">compose</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; </p>
 </div>
 
 

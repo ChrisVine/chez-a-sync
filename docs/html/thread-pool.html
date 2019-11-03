@@ -1,6 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
-<!-- Created by GNU Texinfo 6.5, http://www.gnu.org/software/texinfo/ -->
+<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>thread pool (chez-a-sync)</title>
@@ -10,31 +10,22 @@
 <meta name="resource-type" content="document">
 <meta name="distribution" content="global">
 <meta name="Generator" content="makeinfo">
-<link href="index.html#Top" rel="start" title="Top">
-<link href="index.html#Top" rel="up" title="Top">
-<link href="compose.html#compose" rel="next" title="compose">
-<link href="event-loop.html#event-loop" rel="prev" title="event loop">
+<link href="index.html" rel="start" title="Top">
+<link href="index.html" rel="up" title="Top">
+<link href="compose.html" rel="next" title="compose">
+<link href="event-loop.html" rel="prev" title="event loop">
 <style type="text/css">
 <!--
 a.summary-letter {text-decoration: none}
 blockquote.indentedblock {margin-right: 0em}
-blockquote.smallindentedblock {margin-right: 0em; font-size: smaller}
-blockquote.smallquotation {font-size: smaller}
 div.display {margin-left: 3.2em}
 div.example {margin-left: 3.2em}
 div.lisp {margin-left: 3.2em}
-div.smalldisplay {margin-left: 3.2em}
-div.smallexample {margin-left: 3.2em}
-div.smalllisp {margin-left: 3.2em}
 kbd {font-style: oblique}
 pre.display {font-family: inherit}
 pre.format {font-family: inherit}
 pre.menu-comment {font-family: serif}
 pre.menu-preformatted {font-family: serif}
-pre.smalldisplay {font-family: inherit; font-size: smaller}
-pre.smallexample {font-size: smaller}
-pre.smallformat {font-family: inherit; font-size: smaller}
-pre.smalllisp {font-size: smaller}
 span.nolinebreak {white-space: nowrap}
 span.roman {font-family: initial; font-weight: normal}
 span.sansserif {font-family: sans-serif; font-weight: normal}
@@ -46,15 +37,14 @@ ul.no-bullet {list-style: none}
 </head>
 
 <body lang="en">
-<a name="thread-pool"></a>
-<div class="header">
+<span id="thread-pool"></span><div class="header">
 <p>
-Next: <a href="compose.html#compose" accesskey="n" rel="next">compose</a>, Previous: <a href="event-loop.html#event-loop" accesskey="p" rel="prev">event loop</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>
+Next: <a href="compose.html" accesskey="n" rel="next">compose</a>, Previous: <a href="event-loop.html" accesskey="p" rel="prev">event loop</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; </p>
 </div>
 <hr>
 <h4 class="node-heading">thread pool</h4>
 
-<p>This (a-sync thread-pool) library file supplements the <a href="event-loop.html#event-loop">(a-sync event-loop)</a> library file.  (a-sync event-loop) provides
+<p>This (a-sync thread-pool) library file supplements the <a href="event-loop.html">(a-sync event-loop)</a> library file.  (a-sync event-loop) provides
 asynchronous procedures which can wait on the completion of a task
 running in a worker thread or on an event loop running in another
 thread.  However, sometimes it is better to run tasks in a thread pool
@@ -69,7 +59,7 @@ for a task on the thread pool to complete and provide its result.
 </p>
 <p>The thread pool objects provided by this library file do not make
 provision for rate limiting similar to that provided by the event
-loops in <a href="event-loop.html#event-loop">(a-sync event-loop)</a>.  This is because there
+loops in <a href="event-loop.html">(a-sync event-loop)</a>.  This is because there
 is no one-size-fits-all way of doing so.  One common approach is, as
 in the case of the event loops provided by this library, to apply
 throttling to threads which add tasks by enforcing a wait in their
@@ -93,7 +83,7 @@ the size of the already accumulated tasks has reduced.
 <p>This library file provides the following procedures:
 </p>
 <dl>
-<dt><a name="index-make_002dthread_002dpool"></a>Scheme Procedure: <strong>make-thread-pool</strong> <em>size [non-blocking]</em></dt>
+<dt id="index-make_002dthread_002dpool">Scheme Procedure: <strong>make-thread-pool</strong> <em>size [non-blocking]</em></dt>
 <dd><p>This procedure constructs a thread pool object of native OS threads.
 The &rsquo;size&rsquo; argument specifies the number of threads which will run in
 the pool, and must be greater than 0.  The &rsquo;non-blocking&rsquo; argument is
@@ -127,7 +117,7 @@ pool will be killed.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-thread_002dpool_003f"></a>Scheme Procedure: <strong>thread-pool?</strong> <em>obj</em></dt>
+<dt id="index-thread_002dpool_003f">Scheme Procedure: <strong>thread-pool?</strong> <em>obj</em></dt>
 <dd><p>This procedure indicates whether &rsquo;obj&rsquo; is a thread pool object
 constructed by make-thread-pool.
 </p>
@@ -135,7 +125,7 @@ constructed by make-thread-pool.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-thread_002dpool_002dget_002dnum_002dtasks"></a>Scheme Procedure: <strong>thread-pool-get-num-tasks</strong> <em>pool</em></dt>
+<dt id="index-thread_002dpool_002dget_002dnum_002dtasks">Scheme Procedure: <strong>thread-pool-get-num-tasks</strong> <em>pool</em></dt>
 <dd><p>This procedure returns the number of tasks which the thread pool
 object is at present either running in the pool or has queued for
 execution.  This procedure will not throw.  It is also thread safe,
@@ -148,7 +138,7 @@ result might at any one time be marginally out of date.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-thread_002dpool_002dget_002dsize"></a>Scheme Procedure: <strong>thread-pool-get-size</strong> <em>pool</em></dt>
+<dt id="index-thread_002dpool_002dget_002dsize">Scheme Procedure: <strong>thread-pool-get-size</strong> <em>pool</em></dt>
 <dd><p>This procedure returns the current size setting for the thread pool
 (namely the number of threads that the pool runs).
 </p>
@@ -158,7 +148,7 @@ result might at any one time be marginally out of date.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-thread_002dpool_002dchange_002dsize_0021"></a>Scheme Procedure: <strong>thread-pool-change-size!</strong> <em>pool delta</em></dt>
+<dt id="index-thread_002dpool_002dchange_002dsize_0021">Scheme Procedure: <strong>thread-pool-change-size!</strong> <em>pool delta</em></dt>
 <dd><p>This procedure will increase, or if &rsquo;delta&rsquo; is negative reduce, the
 number of threads which the thread pool object will run by the value
 of &rsquo;delta&rsquo;.  This procedure does nothing if thread-pool-stop! has
@@ -198,7 +188,7 @@ into use by calling this procedure again.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-thread_002dpool_002dget_002dnon_002dblocking"></a>Scheme Procedure: <strong>thread-pool-get-non-blocking</strong> <em>pool</em></dt>
+<dt id="index-thread_002dpool_002dget_002dnon_002dblocking">Scheme Procedure: <strong>thread-pool-get-non-blocking</strong> <em>pool</em></dt>
 <dd><p>This procedure returns the current non-blocking status of the thread
 pool.  (See the documentation on the thread-pool-stop! procedure for
 more information about what that means.)
@@ -209,7 +199,7 @@ more information about what that means.)
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-thread_002dpool_002dset_002dnon_002dblocking_0021"></a>Scheme Procedure: <strong>thread-pool-set-non-blocking!</strong> <em>pool val</em></dt>
+<dt id="index-thread_002dpool_002dset_002dnon_002dblocking_0021">Scheme Procedure: <strong>thread-pool-set-non-blocking!</strong> <em>pool val</em></dt>
 <dd><p>This procedure sets the non-blocking status of the thread pool.  If
 &rsquo;val&rsquo; is #f, the thread-pool-stop procedure will block, if #t it will
 not.  (See the documentation on the thread-pool-stop! procedure for
@@ -225,7 +215,7 @@ thread-pool-stop!.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-thread_002dpool_002dstop_0021"></a>Scheme Procedure: <strong>thread-pool-stop!</strong> <em>pool</em></dt>
+<dt id="index-thread_002dpool_002dstop_0021">Scheme Procedure: <strong>thread-pool-stop!</strong> <em>pool</em></dt>
 <dd><p>This procedure will cause the thread-pool object to stop running
 tasks.  However, all tasks already running or queued for execution
 will be permitted to execute and complete normally.  If the
@@ -247,7 +237,7 @@ thread-pool object may call this procedure.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-thread_002dpool_002dadd_0021"></a>Scheme Procedure: <strong>thread-pool-add!</strong> <em>pool task [fail-handler]</em></dt>
+<dt id="index-thread_002dpool_002dadd_0021">Scheme Procedure: <strong>thread-pool-add!</strong> <em>pool task [fail-handler]</em></dt>
 <dd><p>This procedure adds a new task to the thread pool.  &rsquo;task&rsquo; must be a
 thunk.  If one or more threads in the pool are currently blocking and
 waiting for a task, then the task will begin executing immediately in
@@ -271,7 +261,7 @@ thread-pool-stop!.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-with_002dthread_002dpool_002dincrement"></a>Syntax: <strong>with-thread-pool-increment</strong> <em>pool body0 body1 ...</em></dt>
+<dt id="index-with_002dthread_002dpool_002dincrement">Syntax: <strong>with-thread-pool-increment</strong> <em>pool body0 body1 ...</em></dt>
 <dd><p>This macro is intended to be called by a task running on a thread pool
 which is about to make a blocking (non-asynchronous) call.  It will
 increment the number of threads in &rsquo;pool&rsquo; by 1 (by calling
@@ -296,7 +286,7 @@ better option.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-await_002dtask_002din_002dthread_002dpool_0021"></a>Scheme Procedure: <strong>await-task-in-thread-pool!</strong> <em>await resume [loop] pool thunk [handler]</em></dt>
+<dt id="index-await_002dtask_002din_002dthread_002dpool_0021">Scheme Procedure: <strong>await-task-in-thread-pool!</strong> <em>await resume [loop] pool thunk [handler]</em></dt>
 <dd><p>The &rsquo;loop&rsquo; argument is optional.  This procedure will run &rsquo;thunk&rsquo; in
 the thread pool specified by the &rsquo;pool&rsquo; argument.  The result of
 executing &rsquo;thunk&rsquo; will then be posted to the event loop specified by
@@ -351,7 +341,7 @@ system exception to arise) or memory is exhausted.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-await_002dgenerator_002din_002dthread_002dpool_0021"></a>Scheme Procedure: <strong>await-generator-in-thread-pool!</strong> <em>await resume [loop] pool generator proc [handler]</em></dt>
+<dt id="index-await_002dgenerator_002din_002dthread_002dpool_0021">Scheme Procedure: <strong>await-generator-in-thread-pool!</strong> <em>await resume [loop] pool generator proc [handler]</em></dt>
 <dd><p>The loop argument is optional.  The &rsquo;generator&rsquo; argument is a
 procedure taking one argument, namely a yield argument (see the
 documentation on the make-iterator procedure for further details).
@@ -422,7 +412,7 @@ be).
 <hr>
 <div class="header">
 <p>
-Next: <a href="compose.html#compose" accesskey="n" rel="next">compose</a>, Previous: <a href="event-loop.html#event-loop" accesskey="p" rel="prev">event loop</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>
+Next: <a href="compose.html" accesskey="n" rel="next">compose</a>, Previous: <a href="event-loop.html" accesskey="p" rel="prev">event loop</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; </p>
 </div>
 
 

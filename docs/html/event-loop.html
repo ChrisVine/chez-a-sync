@@ -1,6 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
-<!-- Created by GNU Texinfo 6.5, http://www.gnu.org/software/texinfo/ -->
+<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>event loop (chez-a-sync)</title>
@@ -10,31 +10,22 @@
 <meta name="resource-type" content="document">
 <meta name="distribution" content="global">
 <meta name="Generator" content="makeinfo">
-<link href="index.html#Top" rel="start" title="Top">
-<link href="index.html#Top" rel="up" title="Top">
-<link href="thread-pool.html#thread-pool" rel="next" title="thread pool">
-<link href="coroutines.html#coroutines" rel="prev" title="coroutines">
+<link href="index.html" rel="start" title="Top">
+<link href="index.html" rel="up" title="Top">
+<link href="thread-pool.html" rel="next" title="thread pool">
+<link href="coroutines.html" rel="prev" title="coroutines">
 <style type="text/css">
 <!--
 a.summary-letter {text-decoration: none}
 blockquote.indentedblock {margin-right: 0em}
-blockquote.smallindentedblock {margin-right: 0em; font-size: smaller}
-blockquote.smallquotation {font-size: smaller}
 div.display {margin-left: 3.2em}
 div.example {margin-left: 3.2em}
 div.lisp {margin-left: 3.2em}
-div.smalldisplay {margin-left: 3.2em}
-div.smallexample {margin-left: 3.2em}
-div.smalllisp {margin-left: 3.2em}
 kbd {font-style: oblique}
 pre.display {font-family: inherit}
 pre.format {font-family: inherit}
 pre.menu-comment {font-family: serif}
 pre.menu-preformatted {font-family: serif}
-pre.smalldisplay {font-family: inherit; font-size: smaller}
-pre.smallexample {font-size: smaller}
-pre.smallformat {font-family: inherit; font-size: smaller}
-pre.smalllisp {font-size: smaller}
 span.nolinebreak {white-space: nowrap}
 span.roman {font-family: initial; font-weight: normal}
 span.sansserif {font-family: sans-serif; font-weight: normal}
@@ -46,10 +37,9 @@ ul.no-bullet {list-style: none}
 </head>
 
 <body lang="en">
-<a name="event-loop"></a>
-<div class="header">
+<span id="event-loop"></span><div class="header">
 <p>
-Next: <a href="thread-pool.html#thread-pool" accesskey="n" rel="next">thread pool</a>, Previous: <a href="overview.html#overview" accesskey="p" rel="prev">overview</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>
+Next: <a href="thread-pool.html" accesskey="n" rel="next">thread pool</a>, Previous: <a href="overview.html" accesskey="p" rel="prev">overview</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; </p>
 </div>
 <hr>
 <h4 class="node-heading">event loop</h4>
@@ -75,7 +65,7 @@ worker threads to post an event to an event loop, say with the result
 of a computation, so that the event callback will execute in the event
 loop thread.
 </p>
-<p><a href="meeting.html#meeting">(a-sync meeting)</a> provides synchronization facilities
+<p><a href="meeting.html">(a-sync meeting)</a> provides synchronization facilities
 for event loops provided under this library file.
 </p>
 <p>The file watches provided by this library file uses chez scheme&rsquo;s FFI
@@ -108,7 +98,7 @@ to post the closing as an event using event-post!.
 <p>This library file provides the following procedures:
 </p>
 <dl>
-<dt><a name="index-set_002ddefault_002devent_002dloop_0021"></a>Scheme Procedure: <strong>set-default-event-loop!</strong> <em>[loop]</em></dt>
+<dt id="index-set_002ddefault_002devent_002dloop_0021">Scheme Procedure: <strong>set-default-event-loop!</strong> <em>[loop]</em></dt>
 <dd><p>The &rsquo;loop&rsquo; (event loop) argument is optional.  This procedure sets the
 default event loop for the procedures in this library file to the one
 passed in (which must have been constructed by the make-event-loop
@@ -135,13 +125,13 @@ be called explicitly and the result passed to this procedure.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-get_002ddefault_002devent_002dloop"></a>Scheme Procedure: <strong>get-default-event-loop</strong></dt>
+<dt id="index-get_002ddefault_002devent_002dloop">Scheme Procedure: <strong>get-default-event-loop</strong></dt>
 <dd><p>This returns the default loop set by the set-default-event-loop!
 procedure, or #f if none has been set.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-make_002devent_002dloop"></a>Scheme Procedure: <strong>make-event-loop</strong> <em>[throttle-threshold throttle-delay]</em></dt>
+<dt id="index-make_002devent_002dloop">Scheme Procedure: <strong>make-event-loop</strong> <em>[throttle-threshold throttle-delay]</em></dt>
 <dd><p>This constructs a new event loop object.  From version 0.4, this
 procedure optionally takes two throttling arguments for backpressure
 when applying the event-post! procedure to the event loop.  The
@@ -151,8 +141,8 @@ throttling will first be applied.  Where the threshold is exceeded,
 throttling proceeds by adding a wait to any thread which calls the
 event-post! procedure, equal to the cube of the number of times (if
 any) by which the number of queued tasks exceeds the threshold
-multiplied by the value of &rsquo;threshold-delay&rsquo;.  The value of
-&rsquo;threshold-delay&rsquo; should be given in microseconds.  Throttling is only
+multiplied by the value of &rsquo;throttle-delay&rsquo;.  The value of
+&rsquo;throttle-delay&rsquo; should be given in microseconds.  Throttling is only
 applied where the call to event-post! is made in a thread other than
 the one in which the event loop runs.
 </p>
@@ -168,13 +158,13 @@ microseconds will be applied, and at 30000 unexecuted tasks a delay of
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-event_002dloop_003f"></a>Scheme Procedure: <strong>event-loop?</strong> <em>obj</em></dt>
+<dt id="index-event_002dloop_003f">Scheme Procedure: <strong>event-loop?</strong> <em>obj</em></dt>
 <dd><p>This procedure indicates whether &rsquo;obj&rsquo; is an event-loop object
 constructed by make-event-loop.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-event_002dloop_002drun_0021"></a>Scheme Procedure: <strong>event-loop-run!</strong> <em>[loop]</em></dt>
+<dt id="index-event_002dloop_002drun_0021">Scheme Procedure: <strong>event-loop-run!</strong> <em>[loop]</em></dt>
 <dd><p>The &rsquo;loop&rsquo; (event loop) argument is optional.  This procedure starts
 the event loop passed in as an argument, or if none is passed (or #f
 is passed) it starts the default event loop.  The event loop will run
@@ -200,7 +190,7 @@ dynamic winds).
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-event_002dloop_002dadd_002dread_002dwatch_0021"></a>Scheme Procedure: <strong>event-loop-add-read-watch!</strong> <em>file proc [loop]</em></dt>
+<dt id="index-event_002dloop_002dadd_002dread_002dwatch_0021">Scheme Procedure: <strong>event-loop-add-read-watch!</strong> <em>file proc [loop]</em></dt>
 <dd><p>The &rsquo;loop&rsquo; (event loop) argument is optional.  This procedure will
 start a read watch in the event loop passed in as an argument, or if
 none is passed (or #f is passed), in the default event loop.  The
@@ -229,7 +219,7 @@ exhausted.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-event_002dloop_002dadd_002dwrite_002dwatch_0021"></a>Scheme Procedure: <strong>event-loop-add-write-watch!</strong> <em>file proc [loop]</em></dt>
+<dt id="index-event_002dloop_002dadd_002dwrite_002dwatch_0021">Scheme Procedure: <strong>event-loop-add-write-watch!</strong> <em>file proc [loop]</em></dt>
 <dd><p>The &rsquo;loop&rsquo; (event loop) argument is optional.  This procedure will
 start a write watch in the event loop passed in as an argument, or if
 none is passed (or #f is passed), in the default event loop.  The
@@ -272,7 +262,7 @@ exhausted.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-event_002dloop_002dremove_002dread_002dwatch_0021"></a>Scheme Procedure: <strong>event-loop-remove-read-watch!</strong> <em>file [loop]</em></dt>
+<dt id="index-event_002dloop_002dremove_002dread_002dwatch_0021">Scheme Procedure: <strong>event-loop-remove-read-watch!</strong> <em>file [loop]</em></dt>
 <dd><p>The &rsquo;loop&rsquo; (event loop) argument is optional.  This procedure will
 remove a read watch from the event loop passed in as an argument, or
 if none is passed (or #f is passed), from the default event loop.  The
@@ -286,7 +276,7 @@ exhausted.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-event_002dloop_002dremove_002dwrite_002dwatch_0021"></a>Scheme Procedure: <strong>event-loop-remove-write-watch!</strong> <em>file [loop]</em></dt>
+<dt id="index-event_002dloop_002dremove_002dwrite_002dwatch_0021">Scheme Procedure: <strong>event-loop-remove-write-watch!</strong> <em>file [loop]</em></dt>
 <dd><p>The &rsquo;loop&rsquo; (event loop) argument is optional.  This procedure will
 remove a write watch from the event loop passed in as an argument, or
 if none is passed (or #f is passed), from the default event loop.  The
@@ -300,7 +290,7 @@ exhausted.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-event_002dpost_0021"></a>Scheme Procedure: <strong>event-post!</strong> <em>action [loop]</em></dt>
+<dt id="index-event_002dpost_0021">Scheme Procedure: <strong>event-post!</strong> <em>action [loop]</em></dt>
 <dd><p>The &rsquo;loop&rsquo; (event loop) argument is optional.  This procedure will
 post a callback for execution in the event loop passed in as an
 argument, or if none is passed (or #f is passed), in the default event
@@ -322,7 +312,7 @@ documentation on make-event-loop for further details.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-timeout_002dpost_0021"></a>Scheme Procedure: <strong>timeout-post!</strong> <em>msecs action [loop]</em></dt>
+<dt id="index-timeout_002dpost_0021">Scheme Procedure: <strong>timeout-post!</strong> <em>msecs action [loop]</em></dt>
 <dd><p>The &rsquo;loop&rsquo; (event loop) argument is optional.  This procedure adds a
 timeout to the event loop passed in as an argument, or if none is
 passed (or #f is passed), to the default event loop.  The timeout will
@@ -338,7 +328,7 @@ caught locally, it will propagate out of event-loop-run!.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-timeout_002dremove_0021"></a>Scheme Procedure: <strong>timeout-remove!</strong> <em>tag [loop]</em></dt>
+<dt id="index-timeout_002dremove_0021">Scheme Procedure: <strong>timeout-remove!</strong> <em>tag [loop]</em></dt>
 <dd><p>The &rsquo;loop&rsquo; (event loop) argument is optional.  This procedure stops
 the timeout with the given tag from executing in the event loop passed
 in as an argument, or if none is passed (or #f is passed), in the
@@ -349,7 +339,7 @@ exhausted.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-event_002dloop_002dtasks"></a>Scheme Procedure: <strong>event-loop-tasks</strong> <em>[loop]</em></dt>
+<dt id="index-event_002dloop_002dtasks">Scheme Procedure: <strong>event-loop-tasks</strong> <em>[loop]</em></dt>
 <dd><p>This procedure returns the number of callbacks posted to an event loop
 with the event-post! procedure which at the time still remain queued
 for execution.  Amongst other things, it can be used by a calling
@@ -366,7 +356,7 @@ safe - any thread may call it.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-event_002dloop_002dblock_0021"></a>Scheme Procedure: <strong>event-loop-block!</strong> <em>val [loop]</em></dt>
+<dt id="index-event_002dloop_002dblock_0021">Scheme Procedure: <strong>event-loop-block!</strong> <em>val [loop]</em></dt>
 <dd><p>By default, upon there being no more watches, timeouts and posted
 events for an event loop, event-loop-run! will return, which is
 normally what you want with a single threaded program.  However, this
@@ -387,7 +377,7 @@ exhausted.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-event_002dloop_002dquit_0021"></a>Scheme Procedure: <strong>event-loop-quit!</strong> <em>[loop]</em></dt>
+<dt id="index-event_002dloop_002dquit_0021">Scheme Procedure: <strong>event-loop-quit!</strong> <em>[loop]</em></dt>
 <dd><p>This procedure causes an event loop to end and event-loop-run! to
 return.  Any file watches, timeouts or posted events remaining in the
 event loop will be discarded.  New file watches, timeouts and events
@@ -430,7 +420,7 @@ exhausted.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-event_002dloop_002dclose_0021"></a>Scheme Procedure: <strong>event-loop-close!</strong> <em>[loop]</em></dt>
+<dt id="index-event_002dloop_002dclose_0021">Scheme Procedure: <strong>event-loop-close!</strong> <em>[loop]</em></dt>
 <dd><p>This procedure closes an event loop.  Like event-loop-quit!, if the
 loop is still running it causes the event loop to unblock, and any
 file watches, timeouts or posted events remaining in the event loop
@@ -467,7 +457,7 @@ exhausted.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-await_002dtask_002din_002dthread_0021"></a>Scheme Procedure: <strong>await-task-in-thread!</strong> <em>await resume [loop] thunk [handler]</em></dt>
+<dt id="index-await_002dtask_002din_002dthread_0021">Scheme Procedure: <strong>await-task-in-thread!</strong> <em>await resume [loop] thunk [handler]</em></dt>
 <dd><p>The loop and handler arguments are optional.  The procedure will run
 &rsquo;thunk&rsquo; in its own thread, and then post an event to the event loop
 specified by the &rsquo;loop&rsquo; argument when &rsquo;thunk&rsquo; has finished, or to the
@@ -516,7 +506,7 @@ the handler procedure will propagate out of event-loop-run!.
 </dd></dl>
 
 <dl>
-<dt><a name="index-await_002dtask_002din_002devent_002dloop_0021"></a>Scheme Procedure: <strong>await-task-in-event-loop!</strong> <em>await resume [waiter] worker thunk</em></dt>
+<dt id="index-await_002dtask_002din_002devent_002dloop_0021">Scheme Procedure: <strong>await-task-in-event-loop!</strong> <em>await resume [waiter] worker thunk</em></dt>
 <dd><p>The &rsquo;waiter&rsquo; argument is optional.  The &rsquo;worker&rsquo; argument is an event
 loop running in a different thread than the one in which this
 procedure is called, and is the one in which &rsquo;thunk&rsquo; will be executed
@@ -580,7 +570,7 @@ event-loop-run! procedure called for the &rsquo;worker&rsquo; event loop.
 </dd></dl>
 
 <dl>
-<dt><a name="index-await_002dtask_0021"></a>Scheme Procedure: <strong>await-task!</strong> <em>await resume [loop] thunk</em></dt>
+<dt id="index-await_002dtask_0021">Scheme Procedure: <strong>await-task!</strong> <em>await resume [loop] thunk</em></dt>
 <dd><p>The &rsquo;loop&rsquo; argument is optional.  This is a convenience procedure for
 use with an event loop, which will run &rsquo;thunk&rsquo; in the event loop
 specified by the &rsquo;loop&rsquo; argument, or in the default event loop if no
@@ -633,7 +623,7 @@ event-loop-run!.
 </dd></dl>
 
 <dl>
-<dt><a name="index-await_002dyield_0021"></a>Scheme Procedure: <strong>await-yield!</strong> <em>await resume [loop]</em></dt>
+<dt id="index-await_002dyield_0021">Scheme Procedure: <strong>await-yield!</strong> <em>await resume [loop]</em></dt>
 <dd><p>This is a convenience procedure which will surrender execution to the
 relevant event loop, so that code in other a-sync or compose-a-sync
 blocks can run.  The remainder of the code after the call to
@@ -674,7 +664,7 @@ exhausted.
 </dd></dl>
 
 <dl>
-<dt><a name="index-await_002dgenerator_002din_002dthread_0021"></a>Scheme Procedure: <strong>await-generator-in-thread!</strong> <em>await resume [loop] generator proc [handler]</em></dt>
+<dt id="index-await_002dgenerator_002din_002dthread_0021">Scheme Procedure: <strong>await-generator-in-thread!</strong> <em>await resume [loop] generator proc [handler]</em></dt>
 <dd><p>The &rsquo;loop&rsquo; and &rsquo;handler&rsquo; arguments are optional.  The &rsquo;generator&rsquo;
 argument is a procedure taking one argument, namely a yield argument
 (see the documentation on the make-iterator procedure for further
@@ -745,7 +735,7 @@ propagate out of event-loop-run!.
 </dd></dl>
 
 <dl>
-<dt><a name="index-await_002dgenerator_002din_002devent_002dloop_0021"></a>Scheme Procedure: <strong>await-generator-in-event-loop!</strong> <em>await resume [waiter] worker generator proc</em></dt>
+<dt id="index-await_002dgenerator_002din_002devent_002dloop_0021">Scheme Procedure: <strong>await-generator-in-event-loop!</strong> <em>await resume [waiter] worker generator proc</em></dt>
 <dd><p>The &rsquo;waiter&rsquo; argument is optional.  The &rsquo;worker&rsquo; argument is an event
 loop running in a different thread than the one in which this
 procedure is called.  The &rsquo;generator&rsquo; argument is a procedure taking
@@ -823,7 +813,7 @@ for the &rsquo;waiter&rsquo; or default event loop, as the case may be.
 </dd></dl>
 
 <dl>
-<dt><a name="index-await_002dgenerator_0021"></a>Scheme Procedure: <strong>await-generator!</strong> <em>await resume [loop] generator proc</em></dt>
+<dt id="index-await_002dgenerator_0021">Scheme Procedure: <strong>await-generator!</strong> <em>await resume [loop] generator proc</em></dt>
 <dd><p>The &rsquo;loop&rsquo; argument is optional.  The &rsquo;generator&rsquo; argument is a
 procedure taking one argument, namely a yield argument (see the
 documentation on the make-iterator procedure for further details).
@@ -888,7 +878,7 @@ will propagate out of event-loop-run!.
 </dd></dl>
 
 <dl>
-<dt><a name="index-await_002dtimeout_0021"></a>Scheme Procedure: <strong>await-timeout!</strong> <em>await resume [loop] msecs thunk</em></dt>
+<dt id="index-await_002dtimeout_0021">Scheme Procedure: <strong>await-timeout!</strong> <em>await resume [loop] msecs thunk</em></dt>
 <dd><p>This is a convenience procedure for use with an event loop, which will
 run &rsquo;thunk&rsquo; in the event loop thread when the timeout expires.  This
 procedure calls &rsquo;await&rsquo; and will return the thunk&rsquo;s return value.  It
@@ -931,7 +921,7 @@ shouldn&rsquo;t happen unless memory is exhausted.  Exceptions raised by
 </dd></dl>
 
 <dl>
-<dt><a name="index-await_002dsleep_0021"></a>Scheme Procedure: <strong>await-sleep!</strong> <em>await resume [loop] msecs</em></dt>
+<dt id="index-await_002dsleep_0021">Scheme Procedure: <strong>await-sleep!</strong> <em>await resume [loop] msecs</em></dt>
 <dd><p>This is a convenience procedure which will suspend execution of code
 in the current a-sync or compose-a-sync block for the duration of
 &rsquo;msecs&rsquo; milliseconds.  The event loop will not be blocked by the sleep
@@ -966,7 +956,7 @@ exhausted.
 </dd></dl>
 
 <dl>
-<dt><a name="index-a_002dsync_002dread_002dwatch_0021"></a>Scheme Procedure: <strong>a-sync-read-watch!</strong> <em>resume file proc [loop]</em></dt>
+<dt id="index-a_002dsync_002dread_002dwatch_0021">Scheme Procedure: <strong>a-sync-read-watch!</strong> <em>resume file proc [loop]</em></dt>
 <dd><p>This is a convenience procedure for use with an event loop, which will
 run &rsquo;proc&rsquo; in the event loop thread whenever &rsquo;file&rsquo; is ready for
 reading, and apply &rsquo;resume&rsquo; (obtained from a call to a-sync) to the
@@ -1053,7 +1043,7 @@ implementation of await-getline!:
 </dd></dl>
 
 <dl>
-<dt><a name="index-await_002dgetline_0021"></a>Scheme Procedure: <strong>await-getline!</strong> <em>await resume [loop] port</em></dt>
+<dt id="index-await_002dgetline_0021">Scheme Procedure: <strong>await-getline!</strong> <em>await resume [loop] port</em></dt>
 <dd><p>This is a convenience procedure for use with an event loop, which will
 start a read watch on &rsquo;port&rsquo; for a line of input.  It calls &rsquo;await&rsquo;
 while waiting for input and will return the line of text received
@@ -1109,7 +1099,7 @@ event-loop-run! if not caught in that way.
 </dd></dl>
 
 <dl>
-<dt><a name="index-await_002dgeteveryline_0021"></a>Scheme Procedure: <strong>await-geteveryline!</strong> <em>await resume [loop] port proc</em></dt>
+<dt id="index-await_002dgeteveryline_0021">Scheme Procedure: <strong>await-geteveryline!</strong> <em>await resume [loop] port proc</em></dt>
 <dd><p>This is a convenience procedure for use with an event loop, which will
 start a read watch on &rsquo;port&rsquo; for lines of input.  It calls &rsquo;await&rsquo;
 while waiting for input and will apply &rsquo;proc&rsquo; to every complete line
@@ -1184,7 +1174,7 @@ keyboard has no end-of-file, use Ctrl-C to exit this code snippet):
 </dd></dl>
 
 <dl>
-<dt><a name="index-await_002dgetsomelines_0021"></a>Scheme Procedure: <strong>await-getsomelines!</strong> <em>await resume [loop] port proc</em></dt>
+<dt id="index-await_002dgetsomelines_0021">Scheme Procedure: <strong>await-getsomelines!</strong> <em>await resume [loop] port proc</em></dt>
 <dd><p>This is a convenience procedure for use with an event loop, which does
 the same as await-geteveryline!, except that it provides a second
 argument to &rsquo;proc&rsquo;, namely an escape continuation which can be invoked
@@ -1267,7 +1257,7 @@ may break resource management which uses rethrows or dynamic winds).
 </dd></dl>
 
 <dl>
-<dt><a name="index-await_002dgetblock_0021"></a>Scheme Procedure: <strong>await-getblock!</strong> <em>await resume [loop] port size</em></dt>
+<dt id="index-await_002dgetblock_0021">Scheme Procedure: <strong>await-getblock!</strong> <em>await resume [loop] port size</em></dt>
 <dd><p>This is a convenience procedure for use with an event loop, which will
 start a read watch on &rsquo;port&rsquo; for a block of data, such as a binary
 record, of size &rsquo;size&rsquo;.  It calls &rsquo;await&rsquo; while waiting for input and
@@ -1322,7 +1312,7 @@ event-loop-run! if not caught in that way.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-await_002dgeteveryblock_0021"></a>Scheme Procedure: <strong>await-geteveryblock!</strong> <em>await resume [loop] port size proc</em></dt>
+<dt id="index-await_002dgeteveryblock_0021">Scheme Procedure: <strong>await-geteveryblock!</strong> <em>await resume [loop] port size proc</em></dt>
 <dd><p>This is a convenience procedure for use with an event loop, which will
 start a read watch on &rsquo;port&rsquo; for blocks of data, such as binary
 records, of size &rsquo;size&rsquo;.  It calls &rsquo;await&rsquo; while waiting for input and
@@ -1392,7 +1382,7 @@ may break resource management which uses rethrows or dynamic winds).
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-await_002dgetsomeblocks_0021"></a>Scheme Procedure: <strong>await-getsomeblocks!</strong> <em>await resume [loop] port size proc</em></dt>
+<dt id="index-await_002dgetsomeblocks_0021">Scheme Procedure: <strong>await-getsomeblocks!</strong> <em>await resume [loop] port size proc</em></dt>
 <dd><p>This is a convenience procedure for use with an event loop, which does
 the same as await-geteveryblock!, except that it provides a third
 argument to &rsquo;proc&rsquo;, namely an escape continuation which can be invoked
@@ -1469,7 +1459,7 @@ may break resource management which uses rethrows or dynamic winds).
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-a_002dsync_002dwrite_002dwatch_0021"></a>Scheme Procedure: <strong>a-sync-write-watch!</strong> <em>resume file proc [loop]</em></dt>
+<dt id="index-a_002dsync_002dwrite_002dwatch_0021">Scheme Procedure: <strong>a-sync-write-watch!</strong> <em>resume file proc [loop]</em></dt>
 <dd><p>This is a convenience procedure for use with an event loop, which will
 run &rsquo;proc&rsquo; in the event loop thread whenever &rsquo;file&rsquo; is ready for
 writing, and apply &rsquo;resume&rsquo; (obtained from a call to a-sync) to the
@@ -1531,7 +1521,7 @@ implementation of await-put-bytevector!:
 </dd></dl>
 
 <dl>
-<dt><a name="index-await_002dput_002dbytevector_0021"></a>Scheme Procedure: <strong>await-put-bytevector!</strong> <em>await resume [loop] port bv</em></dt>
+<dt id="index-await_002dput_002dbytevector_0021">Scheme Procedure: <strong>await-put-bytevector!</strong> <em>await resume [loop] port bv</em></dt>
 <dd><p>This is a convenience procedure for use in an event loop, which will
 start a write watch on &rsquo;port&rsquo; for writing the contents of a bytevector
 &rsquo;bv&rsquo; to the port.  It calls &rsquo;await&rsquo; if it has to wait for output to
@@ -1603,7 +1593,7 @@ they may be caught locally, say by putting a &rsquo;try&rsquo; block around the
 call to this procedure.
 </p>
 <p>Here is how EPIPE might be tested for, using the &rsquo;try&rsquo; form from the
-<a href="try.html#try">(a-sync try)</a> library file (with linux and BSDs, the value
+<a href="try.html">(a-sync try)</a> library file (with linux and BSDs, the value
 of EPIPE is 32):
 </p><div class="example">
 <pre class="example">(set-default-event-loop!) ;; if none has yet been set
@@ -1630,7 +1620,7 @@ example-server.ss files in the docs directory.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-await_002dput_002dstring_0021"></a>Scheme Procedure: <strong>await-put-string!</strong> <em>await resume [loop] port text</em></dt>
+<dt id="index-await_002dput_002dstring_0021">Scheme Procedure: <strong>await-put-string!</strong> <em>await resume [loop] port text</em></dt>
 <dd><p>This is a convenience procedure for use in an event loop, which will
 start a write watch on &rsquo;port&rsquo; for writing a string &rsquo;text&rsquo; to the port.
 It calls &rsquo;await&rsquo; if it has to wait for output to become available.
@@ -1701,7 +1691,7 @@ instance out of this procedure so that they may be caught locally, say
 by putting a &rsquo;try&rsquo; block around the call to this procedure.
 </p>
 <p>Here is how EPIPE might be tested for, using the &rsquo;try&rsquo; form from the
-<a href="try.html#try">(a-sync try)</a> library file (with linux and BSDs, the value
+<a href="try.html">(a-sync try)</a> library file (with linux and BSDs, the value
 of EPIPE is 32):
 </p><div class="example">
 <pre class="example">(set-default-event-loop!) ;; if none has yet been set
@@ -1727,7 +1717,7 @@ example-client.ss and example-server.ss files in the docs directory.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-c_002dwrite"></a>Scheme Procedure: <strong>c-write</strong> <em>fd bv begin count</em></dt>
+<dt id="index-c_002dwrite">Scheme Procedure: <strong>c-write</strong> <em>fd bv begin count</em></dt>
 <dd><p>This procedure is used by await-put-bytevector! (and so by
 await-put-string!) and is exported by event-loop.ss so that it can be
 used by other asynchronous procedures.  It makes a block write
@@ -1764,7 +1754,7 @@ not an error.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-make_002dpipe"></a>Scheme Procedure: <strong>make-pipe</strong> <em>[read-buffer-mode [write-buffer-mode [transcoder]]]</em></dt>
+<dt id="index-make_002dpipe">Scheme Procedure: <strong>make-pipe</strong> <em>[read-buffer-mode [write-buffer-mode [transcoder]]]</em></dt>
 <dd><p>This procedure makes a unix pipe using the system pipe() call.  It is
 needed internally by the event-loop implementation, and is exported as
 part of the event-loop library in case it is useful to users.
@@ -1784,7 +1774,7 @@ set: use set-cloexec! below to change that.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-set_002dcloexec_0021"></a>Scheme Procedure: <strong>set-cloexec!</strong> <em>port</em></dt>
+<dt id="index-set_002dcloexec_0021">Scheme Procedure: <strong>set-cloexec!</strong> <em>port</em></dt>
 <dd><p>This procedure sets FD_CLOEXEC on the file descriptor underlying
 &rsquo;port&rsquo;.  It is mainly intended for use with pipes returned by
 make-pipe, but can be used with any port.  It is used internally by
@@ -1805,14 +1795,14 @@ has been closed.
 chez-simple-sockets package at
 <a href="https://github.com/ChrisVine/chez-simple-sockets">https://github.com/ChrisVine/chez-simple-sockets</a>.  Examples of
 their use are in the example-client.ss and example-server.ss files in
-the docs directory.  The <a href="thread-pool.html#thread-pool">(a-sync thread-pool)</a>
+the docs directory.  The <a href="thread-pool.html">(a-sync thread-pool)</a>
 library file in this package also provides
 <strong>await-task-in-thread-pool!</strong> and
 <strong>await-generator-in-thread-pool!</strong> procedures.
 </p><hr>
 <div class="header">
 <p>
-Next: <a href="thread-pool.html#thread-pool" accesskey="n" rel="next">thread pool</a>, Previous: <a href="overview.html#overview" accesskey="p" rel="prev">overview</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>
+Next: <a href="thread-pool.html" accesskey="n" rel="next">thread pool</a>, Previous: <a href="overview.html" accesskey="p" rel="prev">overview</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; </p>
 </div>
 
 

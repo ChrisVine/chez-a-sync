@@ -149,8 +149,8 @@
 ;; threshold is exceeded, throttling proceeds by adding a wait to any
 ;; thread which calls the event-post! procedure, equal to the cube of
 ;; the number of times (if any) by which the number of queued tasks
-;; exceeds the threshold multiplied by the value of 'threshold-delay'.
-;; The value of 'threshold-delay' should be given in microseconds.
+;; exceeds the threshold multiplied by the value of 'throttle-delay'.
+;; The value of 'throttle-delay' should be given in microseconds.
 ;; Throttling is only applied where the call to event-post! is made in
 ;; a thread other than the one in which the event loop runs.
 ;;

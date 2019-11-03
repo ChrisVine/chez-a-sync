@@ -1,6 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
-<!-- Created by GNU Texinfo 6.5, http://www.gnu.org/software/texinfo/ -->
+<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>overview (chez-a-sync)</title>
@@ -10,30 +10,21 @@
 <meta name="resource-type" content="document">
 <meta name="distribution" content="global">
 <meta name="Generator" content="makeinfo">
-<link href="index.html#Top" rel="start" title="Top">
-<link href="coroutines.html#coroutines" rel="next" title="coroutines">
-<link href="index.html#Top" rel="prev" title="Top">
+<link href="index.html" rel="start" title="Top">
+<link href="coroutines.html" rel="next" title="coroutines">
+<link href="index.html" rel="prev" title="Top">
 <style type="text/css">
 <!--
 a.summary-letter {text-decoration: none}
 blockquote.indentedblock {margin-right: 0em}
-blockquote.smallindentedblock {margin-right: 0em; font-size: smaller}
-blockquote.smallquotation {font-size: smaller}
 div.display {margin-left: 3.2em}
 div.example {margin-left: 3.2em}
 div.lisp {margin-left: 3.2em}
-div.smalldisplay {margin-left: 3.2em}
-div.smallexample {margin-left: 3.2em}
-div.smalllisp {margin-left: 3.2em}
 kbd {font-style: oblique}
 pre.display {font-family: inherit}
 pre.format {font-family: inherit}
 pre.menu-comment {font-family: serif}
 pre.menu-preformatted {font-family: serif}
-pre.smalldisplay {font-family: inherit; font-size: smaller}
-pre.smallexample {font-size: smaller}
-pre.smallformat {font-family: inherit; font-size: smaller}
-pre.smalllisp {font-size: smaller}
 span.nolinebreak {white-space: nowrap}
 span.roman {font-family: initial; font-weight: normal}
 span.sansserif {font-family: sans-serif; font-weight: normal}
@@ -45,10 +36,9 @@ ul.no-bullet {list-style: none}
 </head>
 
 <body lang="en">
-<a name="overview"></a>
-<div class="header">
+<span id="overview"></span><div class="header">
 <p>
-Next: <a href="coroutines.html#coroutines" accesskey="n" rel="next">coroutines</a>, Previous: <a href="index.html#Top" accesskey="p" rel="prev">Top</a> &nbsp; </p>
+Next: <a href="coroutines.html" accesskey="n" rel="next">coroutines</a>, Previous: <a href="index.html" accesskey="p" rel="prev">Top</a> &nbsp; </p>
 </div>
 <hr>
 <h4 class="node-heading">overview</h4>
@@ -59,8 +49,8 @@ Next: <a href="coroutines.html#coroutines" accesskey="n" rel="next">coroutines</
 hell&quot;, but it can still be troublesome to think about.  It can help to
 compare it to threads.
 </p>
-<p>Each &rsquo;a-sync&rsquo; block (see <a href="coroutines.html#coroutines">(a-sync coroutines)</a>) or
-&rsquo;compose-a-sync&rsquo; block (see <a href="compose.html#compose">(a-sync compose)</a>) is a
+<p>Each &rsquo;a-sync&rsquo; block (see <a href="coroutines.html">(a-sync coroutines)</a>) or
+&rsquo;compose-a-sync&rsquo; block (see <a href="compose.html">(a-sync compose)</a>) is a
 separate unit of computation, which appears within itself to proceed
 sequentially even though in fact it executes asynchronously on an
 event loop.  Each such block also appears to execute concurrently with
@@ -68,7 +58,7 @@ other &rsquo;a-sync&rsquo; or &rsquo;compose-a-sync&rsquo; blocks running on the
 loop.  Each &rsquo;a-sync&rsquo; or &rsquo;compose-a-sync&rsquo; block is therefore in some
 sense analogous to a thread of execution.
 </p>
-<p>If the event loop provided by the <a href="event-loop.html#event-loop">(a-sync
+<p>If the event loop provided by the <a href="event-loop.html">(a-sync
 event-loop)</a> library file is in use, the mechanism by which these
 &quot;pseudo-threads&quot; execute on the event loop is by a call to
 event-loop-run!.  event-loop-run! therefore behaves in a way which is
@@ -102,9 +92,9 @@ the timeout expires):
 
 <p>&quot;Pseudo-threads&quot; (that is &rsquo;a-sync&rsquo; or &rsquo;compose-a-sync&rsquo; blocks) running
 on the same event loop can intercommunicate by holding meetings to
-exchange a datum (see <a href="meeting.html#meeting">(a-sync meeting)</a>).  A somewhat
+exchange a datum (see <a href="meeting.html">(a-sync meeting)</a>).  A somewhat
 similar result can also be achieved using generators (see the
-await-generator! procedure in the <a href="event-loop.html#event-loop">(a-sync
+await-generator! procedure in the <a href="event-loop.html">(a-sync
 event-loop)</a> library file).
 </p>
 <p>One interesting feature of these &quot;pseudo-threads&quot; is that where one
@@ -125,7 +115,7 @@ await-generator-in-thread-pool! procedures.
 </p><hr>
 <div class="header">
 <p>
-Next: <a href="coroutines.html#coroutines" accesskey="n" rel="next">coroutines</a>, Previous: <a href="index.html#Top" accesskey="p" rel="prev">Top</a> &nbsp; </p>
+Next: <a href="coroutines.html" accesskey="n" rel="next">coroutines</a>, Previous: <a href="index.html" accesskey="p" rel="prev">Top</a> &nbsp; </p>
 </div>
 
 

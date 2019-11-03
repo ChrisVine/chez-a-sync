@@ -1,8 +1,8 @@
-This is chez-a-sync.info, produced by makeinfo version 6.5 from
+This is chez-a-sync.info, produced by makeinfo version 6.7 from
 chez-a-sync.texi.
 
 
-File: chez-a-sync.info,  Node: Top,  Next: overview
+File: chez-a-sync.info,  Node: Top,  Next: overview,  Up: (dir)
 
 chez-a-sync reference
 *********************
@@ -580,8 +580,8 @@ as an event using event-post!.
      threshold is exceeded, throttling proceeds by adding a wait to any
      thread which calls the event-post!  procedure, equal to the cube of
      the number of times (if any) by which the number of queued tasks
-     exceeds the threshold multiplied by the value of 'threshold-delay'.
-     The value of 'threshold-delay' should be given in microseconds.
+     exceeds the threshold multiplied by the value of 'throttle-delay'.
+     The value of 'throttle-delay' should be given in microseconds.
      Throttling is only applied where the call to event-post!  is made
      in a thread other than the one in which the event loop runs.
 
@@ -3038,12 +3038,17 @@ exceptions.
 
 Tag Table:
 Node: Top83
-Node: overview1235
-Node: coroutines4550
-Node: event loop23133
-Node: thread pool114825
-Node: compose133613
-Node: meeting140068
-Node: try154776
+Node: overview1247
+Node: coroutines4562
+Node: event loop23145
+Node: thread pool114835
+Node: compose133623
+Node: meeting140078
+Node: try154786
 
 End Tag Table
+
+
+Local Variables:
+coding: utf-8
+End:

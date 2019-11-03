@@ -1,6 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
-<!-- Created by GNU Texinfo 6.5, http://www.gnu.org/software/texinfo/ -->
+<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>compose (chez-a-sync)</title>
@@ -10,31 +10,22 @@
 <meta name="resource-type" content="document">
 <meta name="distribution" content="global">
 <meta name="Generator" content="makeinfo">
-<link href="index.html#Top" rel="start" title="Top">
-<link href="index.html#Top" rel="up" title="Top">
-<link href="meeting.html#meeting" rel="next" title="meeting">
-<link href="thread-pool.html#thread-pool" rel="prev" title="thread pool">
+<link href="index.html" rel="start" title="Top">
+<link href="index.html" rel="up" title="Top">
+<link href="meeting.html" rel="next" title="meeting">
+<link href="thread-pool.html" rel="prev" title="thread pool">
 <style type="text/css">
 <!--
 a.summary-letter {text-decoration: none}
 blockquote.indentedblock {margin-right: 0em}
-blockquote.smallindentedblock {margin-right: 0em; font-size: smaller}
-blockquote.smallquotation {font-size: smaller}
 div.display {margin-left: 3.2em}
 div.example {margin-left: 3.2em}
 div.lisp {margin-left: 3.2em}
-div.smalldisplay {margin-left: 3.2em}
-div.smallexample {margin-left: 3.2em}
-div.smalllisp {margin-left: 3.2em}
 kbd {font-style: oblique}
 pre.display {font-family: inherit}
 pre.format {font-family: inherit}
 pre.menu-comment {font-family: serif}
 pre.menu-preformatted {font-family: serif}
-pre.smalldisplay {font-family: inherit; font-size: smaller}
-pre.smallexample {font-size: smaller}
-pre.smallformat {font-family: inherit; font-size: smaller}
-pre.smalllisp {font-size: smaller}
 span.nolinebreak {white-space: nowrap}
 span.roman {font-family: initial; font-weight: normal}
 span.sansserif {font-family: sans-serif; font-weight: normal}
@@ -46,20 +37,19 @@ ul.no-bullet {list-style: none}
 </head>
 
 <body lang="en">
-<a name="compose"></a>
-<div class="header">
+<span id="compose"></span><div class="header">
 <p>
-Next: <a href="meeting.html#meeting" accesskey="n" rel="next">meeting</a>, Previous: <a href="thread-pool.html#thread-pool" accesskey="p" rel="prev">thread pool</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>
+Next: <a href="meeting.html" accesskey="n" rel="next">meeting</a>, Previous: <a href="thread-pool.html" accesskey="p" rel="prev">thread pool</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; </p>
 </div>
 <hr>
 <h4 class="node-heading">compose</h4>
 
 <p>This (a-sync compose) library file provides a compose-a-sync macro
 interface for the a-sync procedure provided by the
-<a href="coroutines.html#coroutines">(a-sync coroutines)</a> library file.
+<a href="coroutines.html">(a-sync coroutines)</a> library file.
 </p>
 <dl>
-<dt><a name="index-_0028compose_002da_002dsync"></a>Syntax: <strong>(compose-a-sync</strong> <em>[loop] ((var await-exp0) ...) await-exp1 await-exp2 ...)</em></dt>
+<dt id="index-_0028compose_002da_002dsync">Syntax: <strong>(compose-a-sync</strong> <em>[loop] ((var await-exp0) ...) await-exp1 await-exp2 ...)</em></dt>
 <dd><p>This library file provides the compose-a-sync macro.  This does two
 things: first, it calls a-sync for you and deals with the resulting
 &rsquo;await&rsquo; and &rsquo;resume&rsquo; procedures without exposing them, which for many
@@ -105,8 +95,8 @@ await-timeout!, await-sleep!, await-getline!, await-geteveryline!,
 await-getsomelines!, await-getblock!, await-geteveryblock!,
 await-getsomeblocks!, await-put-bytevector!, await-put-string!,
 await-task-in-thread-pool! and await-generator-in-thread-pool!
-procedures provided by the <a href="event-loop.html#event-loop">(a-sync event-loop)</a> and
-<a href="thread-pool.html#thread-pool">(a-sync thread-pool)</a> library files are
+procedures provided by the <a href="event-loop.html">(a-sync event-loop)</a> and
+<a href="thread-pool.html">(a-sync thread-pool)</a> library files are
 &rsquo;compose-a-sync&rsquo;-capable.  In addition, to make an ordinary body of
 code which does not block (and which does not need to invoke a-sync&rsquo;s
 await procedure) usable by compose-a-sync, the no-await macro can be
@@ -156,14 +146,14 @@ begin executing whatever follows it, and further execution of the
 compose-a-sync block will occur within the event loop concerned.
 </p>
 <p>Other examples of the use of this macro are given in the documentation
-of the <a href="coroutines.html#coroutines">(a-sync coroutines)</a> library file.
+of the <a href="coroutines.html">(a-sync coroutines)</a> library file.
 </p>
 <p>This macro must (like the a-sync procedure) be called in the same
 thread as that in which the event loop runs.
 </p></dd></dl>
 
 <dl>
-<dt><a name="index-_0028no_002dawait"></a>Syntax: <strong>(no-await</strong> <em>body0 body1 ...)</em></dt>
+<dt id="index-_0028no_002dawait">Syntax: <strong>(no-await</strong> <em>body0 body1 ...)</em></dt>
 <dd><p>This macro will generate a &rsquo;compose-a-sync&rsquo;-capable procedure from a
 body of code which does not block.  It can be passed to
 compose-a-sync, either for use as an initializer or as a clause in its
@@ -182,7 +172,7 @@ propagate out of event-loop-run!.
 <hr>
 <div class="header">
 <p>
-Next: <a href="meeting.html#meeting" accesskey="n" rel="next">meeting</a>, Previous: <a href="thread-pool.html#thread-pool" accesskey="p" rel="prev">thread pool</a>, Up: <a href="index.html#Top" accesskey="u" rel="up">Top</a> &nbsp; </p>
+Next: <a href="meeting.html" accesskey="n" rel="next">meeting</a>, Previous: <a href="thread-pool.html" accesskey="p" rel="prev">thread pool</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; </p>
 </div>
 
 
