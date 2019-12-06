@@ -125,20 +125,20 @@
 				    0
 				    (not non-blocking)
 				    #f)])
-       (try
-	(do ([count 0 (+ count 1)])
-	    ((= count size))
-	  (fork-thread (lambda () (thread-loop pool)))
-	  (num-threads-set! pool (+ (num-threads-get pool) 1)))
-	;; if starting any new threads failed, kill them all before
-	;; re-raising the exception
-	(except c
-		[else
-		 (let ([thread-count (num-threads-get pool)])
-		   (do ([kill-count 0 (+ kill-count 1)])
-		       ((= kill-count thread-count))
-		     (a-queue-push! (aq-get pool) (cons (lambda () (raise 'kill-thread)) #f)))
-		   (raise c))]))
+       (with-exception-handler
+	 (lambda (c)
+	   ;; if starting any new threads failed, kill them all before
+	   ;; re-raising the exception
+	   (let ([thread-count (num-threads-get pool)])
+	     (do ([kill-count 0 (+ kill-count 1)])
+		 ((= kill-count thread-count))
+	       (a-queue-push! (aq-get pool) (cons (lambda () (raise 'kill-thread)) #f)))
+	     (raise c)))
+	 (lambda ()
+	   (do ([count 0 (+ count 1)])
+	       ((= count size))
+	     (fork-thread (lambda () (thread-loop pool)))
+	     (num-threads-set! pool (+ (num-threads-get pool) 1)))))
        pool)]))
 
 ;; This is the thread loop which each thread will execute, taking
@@ -304,48 +304,46 @@
       (when start-threads
 	(do ([count 0 (+ count 1)])
 	    ((= count start-threads))
-	  (try
-	   (fork-thread (lambda () (thread-loop pool)))
-	   (except c
-		   [else
-		    ;; roll back for any unstarted threads
-		    (with-mutex mutex
-		      (num-threads-set! pool (+ (- (num-threads-get pool) start-threads) count))
-		      ;; We could be down to 0 threads if all of these
-		      ;; unfortunate events have occurred together:
-		      ;; (i) in the period between this calling thread
-		      ;; releasing the mutex acquired on entry to this
-		      ;; procedure and acquiring it again on handling
-		      ;; this exception, another thread tried,
-		      ;; concurrently with this attempted increase, to
-		      ;; reduce the size of the pool by an amount
-		      ;; equal to or more than its original size, (ii)
-		      ;; during that period a number of tasks equal to
-		      ;; that original size have finished, and (iii)
-		      ;; the attempt to launch new threads failed with
-		      ;; an exception without launching even one of
-		      ;; them.  In such a case we should be able to
-		      ;; launch a rescue thread within the mutex
-		      ;; because no other threads could be running in
-		      ;; the pool.  If we still cannot launch a thread
-		      ;; the program and/or system must be totally
-		      ;; borked and there is little we can do.
-		      (when (zero? (num-threads-get pool))
-			;; if this fails, all is lost (that is, we may have
-			;; queued tasks in the pool with no thread startable
-			;; to run them)
-			(try 
-			 (fork-thread (lambda () (thread-loop pool)))
-			 (num-threads-set! pool 1)
-			 (except c
-				 [else #f])))
-		      ;; reset size to the actual number of threads
-		      ;; now running
-		      (size-set! pool (num-threads-get pool))
-		      (when (and (stopped-get pool)
-				 (blocking-get pool))
-			(condition-broadcast (condvar-get pool)))
-		      (raise c))])))))))
+	  (with-exception-handler
+	    (lambda (c)
+	      ;; roll back for any unstarted threads
+	      (with-mutex mutex
+		(num-threads-set! pool (+ (- (num-threads-get pool) start-threads) count))
+		;; We could be down to 0 threads if all of these
+		;; unfortunate events have occurred together: (i) in
+		;; the period between this calling thread releasing
+		;; the mutex acquired on entry to this procedure and
+		;; acquiring it again on handling this exception,
+		;; another thread tried, concurrently with this
+		;; attempted increase, to reduce the size of the pool
+		;; by an amount equal to or more than its original
+		;; size, (ii) during that period a number of tasks
+		;; equal to that original size have finished, and
+		;; (iii) the attempt to launch new threads failed with
+		;; an exception without launching even one of them.
+		;; In such a case we should be able to launch a rescue
+		;; thread within the mutex because no other threads
+		;; could be running in the pool.  If we still cannot
+		;; launch a thread the program and/or system must be
+		;; totally borked and there is little we can do.
+		(when (zero? (num-threads-get pool))
+		  ;; if this fails, all is lost (that is, we may have
+		  ;; queued tasks in the pool with no thread startable
+		  ;; to run them)
+		  (try 
+		   (fork-thread (lambda () (thread-loop pool)))
+		   (num-threads-set! pool 1)
+		   (except c
+			   [else #f])))
+		;; reset size to the actual number of threads
+		;; now running
+		(size-set! pool (num-threads-get pool))
+		(when (and (stopped-get pool)
+			   (blocking-get pool))
+		  (condition-broadcast (condvar-get pool)))
+		(raise c)))
+	    (lambda ()
+	      (fork-thread (lambda () (thread-loop pool))))))))))
 
 ;; This procedure returns the current non-blocking status of the
 ;; thread pool.  (See the documentation on the thread-pool-stop!

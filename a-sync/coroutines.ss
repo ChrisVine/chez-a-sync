@@ -1,4 +1,4 @@
-;; Copyright (C) 2016 Chris Vine
+;; Copyright (C) 2016 and 2019 Chris Vine
 ;; 
 ;; This file is licensed under the Apache License, Version 2.0 (the
 ;; "License"); you may not use this file except in compliance with the
@@ -59,8 +59,10 @@
 		      ;; any exception must propagate in the context
 		      ;; of the current call to the iterator, not the
 		      ;; first
-		      (try (apply proc yield args)
-			   (except c (else ((prompt-and-null) (lambda () (raise c))))))
+		      (with-exception-handler
+			(lambda (c)
+			  ((prompt-and-null) (lambda () (raise c))))
+			(lambda () (apply proc yield args)))
 		      (set! done #t)
 		      ((prompt-and-null) (lambda () 'stop-iteration))))
   (define yield
@@ -148,8 +150,10 @@
 	   (set! prompt-cont k)
 	   ;; any exception must propagate in the context of the
 	   ;; current call to the coroutine, not the first
-	   (let ([ret (try (apply proc yield args)
-			   (except c (else ((prompt-and-null) (lambda () (raise c))))))])
+	   (let ([ret (with-exception-handler
+			(lambda (c)
+			  ((prompt-and-null) (lambda () (raise c))))
+			(lambda () (apply proc yield args)))])
 	     ((prompt-and-null) (lambda () (values #f ret)))))))]))
   cor)
      

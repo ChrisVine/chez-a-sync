@@ -435,132 +435,132 @@
        (_loop-thread-set! el (get-thread-id))
        (_mode-set! el 'running)]))
 
-  (try
-   (let loop1 ()
-     ;; we don't need to use the mutex in this procedure to access
-     ;; the current-timeout field of an event loop object or any
-     ;; individual timeout item vectors, as we only do this in the
-     ;; event loop thread
-     (_process-timeouts el)
-     ;; we must assign these under a mutex so that we get a consistent
-     ;; view of them on each run: the lists themselves are not mutated
-     ;; (their associated actions may be)
-     (with-mutex mutex
-       (set! read-files (_read-files-get el))
-       (set! write-files (_write-files-get el))
-       (set! set-poll-caches (_poll-caches-flag-get el))
-       (_poll-caches-flag-set! el #f))
+  (with-exception-handler
+    (lambda (c)
+      ;; something threw, probably a callback.  Put the event loop in
+      ;; a valid state and rethrow
+      (with-mutex mutex
+	(_event-loop-reset! el)
+	(when (not (eq? (_mode-get el) 'closed))
+	  (_mode-set! el #f))
+	(raise c)))
+    (lambda ()
+      (let loop1 ()
+	;; we don't need to use the mutex in this procedure to access
+	;; the current-timeout field of an event loop object or any
+	;; individual timeout item vectors, as we only do this in the
+	;; event loop thread
+	(_process-timeouts el)
+	;; we must assign these under a mutex so that we get a
+	;; consistent view of them on each run: the lists themselves
+	;; are not mutated (their associated actions may be)
+	(with-mutex mutex
+	  (set! read-files (_read-files-get el))
+	  (set! write-files (_write-files-get el))
+	  (set! set-poll-caches (_poll-caches-flag-get el))
+	  (_poll-caches-flag-set! el #f))
 
-     ;; no mutex is required - we only call _set-poll-caches! in the
-     ;; event loop thread
-     (when set-poll-caches
-       (_set-poll-caches! el read-files write-files))
+	;; no mutex is required - we only call _set-poll-caches! in
+	;; the event loop thread
+	(when set-poll-caches
+	  (_set-poll-caches! el read-files write-files))
 
-     (when (not (and (null? read-files)
-		     (null? write-files)
-		     (null? (_timeouts-get el))
-		     (with-mutex mutex (and (q-empty? q)
-					    (not (_block-get el))))))
-       (let* ([current-timeout (_current-timeout-get el)]
-	      [res (poll (_poll-table-get el) (_poll-table-size-get el)
-			 (_read-ports-hash-get el) (_write-ports-hash-get el)
-			 (_out-read-bv-get el) (_out-write-bv-get el) (_out-except-bv-get el)
-			 (if current-timeout
-			     (let ((msecs (_time-remaining (vector-ref current-timeout 0))))
-			       (if (< msecs 0) 0 msecs))
-			     -1))])
-	 ;; deal with POLLPRI events first
-	 (for-each (lambda (elt)
-		     (let ([action
-			    ;; we only poll for POLLPRI on read descriptors
-			    (with-mutex mutex
-			      (hashtable-ref (_read-files-actions-get el)
-					     (_fd-or-port->fd elt)
-					     #f))])
-		       ;; if the action has been concurrently removed, ignore it
-		       (when (and action (not (action 'excpt)))
-			 (with-mutex mutex (_remove-read-watch-impl! elt el)))))
-		   (caddr res))
-	 ;; this deals with POLLIN, POLLHUP, POLLERR and POLLNVAL
-	 ;; events on read file descriptors
-	 (for-each (lambda (elt)
-		     (let ([action
-			    (with-mutex mutex
-			      (hashtable-ref (_read-files-actions-get el)
-					     (_fd-or-port->fd elt)
-					     #f))])
-		       ;; if the action has been concurrently removed, ignore it
-		       (when (and action (not (action 'in)))
-			 (with-mutex mutex (_remove-read-watch-impl! elt el)))))
-		   (remv event-fd (car res)))
-	 ;; this deals with POLLOUT, POLLHUP, POLLERR and POLLNVAL
-	 ;; events on write file descriptors (although I don't think
-	 ;; POLLHUP can occur with these)
-	 (for-each (lambda (elt)
-		     (let ([action
-			    (with-mutex mutex
-			      (hashtable-ref (_write-files-actions-get el)
-					     (_fd-or-port->fd elt)
-					     #f))])
-		       ;; if the action has been concurrently removed, ignore it
-		       (when (and action (not (action 'out)))
-			 (with-mutex mutex (_remove-write-watch-impl! elt el)))))
-		   (cadr res))
-	 ;; the strategy with posted events is first to empty the
-	 ;; event pipe (the only purpose of which is to cause the
-	 ;; event loop to unblock) and then run any events queued
-	 ;; in the queue.  This (i) eliminates any concerns that
-	 ;; events might go missing if the pipe fills up, and (ii)
-	 ;; ensures that if a timeout or watch callback has posted
-	 ;; an event (say ending the timeout or watch), that will
-	 ;; have been acted on by the time the event loop begins
-	 ;; its next iteration.
-	 (when (memv event-fd (car res))
-	   (let loop2 ()
-	     (let ((b (get-u8 event-in)))
-	       (when (and (input-port-ready? event-in)
-			  (not (eof-object? b))) ;; this shouldn't ever happen
-		 (loop2)))))
-	 (let loop3 ()
-	   (let ((action (with-mutex mutex
-			   (if (q-empty? q)
-			       (begin
-				 ;; num-tasks should be 0 with an
-				 ;; empty queue anyway, but ...
-				 (_num-tasks-set! el 0)
-				 #f)
-			       (begin
-				 (_num-tasks-set! el (- (_num-tasks-get el) 1))
-				 (q-deq! q))))))
-	     (when action
-	       (action)
-	       ;; one of the posted events may have called
-	       ;; event-loop-quit!, so test for it
-	       (when (eq? (with-mutex mutex (_mode-get el)) 'running)
-		 (loop3))))))
-       (when (eq? (with-mutex mutex (_mode-get el)) 'running)
-	 (loop1))))
-   (with-mutex mutex
-     (let ([mode (_mode-get el)])
-       ;; if we are here, the loop must have ended either because (i)
-       ;; the event loop is not set blocking and there are no further
-       ;; events, watches or timeouts to handle, or (ii)
-       ;; event-loop-quit! or event-loop-close! have been called.
-       ;; First, reset the event loop where case (ii) applies.
-       (when (not (eq? mode 'running))
-	 (_event-loop-reset! el))
-       ;; now reset the operating mode when not closed
-       (when (not (eq? mode 'closed))
-	 (_mode-set! el #f))))
-   (except c
-	   [else
-	    ;; something threw, probably a callback.  Put the event
-	    ;; loop in a valid state and rethrow
-	    (with-mutex mutex
-	      (_event-loop-reset! el)
-	      (when (not (eq? (_mode-get el) 'closed))
-		(_mode-set! el #f))
-	      (raise c))])))
+	(when (not (and (null? read-files)
+			(null? write-files)
+			(null? (_timeouts-get el))
+			(with-mutex mutex (and (q-empty? q)
+					       (not (_block-get el))))))
+	  (let* ([current-timeout (_current-timeout-get el)]
+		 [res (poll (_poll-table-get el) (_poll-table-size-get el)
+			    (_read-ports-hash-get el) (_write-ports-hash-get el)
+			    (_out-read-bv-get el) (_out-write-bv-get el) (_out-except-bv-get el)
+			    (if current-timeout
+				(let ((msecs (_time-remaining (vector-ref current-timeout 0))))
+				  (if (< msecs 0) 0 msecs))
+				-1))])
+	    ;; deal with POLLPRI events first
+	    (for-each (lambda (elt)
+			(let ([action
+			       ;; we only poll for POLLPRI on read descriptors
+			       (with-mutex mutex
+				 (hashtable-ref (_read-files-actions-get el)
+						(_fd-or-port->fd elt)
+						#f))])
+			  ;; if the action has been concurrently removed, ignore it
+			  (when (and action (not (action 'excpt)))
+			    (with-mutex mutex (_remove-read-watch-impl! elt el)))))
+		      (caddr res))
+	    ;; this deals with POLLIN, POLLHUP, POLLERR and POLLNVAL
+	    ;; events on read file descriptors
+	    (for-each (lambda (elt)
+			(let ([action
+			       (with-mutex mutex
+				 (hashtable-ref (_read-files-actions-get el)
+						(_fd-or-port->fd elt)
+						#f))])
+			  ;; if the action has been concurrently removed, ignore it
+			  (when (and action (not (action 'in)))
+			    (with-mutex mutex (_remove-read-watch-impl! elt el)))))
+		      (remv event-fd (car res)))
+	    ;; this deals with POLLOUT, POLLHUP, POLLERR and POLLNVAL
+	    ;; events on write file descriptors (although I don't
+	    ;; think POLLHUP can occur with these)
+	    (for-each (lambda (elt)
+			(let ([action
+			       (with-mutex mutex
+				 (hashtable-ref (_write-files-actions-get el)
+						(_fd-or-port->fd elt)
+						#f))])
+			  ;; if the action has been concurrently removed, ignore it
+			  (when (and action (not (action 'out)))
+			    (with-mutex mutex (_remove-write-watch-impl! elt el)))))
+		      (cadr res))
+	    ;; the strategy with posted events is first to empty the
+	    ;; event pipe (the only purpose of which is to cause the
+	    ;; event loop to unblock) and then run any events queued
+	    ;; in the queue.  This (i) eliminates any concerns that
+	    ;; events might go missing if the pipe fills up, and (ii)
+	    ;; ensures that if a timeout or watch callback has posted
+	    ;; an event (say ending the timeout or watch), that will
+	    ;; have been acted on by the time the event loop begins
+	    ;; its next iteration.
+	    (when (memv event-fd (car res))
+	      (let loop2 ()
+		(let ((b (get-u8 event-in)))
+		  (when (and (input-port-ready? event-in)
+			     (not (eof-object? b))) ;; this shouldn't ever happen
+		    (loop2)))))
+	    (let loop3 ()
+	      (let ((action (with-mutex mutex
+			      (if (q-empty? q)
+				  (begin
+				    ;; num-tasks should be 0 with an
+				    ;; empty queue anyway, but ...
+				    (_num-tasks-set! el 0)
+				    #f)
+				  (begin
+				    (_num-tasks-set! el (- (_num-tasks-get el) 1))
+				    (q-deq! q))))))
+		(when action
+		  (action)
+		  ;; one of the posted events may have called
+		  ;; event-loop-quit!, so test for it
+		  (when (eq? (with-mutex mutex (_mode-get el)) 'running)
+		    (loop3))))))
+	  (when (eq? (with-mutex mutex (_mode-get el)) 'running)
+	    (loop1))))
+      (with-mutex mutex
+	(let ([mode (_mode-get el)])
+	  ;; if we are here, the loop must have ended either because
+	  ;; (i) the event loop is not set blocking and there are no
+	  ;; further events, watches or timeouts to handle, or (ii)
+	  ;; event-loop-quit! or event-loop-close! have been called.
+	  ;; First, reset the event loop where case (ii) applies.
+	  (when (not (eq? mode 'running))
+	    (_event-loop-reset! el))
+	  ;; now reset the operating mode when not closed
+	  (when (not (eq? mode 'closed))
+	    (_mode-set! el #f)))))))
 
 ;; This procedure is only called in the event loop thread, by
 ;; event-loop-run!  It must be called while holding the event loop
@@ -1925,28 +1925,28 @@
 						   'more))))])))))
 			   loop))
      ;; exceptions might be thrown from the remainder of this
-     ;; procedure (and in particular from 'proc').  This try block
-     ;; ensures that the watch is removed if the user has her own
-     ;; exception handler within or around the a-sync block which
+     ;; procedure (and in particular from 'proc').  This exception
+     ;; handler ensures that the watch is removed if the user has her
+     ;; own exception handler within or around the a-sync block which
      ;; covers this procedure.
-     (try
-      (let next ([res (await)])
-	(cond
-	 [(condition? res)
-	  (raise res)]
-	 [(eq? res 'more)
-	  (next (await))]
-	 [(or (eof-object? res)
-	      (not res))
-	  (event-loop-remove-read-watch! port loop)
-	  res]
-	 [else
-	  (proc res)
-	  (next (await))]))
-      (except c
-	      [else 
-	       (event-loop-remove-read-watch! port loop)
-	       (raise c)]))]))
+     (with-exception-handler
+       (lambda (c)
+	 (event-loop-remove-read-watch! port loop)
+	 (raise c))
+       (lambda ()
+	 (let next ([res (await)])
+	   (cond
+	    [(condition? res)
+	     (raise res)]
+	    [(eq? res 'more)
+	     (next (await))]
+	    [(or (eof-object? res)
+		 (not res))
+	     (event-loop-remove-read-watch! port loop)
+	     res]
+	    [else
+	     (proc res)
+	     (next (await))]))))]))
 
 ;; This is a convenience procedure whose signature is:
 ;;
@@ -2070,32 +2070,32 @@
 						   'more))))])))))
 			   loop))
      ;; exceptions might be thrown from the remainder of this
-     ;; procedure (and in particular from 'proc').  This try block
-     ;; ensures that the watch is removed if the user has her own
-     ;; exception handler within or around the a-sync block which
+     ;; procedure (and in particular from 'proc').  This exception
+     ;; handler ensures that the watch is removed if the user has her
+     ;; own exception handler within or around the a-sync block which
      ;; covers this procedure.
-     (try
-      (let ([ret-val
-	     (let next ([res (await)])
-	       (cond
-		[(condition? res)
-		 (raise res)]
-		[(eq? res 'more)
-		 (next (await))]
-		[(or (eof-object? res)
-		     (not res))
-		 res]
-		[else
-		 (call/1cc
-		  (lambda (k)
-		    (proc res k)
-		    (next (await))))]))])
-	(event-loop-remove-read-watch! port loop)
-	ret-val)
-      (except c
-	      [else
-	       (event-loop-remove-read-watch! port loop)
-	       (raise c)]))]))
+     (with-exception-handler
+       (lambda (c)
+	 (event-loop-remove-read-watch! port loop)
+	 (raise c))
+       (lambda ()
+	 (let ([ret-val
+		(let next ([res (await)])
+		  (cond
+		   [(condition? res)
+		    (raise res)]
+		   [(eq? res 'more)
+		    (next (await))]
+		   [(or (eof-object? res)
+			(not res))
+		    res]
+		   [else
+		    (call/1cc
+		     (lambda (k)
+		       (proc res k)
+		       (next (await))))]))])
+	   (event-loop-remove-read-watch! port loop)
+	   ret-val)))]))
 
 ;; This is a convenience procedure whose signature is:
 ;;
@@ -2296,34 +2296,34 @@
 					 (cons 'more #f))]))))
 			   loop))
      ;; exceptions might be thrown from the remainder of this
-     ;; procedure (and in particular from 'proc').  This try block
-     ;; ensures that the watch is removed if the user has her own
-     ;; exception handler within or around the a-sync block which
+     ;; procedure (and in particular from 'proc').  This exception
+     ;; handler ensures that the watch is removed if the user has her
+     ;; own exception handler within or around the a-sync block which
      ;; covers this procedure.
-     (try
-      (let ([ret-val
-	     (let next ([res (await)])
-	       (let ([val (car res)]
-		     [len (cdr res)])
-		 (cond
-		  [(eq? val 'more)
-		   (next (await))]
-		  [(condition? val)
-		   (raise val)]
-		  [(or (eof-object? val)
-		       (not val))
-		   val]
-		  [else
-		   (proc val len)
-		   (if (< len size)
-		       (eof-object)
-		       (next (await)))])))])
-	(event-loop-remove-read-watch! port loop)
-	ret-val)
-      (except c
-	      [else
-	       (event-loop-remove-read-watch! port loop)
-	       (raise c)]))]))
+     (with-exception-handler
+       (lambda (c)
+	 (event-loop-remove-read-watch! port loop)
+	 (raise c))
+       (lambda ()
+	 (let ([ret-val
+		(let next ([res (await)])
+		  (let ([val (car res)]
+			[len (cdr res)])
+		    (cond
+		     [(eq? val 'more)
+		      (next (await))]
+		     [(condition? val)
+		      (raise val)]
+		     [(or (eof-object? val)
+			  (not val))
+		      val]
+		     [else
+		      (proc val len)
+		      (if (< len size)
+			  (eof-object)
+			  (next (await)))])))])
+	   (event-loop-remove-read-watch! port loop)
+	   ret-val)))]))
 
 ;; This is a convenience procedure whose signature is:
 ;;
@@ -2435,36 +2435,36 @@
 					 (cons 'more #f))]))))
 			   loop))
      ;; exceptions might be thrown from the remainder of this
-     ;; procedure (and in particular from 'proc').  This try block
-     ;; ensures that the watch is removed if the user has her own
-     ;; exception handler within or around the a-sync block which
+     ;; procedure (and in particular from 'proc').  This exception
+     ;; handler ensures that the watch is removed if the user has her
+     ;; own exception handler within or around the a-sync block which
      ;; covers this procedure.
-     (try
-      (let ([ret-val
-	     (let next ([res (await)])
-	       (let ([val (car res)]
-		     [len (cdr res)])
-		 (cond
-		  [(eq? val 'more)
-		   (next (await))]
-		  [(condition? val)
-		   (raise val)]
-		  [(or (eof-object? val)
-		       (not val))
-		   val]
-		  [else
-		   (call/1cc
-		    (lambda (k)
-		      (proc val len k)
-		      (if (< len size)
-			  (eof-object)
-			  (next (await)))))])))])
-	(event-loop-remove-read-watch! port loop)
-	ret-val)
-      (except c
-	      [else
-	       (event-loop-remove-read-watch! port loop)
-	       (raise c)]))]))
+     (with-exception-handler
+       (lambda (c)
+	 (event-loop-remove-read-watch! port loop)
+	 (raise c))
+       (lambda ()
+	 (let ([ret-val
+		(let next ([res (await)])
+		  (let ([val (car res)]
+			[len (cdr res)])
+		    (cond
+		     [(eq? val 'more)
+		      (next (await))]
+		     [(condition? val)
+		      (raise val)]
+		     [(or (eof-object? val)
+			  (not val))
+		      val]
+		     [else
+		      (call/1cc
+		       (lambda (k)
+			 (proc val len k)
+			 (if (< len size)
+			     (eof-object)
+			     (next (await)))))])))])
+	   (event-loop-remove-read-watch! port loop)
+	   ret-val)))]))
 
 ;; This is a convenience procedure for use with an event loop, which
 ;; will run 'proc' in the event loop thread whenever 'file' is ready
