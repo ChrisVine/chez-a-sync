@@ -118,6 +118,45 @@ datum exchange, but it may or may not see a later value.
 (event-loop-run!)
 </pre></div>
 
+<p>And here is one possible implementation of a parallel-map procedure
+using a meeting object, for a program with an event loop (this uses
+await-task-in-thread! for simplicity, but in real life you might want
+to use await-task-in-thread-pool!):
+</p>
+<div class="example">
+<pre class="example">(import
+ (a-sync coroutines)
+ (a-sync event-loop)
+ (a-sync meeting)
+ (a-sync compose)
+ (chezscheme))
+
+(set-default-event-loop!) ;; if none has yet been set
+(event-loop-block! #t)
+
+(define (parallel-map await resume proc lst)
+  (if (null? lst)
+      '()
+      (let ([head (car lst)]
+	    [tail (cdr lst)]
+	    [m1 (make-meeting)])
+	(compose-a-sync ([hd (await-task-in-thread! (lambda () (proc head)))])
+			(meeting-send m1 hd))
+	(let* ([tl (parallel-map await resume proc tail)]
+	       [hd (meeting-receive await resume m1)])
+	  (cons hd tl))))))
+
+;; simulate a computational task which takes 1 second to complete
+(define (do-work i) (sleep (make-time 'time-duration 0 1)) (* i 2)) 
+
+(a-sync
+ (lambda (await resume)
+   (let ([lst (parallel-map await resume do-work (list 1 2 3 4 5))])
+     (display lst)(newline)
+     (event-loop-block! #f))))
+(event-loop-run!)
+</pre></div>
+
 <p>See the documentation on the meeting-send and meeting-receive
 procedures below for an example of multiple &quot;pseudo-threads&quot; sending
 to or receiving from a single meeting object for fan in and fan out,
