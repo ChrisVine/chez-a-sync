@@ -2758,7 +2758,7 @@ to use await-task-in-thread-pool!):
      			(meeting-send m1 hd))
      	(let* ([tl (parallel-map await resume proc tail)]
      	       [hd (meeting-receive await resume m1)])
-     	  (cons hd tl))))))
+     	  (cons hd tl)))))
 
      ;; simulate a computational task which takes 1 second to complete
      (define (do-work i) (sleep (make-time 'time-duration 0 1)) (* i 2))
@@ -3081,7 +3081,7 @@ Node: event loop23145
 Node: thread pool114835
 Node: compose133623
 Node: meeting140078
-Node: try156030
+Node: try156029
 
 End Tag Table
 
