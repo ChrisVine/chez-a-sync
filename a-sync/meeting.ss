@@ -83,7 +83,7 @@
 	  (lp (q-deq! res)))))
     (status-set! m 'closed)))
 
-;; This indicates whether applying message-send or message-receive (as
+;; This indicates whether applying meeting-send or meeting-receive (as
 ;; the case may be) to the meeting object 'm' will return immediately:
 ;; in other words, this procedure will return #t if another a-sync or
 ;; compose-a-sync block is already waiting on the object or the

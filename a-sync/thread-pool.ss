@@ -516,11 +516,12 @@
 ;; will run if 'thunk' raises an exception, and the return value of
 ;; the handler would become the return value of this procedure;
 ;; otherwise the program will terminate if an unhandled exception
-;; propagates out of 'thunk'.  Note that unlike a handler passed to
-;; the thread-pool-add! procedure, 'handler' will run in the event
-;; loop thread and not in a thread pool thread.  Exceptions raised by
-;; the handler procedure will propagate out of event-loop-run! for the
-;; 'loop' event loop.
+;; propagates out of 'thunk'.  'handler' should take a single
+;; argument, which will be the thrown condition object.  Note that
+;; unlike a handler passed to the thread-pool-add! procedure,
+;; 'handler' will run in the event loop thread and not in a thread
+;; pool thread.  Exceptions raised by the handler procedure will
+;; propagate out of event-loop-run! for the 'loop' event loop.
 ;;
 ;; This procedure calls 'await' and must (like the a-sync procedure)
 ;; be called in the same thread as that in which the 'loop' or default
@@ -583,13 +584,14 @@
 ;; The loop argument is optional.  The 'generator' argument is a
 ;; procedure taking one argument, namely a yield argument (see the
 ;; documentation on the make-iterator procedure for further details).
-;; This await-generator-in-pool procedure will cause 'generator' to
-;; run as a task in the 'pool' thread pool, and whenever
-;; 'generator' yields a value this will cause 'proc' to execute in the
-;; event loop specified by the 'loop' argument, or in the default
-;; event loop if no 'loop' argument is provided or if #f is provided
-;; as the 'loop' argument.  'proc' should be a procedure taking a
-;; single argument, namely the value yielded by the generator.
+;; This await-generator-in-thread-pool! procedure will cause
+;; 'generator' to run as a task in the 'pool' thread pool, and
+;; whenever 'generator' yields a value this will cause 'proc' to
+;; execute in the event loop specified by the 'loop' argument, or in
+;; the default event loop if no 'loop' argument is provided or if #f
+;; is provided as the 'loop' argument.  'proc' should be a procedure
+;; taking a single argument, namely the value yielded by the
+;; generator.
 
 ;; This procedure is intended to be called within a waitable procedure
 ;; invoked by a-sync (which supplies the 'await' and 'resume'
@@ -600,10 +602,11 @@
 ;; If the optional 'handler' argument is provided, then that handler
 ;; will run if 'generator' raises an exception; otherwise the program
 ;; will terminate if an unhandled exception propagates out of
-;; 'generator'.  Note that unlike a handler passed to the
-;; thread-pool-add! procedure, 'handler' will run in the event loop
-;; thread and not in a thread pool thread.  This procedure will return
-;; #f if the generator completes normally, or
+;; 'generator'.  'handler' should take a single argument, which will
+;; be the thrown condition object.  Note that unlike a handler passed
+;; to the thread-pool-add! procedure, 'handler' will run in the event
+;; loop thread and not in a thread pool thread.  This procedure will
+;; return #f if the generator completes normally, or
 ;; 'chez-a-sync-thread-error if the generator throws an exception and
 ;; 'handler' is run (the 'chez-a-sync-thread-error symbol is reserved
 ;; to the implementation and should not be yielded by the generator).
@@ -621,7 +624,7 @@
 ;; for the make-event-loop procedure for further information).
 ;;
 ;; Exceptions may propagate out of this procedure if they arise while
-;; setting up, which shouldn't happen unless the thread loop given by
+;; setting up, which shouldn't happen unless the thread pool given by
 ;; the 'pool' argument has been closed (in which case an &violation
 ;; exception will be raised) or memory is exhausted.  Exceptions
 ;; arising during the execution of 'proc', if not caught locally, will
