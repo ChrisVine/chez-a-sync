@@ -483,7 +483,7 @@ The (a-sync coroutines) library file provides the following procedures:
      general overview: overview.
 
 
-File: chez-a-sync.info,  Node: event loop,  Next: thread pool,  Prev: overview,  Up: Top
+File: chez-a-sync.info,  Node: event loop,  Next: thread pool,  Prev: coroutines,  Up: Top
 
 The (a-sync event-loop) library file provides an event loop for
 asynchronous operations.  The event loop does not of itself start any
@@ -3081,10 +3081,10 @@ Node: Top83
 Node: overview1247
 Node: coroutines4562
 Node: event loop23145
-Node: thread pool114835
-Node: compose133817
-Node: meeting140272
-Node: try156223
+Node: thread pool114837
+Node: compose133819
+Node: meeting140274
+Node: try156225
 
 End Tag Table
 

@@ -1,4 +1,4 @@
-@node event loop,thread pool,overview,Top
+@node event loop,thread pool,coroutines,Top
 
 The (a-sync event-loop) library file provides an event loop for
 asynchronous operations.  The event loop does not of itself start any
