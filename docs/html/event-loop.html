@@ -1085,6 +1085,11 @@ procedure so that they may be caught locally, say by putting a &rsquo;try&rsquo;
 block around the call to this procedure, and only out of
 event-loop-run! if not caught in that way.
 </p>
+<p>If a continuable exception propagates out of this procedure, it will
+be converted into a non-continuable one (continuable exceptions are
+incompatible with asynchronous event handling using this procedure and
+may break resource management which uses rethrows or dynamic winds).
+</p>
 <p>Here is an example of the use of await-getline!:
 </p><div class="example">
 <pre class="example">(set-default-event-loop!) ;; if none has yet been set
@@ -1307,6 +1312,11 @@ all read exceptions will propagate in the first instance out of this
 procedure so that they may be caught locally, say by putting a &rsquo;try&rsquo;
 block around the call to this procedure, and only out of
 event-loop-run! if not caught in that way.
+</p>
+<p>If a continuable exception propagates out of this procedure, it will
+be converted into a non-continuable one (continuable exceptions are
+incompatible with asynchronous event handling using this procedure and
+may break resource management which uses rethrows or dynamic winds).
 </p>
 <p>This procedure is first available in version 0.8 of this library.
 </p></dd></dl>
@@ -1592,6 +1602,11 @@ will propagate in the first instance out of this procedure so that
 they may be caught locally, say by putting a &rsquo;try&rsquo; block around the
 call to this procedure.
 </p>
+<p>If a continuable exception propagates out of this procedure, it will
+be converted into a non-continuable one (continuable exceptions are
+incompatible with asynchronous event handling using this procedure and
+may break resource management which uses rethrows or dynamic winds).
+</p>
 <p>Here is how EPIPE might be tested for, using the &rsquo;try&rsquo; form from the
 <a href="try.html">(a-sync try)</a> library file (with linux and BSDs, the value
 of EPIPE is 32):
@@ -1689,6 +1704,11 @@ event loop in this way was not a good approach, so from version 0.11
 of this library all write exceptions will propagate in the first
 instance out of this procedure so that they may be caught locally, say
 by putting a &rsquo;try&rsquo; block around the call to this procedure.
+</p>
+<p>If a continuable exception propagates out of this procedure, it will
+be converted into a non-continuable one (continuable exceptions are
+incompatible with asynchronous event handling using this procedure and
+may break resource management which uses rethrows or dynamic winds).
 </p>
 <p>Here is how EPIPE might be tested for, using the &rsquo;try&rsquo; form from the
 <a href="try.html">(a-sync try)</a> library file (with linux and BSDs, the value

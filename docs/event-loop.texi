@@ -1014,6 +1014,11 @@ procedure so that they may be caught locally, say by putting a 'try'
 block around the call to this procedure, and only out of
 event-loop-run! if not caught in that way.
 
+If a continuable exception propagates out of this procedure, it will
+be converted into a non-continuable one (continuable exceptions are
+incompatible with asynchronous event handling using this procedure and
+may break resource management which uses rethrows or dynamic winds).
+
 Here is an example of the use of await-getline!:
 @example
 (set-default-event-loop!) ;; if none has yet been set
@@ -1233,6 +1238,11 @@ all read exceptions will propagate in the first instance out of this
 procedure so that they may be caught locally, say by putting a 'try'
 block around the call to this procedure, and only out of
 event-loop-run! if not caught in that way.
+
+If a continuable exception propagates out of this procedure, it will
+be converted into a non-continuable one (continuable exceptions are
+incompatible with asynchronous event handling using this procedure and
+may break resource management which uses rethrows or dynamic winds).
 
 This procedure is first available in version 0.8 of this library.
 @end deffn
@@ -1514,6 +1524,11 @@ will propagate in the first instance out of this procedure so that
 they may be caught locally, say by putting a 'try' block around the
 call to this procedure.
 
+If a continuable exception propagates out of this procedure, it will
+be converted into a non-continuable one (continuable exceptions are
+incompatible with asynchronous event handling using this procedure and
+may break resource management which uses rethrows or dynamic winds).
+
 Here is how EPIPE might be tested for, using the 'try' form from the
 @ref{try,,(a-sync try)} library file (with linux and BSDs, the value
 of EPIPE is 32):
@@ -1610,6 +1625,11 @@ event loop in this way was not a good approach, so from version 0.11
 of this library all write exceptions will propagate in the first
 instance out of this procedure so that they may be caught locally, say
 by putting a 'try' block around the call to this procedure.
+
+If a continuable exception propagates out of this procedure, it will
+be converted into a non-continuable one (continuable exceptions are
+incompatible with asynchronous event handling using this procedure and
+may break resource management which uses rethrows or dynamic winds).
 
 Here is how EPIPE might be tested for, using the 'try' form from the
 @ref{try,,(a-sync try)} library file (with linux and BSDs, the value

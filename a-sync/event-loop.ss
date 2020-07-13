@@ -1752,6 +1752,12 @@
 ;; locally, say by putting a 'try' block around the call to this
 ;; procedure, and only out of event-loop-run! if not caught in that
 ;; way.
+;;
+;; If a continuable exception propagates out of this procedure, it
+;; will be converted into a non-continuable one (continuable
+;; exceptions are incompatible with asynchronous event handling using
+;; this procedure and may break resource management which uses
+;; rethrows or dynamic winds).
 (define await-getline!
   (case-lambda
     [(await resume port) (await-getline! await resume #f port)]
@@ -2151,6 +2157,12 @@
 ;; locally, say by putting a 'try' block around the call to this
 ;; procedure, and only out of event-loop-run! if not caught in that
 ;; way.
+;;
+;; If a continuable exception propagates out of this procedure, it
+;; will be converted into a non-continuable one (continuable
+;; exceptions are incompatible with asynchronous event handling using
+;; this procedure and may break resource management which uses
+;; rethrows or dynamic winds).
 ;;
 ;; This procedure is first available in version 0.8 of this library.
 (define await-getblock!
@@ -2581,6 +2593,12 @@
 ;; this procedure so that they may be caught locally, say by putting a
 ;; 'try' block around the call to this procedure.
 ;;
+;; If a continuable exception propagates out of this procedure, it
+;; will be converted into a non-continuable one (continuable
+;; exceptions are incompatible with asynchronous event handling using
+;; this procedure and may break resource management which uses
+;; rethrows or dynamic winds).
+;;
 ;; Unlike the other await-* procedures in this library file,
 ;; await-put-bytevector! and await-put-string! will not call 'await'
 ;; if all the contents of the bytevector/string can be written
@@ -2699,6 +2717,12 @@
 ;; first instance out of this procedure so that they may be caught
 ;; locally, say by putting a 'try' block around the call to this
 ;; procedure.
+;;
+;; If a continuable exception propagates out of this procedure, it
+;; will be converted into a non-continuable one (continuable
+;; exceptions are incompatible with asynchronous event handling using
+;; this procedure and may break resource management which uses
+;; rethrows or dynamic winds).
 ;;
 ;; Unlike the other await-* procedures in this library file,
 ;; await-put-bytevector! and await-put-string! will not call 'await'
