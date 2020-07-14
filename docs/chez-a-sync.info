@@ -3077,14 +3077,19 @@ exceptions.
      environment of the original call to 'try'.  From version 0.24 the
      cond tests are evaluated, and any re-raising of the exception
      occurs, in the dynamic environment in which the exception arose,
-     and only any cond consequent (upon a test succeeding) or else
+     and only the cond consequent (upon a test succeeding) or else
      clause is evaluated in the dynamic environment of the call to
      'try'.  This change is to avoid losing relevant debugging
-     information should the exception be re-raised.
+     information should the exception be re-raised, but in the highly
+     unlikely event that user code which applies this macro has a cond
+     test which accesses parameter values set by parameterize, it could
+     change the behavior of the cond test.  If so, checkout try.ss for
+     version 0.23 and use that (and have a little less debugability):
+     either version of try.ss will work fine with this library.
 
-     Or put another way, the 'try' macro behaves like a conventional
-     stack unwinding exception implementation.  'guard' does not
-     necessarily do so.
+     Put another way, the 'try' macro behaves like a conventional stack
+     unwinding exception implementation.  'guard' does not necessarily
+     do so.
 
      Continuable exceptions with generalised handling forms such as
      'guard' are generally to be avoided, as they may break any
