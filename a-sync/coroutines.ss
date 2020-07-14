@@ -19,8 +19,7 @@
    make-iterator
    make-coroutine
    a-sync)
-  (import (a-sync try)
-	  (chezscheme))
+  (import (chezscheme))
 
 
 ;; this procedure takes a generator procedure, namely a procedure
