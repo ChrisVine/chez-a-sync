@@ -90,10 +90,10 @@ evaluated in the dynamic environment of the call to &rsquo;try&rsquo;.  This
 change is to avoid losing relevant debugging information should the
 exception be re-raised, but in the highly unlikely event that user
 code which applies this macro has a cond test which accesses parameter
-values set by parameterize, it could change the behavior of the cond
-test.  If so, checkout try.ss for version 0.23 and use that (and have
-a little less debugability): either version of try.ss will work fine
-with this library.
+values set by parameterize in the &rsquo;try&rsquo; body clauses, it could change
+the behavior of the cond test.  If so, checkout try.ss for version
+0.23 and use that (and have a little less debugability): either
+version of try.ss will work fine with this library.
 </p>
 <p>Put another way, the &rsquo;try&rsquo; macro behaves like a conventional stack
 unwinding exception implementation.  &rsquo;guard&rsquo; does not necessarily do

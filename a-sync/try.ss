@@ -72,10 +72,11 @@
 ;; 'try'.  This change is to avoid losing relevant debugging
 ;; information should the exception be re-raised, but in the highly
 ;; unlikely event that user code which applies this macro has a cond
-;; test which accesses parameter values set by parameterize, it could
-;; change the behavior of the cond test.  If so, checkout try.ss for
-;; version 0.23 and use that (and have a little less debugability):
-;; either version of try.ss will work fine with this library.
+;; test which accesses parameter values set by parameterize in the
+;; 'try' body clauses, it could change the behavior of the cond test.
+;; If so, checkout try.ss for version 0.23 and use that (and have a
+;; little less debugability): either version of try.ss will work fine
+;; with this library.
 ;;
 ;; Put another way, the 'try' macro behaves like a conventional stack
 ;; unwinding exception implementation.  'guard' does not necessarily
