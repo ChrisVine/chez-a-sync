@@ -3045,14 +3045,13 @@ exceptions.
      executes the body clauses, and if an exception is raised by them
      passes control to the 'except' block with 'condition' set to the
      condition which was raised.  The cond-clauses are then evaluated as
-     if in a cond expression.  If one of the cond tests is found to be
-     true, or there is none found to be true but there is an else
-     clause, then the relevant cond clause or else clause will be
-     evaluated and returned.  If none of the cond tests in the
-     cond-clauses is found to be true and there is no else clause, the
-     exception condition will be re-raised as if by raise, for a
-     dynamically enclosing try form, guard form or
-     with-exception-handler form (if any) to handle.
+     if in a cond expression.  If a cond test is found to be true, or
+     there is none found to be true but there is an else clause, then
+     the relevant cond consequent or else clause will be evaluated and
+     returned.  If none of the cond tests in the cond-clauses is found
+     to be true and there is no else clause, the exception condition
+     will be re-raised as if by raise, for a dynamically enclosing try
+     form, guard form or with-exception-handler form (if any) to handle.
 
      The return value of try, if there is no exception raised by the
      body clauses or any exception raised is handled by a cond-clause,
@@ -3060,18 +3059,28 @@ exceptions.
      cond-clause, as the case may be.
 
      This is similar to but not the same as the R6RS 'guard' form.  The
-     guard form has the property that if no cond test is found to be
-     true in the cond clauses and there is no else clause, the exception
-     condition will be re-raised with raise-continuable.  This is to
-     allow continuable exceptions to propagate successfully through a
-     'guard' form (albeit triggering any dynamic winds in doing so).  A
-     further consequence is that when the condition is re-raised, that
-     is done in the dynamic environment of the original call to raise or
-     raise-continuable.  As mentioned, the 'try' form always re-raises
-     with 'raise' (so in effect converting any continuable exception to
-     a non-continuable one), and it does so in the dynamic environment
-     in which the cond-clauses are evaluated, which is the dynamic
-     environment of the original call to 'try'.
+     guard form has the property that the cond tests and any cond
+     consequent or else clause are evaluated in the dynamic environment
+     of the call to 'guard', and if no cond test is found to be true and
+     there is no else clause, there is a return to the dynamic
+     environment in which the exception arose for the exception
+     condition to be re-raised with raise-continuable (the use of
+     raise-continuable is to allow continuable exceptions to propagate
+     successfully through the 'guard' form).  However, this can result
+     in triggering multiple dynamic unwinds and rewinds.  As mentioned,
+     the 'try' form always re-raises with 'raise' (so in effect
+     converting any continuable exception to a non-continuable one).
+     Furthermore it only exits the dynamic environment in which the
+     exception occurred once.  Prior to version 0.24 of this library it
+     did this by evaluating the cond tests, and any cond consequent or
+     else clause, or re-raising the exception, in the dynamic
+     environment of the original call to 'try'.  From version 0.24 the
+     cond tests are evaluated, and any re-raising of the exception
+     occurs, in the dynamic environment in which the exception arose,
+     and only any cond consequent (upon a test succeeding) or else
+     clause is evaluated in the dynamic environment of the call to
+     'try'.  This change is to avoid losing relevant debugging
+     information should the exception be re-raised.
 
      Or put another way, the 'try' macro behaves like a conventional
      stack unwinding exception implementation.  'guard' does not
