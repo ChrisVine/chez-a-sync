@@ -78,9 +78,10 @@
   (case (a-sync-regular-file-p fd)
     [(0) #f]
     [(1) (raise (condition (make-i/o-write-error)
-			   (make-who-condition "raise-condition-if-regular-file")
-			   (make-message-condition "await-put-bytevector! procedure cannot be used with regular files")))]
+			   (make-who-condition "raise-exception-if-regular-file")
+			   (make-message-condition "await-put-bytevector! procedure cannot be used with regular files")
+			   (make-irritants-condition '(errno 0))))]
     [(-1) (raise (condition (make-i/o-write-error)
-			    (make-who-condition "raise-condition-if-regular-file")
+			    (make-who-condition "raise-exception-if-regular-file")
 			    (make-message-condition "C fstat() function returned an error")
 			    (make-irritants-condition `(errno ,(a-sync-errno)))))]))
