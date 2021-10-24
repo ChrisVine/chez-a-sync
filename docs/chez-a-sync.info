@@ -2471,10 +2471,7 @@ the already accumulated tasks has reduced.
      Exceptions may propagate out of this procedure if they arise while
      setting up, which shouldn't happen unless the thread pool given by
      the 'pool' argument has been closed (in which case a &violation
-     exception will be raised), the thread pool tries to start an
-     additional native thread which the operating system fails to supply
-     (which would cause a system exception to arise) or memory is
-     exhausted.
+     exception will be raised) or memory is exhausted.
 
      Here is an example of the use of await-task-in-thread-pool!:
           (set-default-event-loop!) ;; if none has yet been set
@@ -3121,9 +3118,9 @@ Node: overview1247
 Node: coroutines4562
 Node: event loop23145
 Node: thread pool116049
-Node: compose135031
-Node: meeting141486
-Node: try157437
+Node: compose134865
+Node: meeting141320
+Node: try157271
 
 End Tag Table
 

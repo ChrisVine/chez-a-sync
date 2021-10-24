@@ -534,10 +534,7 @@
 ;; Exceptions may propagate out of this procedure if they arise while
 ;; setting up, which shouldn't happen unless the thread pool given by
 ;; the 'pool' argument has been closed (in which case a &violation
-;; exception will be raised), the thread pool tries to start an
-;; additional native thread which the operating system fails to supply
-;; (which would cause a system exception to arise) or memory is
-;; exhausted.
+;; exception will be raised) or memory is exhausted.
 ;;
 ;; This procedure is first available in version 0.16 of this library.
 (define (await-task-in-thread-pool! await resume . rest)

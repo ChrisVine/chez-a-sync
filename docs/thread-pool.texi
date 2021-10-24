@@ -267,9 +267,7 @@ make-event-loop procedure for further information).
 Exceptions may propagate out of this procedure if they arise while
 setting up, which shouldn't happen unless the thread pool given by the
 'pool' argument has been closed (in which case a &violation exception
-will be raised), the thread pool tries to start an additional native
-thread which the operating system fails to supply (which would cause a
-system exception to arise) or memory is exhausted.
+will be raised) or memory is exhausted.
 
 Here is an example of the use of await-task-in-thread-pool!:
 @example
