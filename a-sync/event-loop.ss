@@ -1,4 +1,4 @@
-;; Copyright (C) 2014 to 2018 Chris Vine
+;; Copyright (C) 2014 to 2021 Chris Vine
 ;; 
 ;; This file is licensed under the Apache License, Version 2.0 (the
 ;; "License"); you may not use this file except in compliance with the
@@ -417,23 +417,26 @@
   (define write-files #f)
   (define set-poll-caches #f)
 
-  (with-mutex mutex
-    (case (_mode-get el)
-      [(closed)
-       (raise (condition (make-violation)
+  (let ((cndn
+	 (with-mutex mutex
+	   (case (_mode-get el)
+	     [(closed)
+	      (condition (make-violation)
 			 (make-who-condition "event-loop-run!")
 			 (make-message-condition
-			  "event-loop-run! applied to an event loop which has been closed")))]
-      [(running prepare-to-quit)
-       (raise (condition (make-violation)
-			 (make-who-condition "event-loop-run!")
-			 (make-message-condition
-			  "event-loop-run! applied to an event loop which is already running")))]
-      [else
-       (set! event-in (_event-in-get el))
-       (set! event-fd (port-file-descriptor event-in))
-       (_loop-thread-set! el (get-thread-id))
-       (_mode-set! el 'running)]))
+			  "event-loop-run! applied to an event loop which has been closed"))]
+	     [(running prepare-to-quit)
+	      (condition (make-violation)
+				(make-who-condition "event-loop-run!")
+				(make-message-condition
+				 "event-loop-run! applied to an event loop which is already running"))]
+	     [else
+	      (set! event-in (_event-in-get el))
+	      (set! event-fd (port-file-descriptor event-in))
+	      (_loop-thread-set! el (get-thread-id))
+	      (_mode-set! el 'running)
+	      #f]))))
+    (when cndn (raise cndn)))
 
   (with-exception-handler
     (lambda (c)
@@ -442,8 +445,8 @@
       (with-mutex mutex
 	(_event-loop-reset! el)
 	(when (not (eq? (_mode-get el) 'closed))
-	  (_mode-set! el #f))
-	(raise c)))
+	  (_mode-set! el #f)))
+      (raise c))
     (lambda ()
       (let loop1 ()
 	;; we don't need to use the mutex in this procedure to access

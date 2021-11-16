@@ -1,4 +1,4 @@
-;; Copyright (C) 2017 Chris Vine
+;; Copyright (C) 2017 and 2021 Chris Vine
 ;; 
 ;; This file is licensed under the Apache License, Version 2.0 (the
 ;; "License"); you may not use this file except in compliance with the
@@ -340,8 +340,8 @@
 		(size-set! pool (num-threads-get pool))
 		(when (and (stopped-get pool)
 			   (blocking-get pool))
-		  (condition-broadcast (condvar-get pool)))
-		(raise c)))
+		  (condition-broadcast (condvar-get pool))))
+	      (raise c))
 	    (lambda ()
 	      (fork-thread (lambda () (thread-loop pool))))))))))
 
@@ -369,13 +369,17 @@
 ;;
 ;; This procedure is first available in version 0.16 of this library.
 (define (thread-pool-set-non-blocking! pool val)
-  (with-mutex (mutex-get pool)
-    (when (stopped-get pool)
-      (raise (condition (make-violation)
-			(make-who-condition "thread-pool-set-non-blocking!")
-			(make-message-condition
-			 "thread-pool-set-non-blocking! applied to a thread pool which has been closed"))))
-    (blocking-set! pool (not val))))
+  (let ([cndn
+	 (with-mutex (mutex-get pool)
+	   (if (stopped-get pool)
+	       (condition (make-violation)
+			  (make-who-condition "thread-pool-set-non-blocking!")
+			  (make-message-condition
+			   "thread-pool-set-non-blocking! applied to a thread pool which has been closed"))
+	       (begin
+		 (blocking-set! pool (not val))
+		 #f)))])
+    (when cndn (raise cndn))))
 
 ;; This procedure will cause the thread-pool object to stop running
 ;; tasks.  However, all tasks already running or queued for execution
@@ -396,29 +400,33 @@
 ;;
 ;; This procedure is first available in version 0.16 of this library.
 (define (thread-pool-stop! pool)
-  (let ([mutex (mutex-get pool)])
-    (with-mutex mutex
-      (when (stopped-get pool)
-	(raise (condition (make-violation)
-			  (make-who-condition "thread-pool-stop!")
-			  (make-message-condition
-			   "thread-pool-stop! applied to a thread pool which has been closed"))))
-      (stopped-set! pool #t)
-      (let ([thread-count (num-threads-get pool)])
-	;; we could be adding more 'kill-thread callbacks than
-	;; necessary here, because as we are doing this a concurrent
-	;; call to thread-pool-change-size! may have failed to start a
-	;; thread and raised an exception.  However, that doesn't
-	;; matter - we just get left with a redundant callback in 'aq'
-	;; which never gets used and disappears when the pool is
-	;; garbage collected
-	(do ([kill-count 0 (+ kill-count 1)])
-	    ((= kill-count thread-count))
-	  (a-queue-push! (aq-get pool) (cons (lambda () (raise 'kill-thread)) #f)))
-	(when (blocking-get pool)
-	  (do ()
-	      ((= (num-threads-get pool) 0))
-	      (condition-wait (condvar-get pool) mutex)))))))
+  (let* ([mutex (mutex-get pool)]
+	 [cndn
+	  (with-mutex mutex
+	    (if (stopped-get pool)
+		(condition (make-violation)
+			   (make-who-condition "thread-pool-stop!")
+			   (make-message-condition
+			    "thread-pool-stop! applied to a thread pool which has been closed"))
+		(begin
+		  (stopped-set! pool #t)
+		  (let ([thread-count (num-threads-get pool)])
+		    ;; we could be adding more 'kill-thread callbacks than
+		    ;; necessary here, because as we are doing this a concurrent
+		    ;; call to thread-pool-change-size! may have failed to start a
+		    ;; thread and raised an exception.  However, that doesn't
+		    ;; matter - we just get left with a redundant callback in 'aq'
+		    ;; which never gets used and disappears when the pool is
+		    ;; garbage collected
+		    (do ([kill-count 0 (+ kill-count 1)])
+			((= kill-count thread-count))
+		      (a-queue-push! (aq-get pool) (cons (lambda () (raise 'kill-thread)) #f)))
+		    (when (blocking-get pool)
+		      (do ()
+			  ((= (num-threads-get pool) 0))
+			(condition-wait (condvar-get pool) mutex))))
+		  #f)))])
+    (when cndn (raise cndn))))
 
 ;; This procedure adds a new task to the thread pool.  'task' must be
 ;; a thunk.  If one or more threads in the pool are currently blocking
@@ -444,26 +452,30 @@
   (case-lambda
     [(pool task) (thread-pool-add! pool task #f)]
     [(pool task fail-handler)
-     ;; check the pool has not been closed and increment the task
-     ;; count under a single mutex locking operation to ensure
-     ;; atomicity within the pool
-     (with-mutex (mutex-get pool)
-       (when (stopped-get pool)
-	 (raise (condition (make-violation)
-			   (make-who-condition "thread-pool-add!")
-			   (make-message-condition
-			    "thread-pool-add! applied to a thread pool which has been closed"))))
-       ;; We need to hold the mutex when adding the task so that
-       ;; the whole operation is atomic - otherwise if
-       ;; thread-pool-stop! is called concurrently with
-       ;; thread-pool-add!, we cannot guarantee that a task will
-       ;; either run or a violation exception will be raised.  We
-       ;; must give this guarantee for await-task-in-thread-pool!
-       ;; to work correctly.  That is not too much of an additional
-       ;; point of contention, because a-queue-push! is itself
-       ;; serialized.
-       (a-queue-push! (aq-get pool) (cons task fail-handler))
-       (num-tasks-set! pool (+ (num-tasks-get pool) 1)))]))
+     (let ([cndn
+	    ;; check the pool has not been closed and increment the
+	    ;; task count under a single mutex locking operation to
+	    ;; ensure atomicity within the pool
+	    (with-mutex (mutex-get pool)
+	      (if (stopped-get pool)
+		  (condition (make-violation)
+			     (make-who-condition "thread-pool-add!")
+			     (make-message-condition
+			      "thread-pool-add! applied to a thread pool which has been closed"))
+		  (begin
+		    ;; We need to hold the mutex when adding the task so that
+		    ;; the whole operation is atomic - otherwise if
+		    ;; thread-pool-stop! is called concurrently with
+		    ;; thread-pool-add!, we cannot guarantee that a task will
+		    ;; either run or a violation exception will be raised.  We
+		    ;; must give this guarantee for await-task-in-thread-pool!
+		    ;; to work correctly.  That is not too much of an additional
+		    ;; point of contention, because a-queue-push! is itself
+		    ;; serialized.
+		    (a-queue-push! (aq-get pool) (cons task fail-handler))
+		    (num-tasks-set! pool (+ (num-tasks-get pool) 1))
+		    #f)))])
+       (when cndn (raise cndn)))]))
 
 ;; This macro is intended to be called by a task running on a thread
 ;; pool which is about to make a blocking (non-asynchronous) call.  It
