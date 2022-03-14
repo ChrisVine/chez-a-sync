@@ -1,6 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
-<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
+<!-- Created by GNU Texinfo 6.8, https://www.gnu.org/software/texinfo/ -->
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>compose (chez-a-sync)</title>
@@ -10,17 +10,19 @@
 <meta name="resource-type" content="document">
 <meta name="distribution" content="global">
 <meta name="Generator" content="makeinfo">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
 <link href="index.html" rel="start" title="Top">
 <link href="index.html" rel="up" title="Top">
 <link href="meeting.html" rel="next" title="meeting">
 <link href="thread-pool.html" rel="prev" title="thread pool">
 <style type="text/css">
 <!--
+a.copiable-anchor {visibility: hidden; text-decoration: none; line-height: 0em}
 a.summary-letter {text-decoration: none}
 blockquote.indentedblock {margin-right: 0em}
 div.display {margin-left: 3.2em}
 div.example {margin-left: 3.2em}
-div.lisp {margin-left: 3.2em}
 kbd {font-style: oblique}
 pre.display {font-family: inherit}
 pre.format {font-family: inherit}
@@ -29,6 +31,7 @@ pre.menu-preformatted {font-family: serif}
 span.nolinebreak {white-space: nowrap}
 span.roman {font-family: initial; font-weight: normal}
 span.sansserif {font-family: sans-serif; font-weight: normal}
+span:hover a.copiable-anchor {visibility: visible}
 ul.no-bullet {list-style: none}
 -->
 </style>
@@ -39,7 +42,7 @@ ul.no-bullet {list-style: none}
 <body lang="en">
 <span id="compose"></span><div class="header">
 <p>
-Next: <a href="meeting.html" accesskey="n" rel="next">meeting</a>, Previous: <a href="thread-pool.html" accesskey="p" rel="prev">thread pool</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; </p>
+Next: <a href="meeting.html" accesskey="n" rel="next">meeting</a>, Previous: <a href="thread-pool.html" accesskey="p" rel="prev">thread pool</a>, Up: <a href="index.html" accesskey="u" rel="up">chez-a-sync reference</a> &nbsp; </p>
 </div>
 <hr>
 <h4 class="node-heading">compose</h4>
@@ -48,8 +51,8 @@ Next: <a href="meeting.html" accesskey="n" rel="next">meeting</a>, Previous: <a 
 interface for the a-sync procedure provided by the
 <a href="coroutines.html">(a-sync coroutines)</a> library file.
 </p>
-<dl>
-<dt id="index-_0028compose_002da_002dsync">Syntax: <strong>(compose-a-sync</strong> <em>[loop] ((var await-exp0) ...) await-exp1 await-exp2 ...)</em></dt>
+<dl class="def">
+<dt id="index-_0028compose_002da_002dsync"><span class="category">Syntax: </span><span><strong>(compose-a-sync</strong> <em>[loop] ((var await-exp0) ...) await-exp1 await-exp2 ...)</em><a href='#index-_0028compose_002da_002dsync' class='copiable-anchor'> &para;</a></span></dt>
 <dd><p>This library file provides the compose-a-sync macro.  This does two
 things: first, it calls a-sync for you and deals with the resulting
 &rsquo;await&rsquo; and &rsquo;resume&rsquo; procedures without exposing them, which for many
@@ -152,8 +155,8 @@ of the <a href="coroutines.html">(a-sync coroutines)</a> library file.
 thread as that in which the event loop runs.
 </p></dd></dl>
 
-<dl>
-<dt id="index-_0028no_002dawait">Syntax: <strong>(no-await</strong> <em>body0 body1 ...)</em></dt>
+<dl class="def">
+<dt id="index-_0028no_002dawait"><span class="category">Syntax: </span><span><strong>(no-await</strong> <em>body0 body1 ...)</em><a href='#index-_0028no_002dawait' class='copiable-anchor'> &para;</a></span></dt>
 <dd><p>This macro will generate a &rsquo;compose-a-sync&rsquo;-capable procedure from a
 body of code which does not block.  It can be passed to
 compose-a-sync, either for use as an initializer or as a clause in its
@@ -172,7 +175,7 @@ propagate out of event-loop-run!.
 <hr>
 <div class="header">
 <p>
-Next: <a href="meeting.html" accesskey="n" rel="next">meeting</a>, Previous: <a href="thread-pool.html" accesskey="p" rel="prev">thread pool</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; </p>
+Next: <a href="meeting.html">meeting</a>, Previous: <a href="thread-pool.html">thread pool</a>, Up: <a href="index.html">chez-a-sync reference</a> &nbsp; </p>
 </div>
 
 

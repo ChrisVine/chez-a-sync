@@ -1,6 +1,6 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
 <html>
-<!-- Created by GNU Texinfo 6.7, http://www.gnu.org/software/texinfo/ -->
+<!-- Created by GNU Texinfo 6.8, https://www.gnu.org/software/texinfo/ -->
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <title>try (chez-a-sync)</title>
@@ -10,16 +10,18 @@
 <meta name="resource-type" content="document">
 <meta name="distribution" content="global">
 <meta name="Generator" content="makeinfo">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
 <link href="index.html" rel="start" title="Top">
 <link href="index.html" rel="up" title="Top">
 <link href="meeting.html" rel="prev" title="meeting">
 <style type="text/css">
 <!--
+a.copiable-anchor {visibility: hidden; text-decoration: none; line-height: 0em}
 a.summary-letter {text-decoration: none}
 blockquote.indentedblock {margin-right: 0em}
 div.display {margin-left: 3.2em}
 div.example {margin-left: 3.2em}
-div.lisp {margin-left: 3.2em}
 kbd {font-style: oblique}
 pre.display {font-family: inherit}
 pre.format {font-family: inherit}
@@ -28,6 +30,7 @@ pre.menu-preformatted {font-family: serif}
 span.nolinebreak {white-space: nowrap}
 span.roman {font-family: initial; font-weight: normal}
 span.sansserif {font-family: sans-serif; font-weight: normal}
+span:hover a.copiable-anchor {visibility: visible}
 ul.no-bullet {list-style: none}
 -->
 </style>
@@ -38,7 +41,7 @@ ul.no-bullet {list-style: none}
 <body lang="en">
 <span id="try"></span><div class="header">
 <p>
-Previous: <a href="meeting.html" accesskey="p" rel="prev">meeting</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; </p>
+Previous: <a href="meeting.html" accesskey="p" rel="prev">meeting</a>, Up: <a href="index.html" accesskey="u" rel="up">chez-a-sync reference</a> &nbsp; </p>
 </div>
 <hr>
 <h4 class="node-heading">try</h4>
@@ -46,8 +49,8 @@ Previous: <a href="meeting.html" accesskey="p" rel="prev">meeting</a>, Up: <a hr
 <p>This (a-sync try) library file provides a &rsquo;try&rsquo; macro for dealing with
 exceptions.
 </p>
-<dl>
-<dt id="index-_0028try">Syntax: <strong>(try</strong> <em>body0 body1 ... (except condition cond-clause0 cond-clause1 ...))</em></dt>
+<dl class="def">
+<dt id="index-_0028try"><span class="category">Syntax: </span><span><strong>(try</strong> <em>body0 body1 ... (except condition cond-clause0 cond-clause1 ...))</em><a href='#index-_0028try' class='copiable-anchor'> &para;</a></span></dt>
 <dd><p>Try is a macro used in the implementation of the event loop provided
 by this library, and is exported in case it is useful to users.  The
 macro has two keywords, &rsquo;try&rsquo; and &rsquo;except&rsquo;.  It executes the body
@@ -125,7 +128,7 @@ of &rsquo;try&rsquo; for maintaining continuable exceptions as continuable.
 <hr>
 <div class="header">
 <p>
-Previous: <a href="meeting.html" accesskey="p" rel="prev">meeting</a>, Up: <a href="index.html" accesskey="u" rel="up">Top</a> &nbsp; </p>
+Previous: <a href="meeting.html">meeting</a>, Up: <a href="index.html">chez-a-sync reference</a> &nbsp; </p>
 </div>
 
 

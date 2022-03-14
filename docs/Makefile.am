@@ -3,7 +3,7 @@
 .PHONY: docs
 docs:
 	makeinfo chez-a-sync.texi
-	makeinfo --html chez-a-sync.texi
+	makeinfo --html -c FORMAT_MENU=menu chez-a-sync.texi
 	rm -rf html
 	mv chez-a-sync html
 
